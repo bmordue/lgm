@@ -1,0 +1,165 @@
+openapi: 3.0.1
+info:
+  title: Lgm
+  version: 0.0.1
+servers:
+- url: /
+security:
+- bearerAuth: []
+paths:
+  /games:
+    post:
+      summary: create a new game
+      operationId: createGame
+      responses:
+        "200":
+          description: metadata about newly created game
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCreatedResponse'
+      x-swagger-router-controller: Default
+  /games/{id}:
+    put:
+      summary: join a game
+      operationId: joinGame
+      parameters:
+      - name: id
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      responses:
+        "204":
+          description: join request accepted
+        "400":
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "403":
+          description: join request denied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+      x-swagger-router-controller: Default
+  /games/{gameId}/turns/{turn}/players/{playerId}:
+    get:
+      summary: get turn results
+      operationId: turnResults
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      - name: turn
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      - name: playerId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: turn results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TurnResultsResponse'
+      x-swagger-router-controller: Default
+    post:
+      summary: post turn orders
+      operationId: postOrders
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      - name: turn
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      - name: playerId
+        in: path
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurnOrders'
+        required: true
+      responses:
+        "202":
+          description: accepted
+        "400":
+          description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+      x-swagger-router-controller: Default
+components:
+  schemas:
+    GameCreatedResponse:
+      required:
+      - id
+      - join_url
+      properties:
+        id:
+          type: integer
+        join_url:
+          type: string
+      example:
+        join_url: join_url
+        id: 0
+    ErrorMessageResponse:
+      required:
+      - message
+      properties:
+        message:
+          type: string
+    TurnOrders:
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/TurnOrders_orders'
+    TurnResultsResponse:
+      properties:
+        placeholder:
+          type: string
+      example:
+        placeholder: placeholder
+    TurnOrders_orders:
+      type: object
+      properties:
+        placeholder:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
