@@ -2,6 +2,8 @@
 
 const store = require('./Store.js');
 const rules = require('./Rules.js');
+const logger = require('../utils/Logger.js');
+const util = require('util');
 
 /**
  * create a new game
@@ -9,7 +11,20 @@ const rules = require('./Rules.js');
  * returns GameCreatedResponse
  **/
 module.exports.createGame = function () {
-  return store.create(store.keys.games, {turn: 1, turnComplete: false});
+    return new Promise((resolve, reject) => {
+        rules.createWorld()
+            .then((world) => {
+                return store.create(store.keys.games, { turn: 1, turnComplete: false, world: world })
+            })
+            .then((gameId) => {
+                resolve({ id: gameId });
+            })
+            .catch((e) => {
+                logger.error("Error in createGame");
+                logger.error(e);
+                reject(e);
+            });
+    });
 }
 
 
@@ -19,23 +34,48 @@ module.exports.createGame = function () {
  * id Integer 
  * no response value expected for this operation
  **/
-module.exports.joinGame = function(gameId) {
-  return new Promise(function (resolve, reject) {
-    const playerId = store.create(store.keys.players, {gameId: gameId});
-    let game = store.read(store.keys.games, gameId);
-    if (!game) {
-      reject({message: "could not find game to join"});
-    }
-    if (game.players) {
-      game.players.push(playerId);
-    } else {
-      game.players = [playerId];
-    }
-    store.replace(store.keys.games, gameId, game);
-    resolve({gameId: gameId, playerId: playerId, turn: game.turn});
-  });
+module.exports.joinGame = function (gameId) {
+    logger.debug("joinGame");
+    return new Promise(function (resolve, reject) {
+        let playerId;
+        logger.debug("joinGame promise cb");
+        Promise.all([
+            store.read(store.keys.games, gameId),
+            store.create(store.keys.players, { gameId: gameId }),
+        ]).then((results) => {
+            logger.debug("joinGame add player to game");
+            const game = results[0];
+            playerId = results[1];
+            return addPlayerToGame(game, playerId);
+        }).then((updatedGame) => {
+            logger.debug("joinGame update game");
+            return store.replace(store.keys.games, gameId, updatedGame);
+        }).then((game) => {
+            logger.debug("joinGame resolve");
+            resolve({ gameId: gameId, playerId: playerId, turn: game.turn });
+        })
+        .catch((e) => {
+            logger.error("Error in joinGame");
+            logger.error(e);
+            reject(e);
+        });
+    });
 }
 
+function addPlayerToGame(game, playerId) {
+    return new Promise(function (resolve, reject) {
+        logger.debug("addPlayerToGame promise");
+
+        if (game.players) {
+            logger.debug("addPlayerToGame append to existing");
+            game.players.push(playerId);
+        } else {
+            logger.debug("addPlayerToGame new list");
+            game.players = [playerId];
+        }
+        resolve(game);
+    });
+}
 
 /**
  * post turn orders
@@ -44,12 +84,45 @@ module.exports.joinGame = function(gameId) {
  * id Integer 
  * no response value expected for this operation
  **/
-module.exports.postOrders = function(body, gameId, turn, playerId) {
-  return new Promise(function (resolve, reject) {
-    ordersId = store.create(store.keys.turnOrders, {gameId: gameId, turn: turn, playerId: playerId, body: body});
-    rules.process(ordersId)
-         .then(resolve, reject);
-  });
+
+ function anyExistingOrders(gameId, turn, playerId) {
+     logger.debug("anyExistingOrders");
+    return (o) => { return o.gameId == gameId && o.turn == turn && o.playerId == playerId; };
+}
+
+module.exports.postOrders = function (body, gameId, turn, playerId) {
+    return new Promise(function (resolve, reject) {
+        logger.debug("postOrders promise");
+        let summary = { gameId: gameId, turn: turn, playerId: playerId};
+        store.readAll(store.keys.turnOrders, anyExistingOrders(gameId, turn, playerId))
+            .then((existing) => {
+                if (existing.length > 0) {
+                    logger.debug("postOrders: replace existing orders");
+                    store.update(store.keys.turnOrders, existing[0].id, {body: body})
+                        .then(() => {
+                            summary.ordersId = existing[0].id;
+                            return;
+                        }, reject);
+                } else {
+                    logger.debug("postOrders: create new orders");
+                    store.create(store.keys.turnOrders, { gameId: gameId, turn: turn, playerId: playerId, body: body })
+                        .then((ordersId) => {
+                            logger.debug("postOrders: created new orders");
+                            summary.ordersId = ordersId;
+                            return;
+                        }, reject);
+                }
+            })
+            .then(() => {
+                logger.debug("postOrders: process rules");
+                return rules.process(summary.ordersId);
+            })
+            .then((turnSummary) => {
+                logger.debug("postOrders: provide summary");
+                resolve({turnStatus: turnSummary, orders: summary});
+            })
+            .catch(reject);
+    });
 }
 
 
@@ -59,10 +132,20 @@ module.exports.postOrders = function(body, gameId, turn, playerId) {
  * id Integer 
  * returns TurnResultsResponse
  **/
-module.exports.turnResults = function(gameId, turn, playerId) {
-  return new Promise(function (resolve, reject) {
-    const result = false;
-    result ? resolve({success: true, result: result}) : resolve({success: false, message: "turn results not available"});
-  });
-}
 
+module.exports.turnResults = function (gameId, turn, playerId) {
+    return new Promise(function (resolve, reject) {
+        store.readAll(store.keys.turnResults, (r) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; })
+            .then((results) => {
+                logger.debug(util.format("turnResults: found %s results", results.length));
+                if (results.length == 0) {
+                    resolve({ success: false, message: "turn results not available" });
+                } else if (results.length == 1) {
+                    resolve({ success: true, results: results[0] });
+                } else {
+                    reject({message: "expected a single result for turn results", results: results});
+                }
+            })
+            .catch(reject);
+    });
+}

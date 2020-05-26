@@ -3,51 +3,83 @@
 const util = require('util');
 const logger = require('../utils/Logger.js')
 
-let store = {}; // { "someKey": [{},...] }
+const STORE_DEBUG = false;
+
+var store = {}; // { "someKey": [{},...] }
+
+let store_debug = (obj) => {if (STORE_DEBUG) logger.debug(obj)};
 
 module.exports.keys = {
     games: "games",
-    turns: "turns",
+    turnResults: "turnResults",
     turnOrders: "turnOrders",
+    worlds: "worlds"
 }
 
-function initArray(x) {
-    return new Promise(function(resolve, reject) {
-        resolve(x ? x : []);
-    });
+function initSlot(x) {
+    if (!store[x]) store[x] = [];
 }
 
 function exists(key, id) {
     return new Promise(function(resolve, reject) {
+        store_debug("store.exists()");
         if (!store[key]) {
-            logger.debug(util.format("store for key %s does not exist", key));
-            resolve(false);
+            store_debug(util.format("store for key %s does not exist", key));
+            return resolve(false);
         }
     
         if (id >= store[key].length) {
-            logger.debug(util.format("id %s is out of range for store key %s", key));
-            resolve(false);
+            store_debug(util.format("id %s is out of range for store key %s", key));
+            return resolve(false);
         }
+        store_debug("seems to exist...");
         resolve(true);
     });
 }
 
 module.exports.create = function(key, obj) {
+    store_debug("store.create");
     return new Promise(function(resolve, reject) {
-        initArray(store[key])
-            .then(function(storeSlot) {
-                const id = storeSlot.push(obj) - 1;
-                resolve(id);
+        store_debug("store.create promise");
+        initSlot(key);
+        const id = store[key].push(obj) - 1;
+        store[key][id].id = id;
+        resolve(id);
+    });
+};
+
+module.exports.read = function(key, id) {
+    store_debug("store.read");
+    return new Promise(function(resolve, reject) {
+        store_debug("store.read promise");
+        exists(key, id)
+            .then((found) => {
+                if (found) {
+                    resolve(store[key][id]);
+                } else {
+                    reject({message: util.format("id %s not found for key %s", id, key)});
+                } 
             })
             .catch(reject);
     });
 };
 
-module.exports.read = function(key, id) {
-    return new Promise(function(resolve, reject) {
-        exists(key, id)
-            .then((found) => resolve(found ? store[key][id] : null))
-            .catch(reject);
+module.exports.readAll = function(key, filterFunc) {
+    return new Promise((resolve, reject) => {
+        store_debug("store.readAll promise");
+        try {
+            if (!Array.isArray(store[key])) {
+                store_debug(util.format("store.readAll no slot for key; typeof(store[%s]) is %s", key, typeof(store[key])));
+                resolve([]);
+            } else {
+                store_debug("store.readAll filtering entries");
+                resolve(store[key].filter(filterFunc));
+            } 
+            } catch (e) {
+            logger.error("store.readAll failed");
+            logger.error(e);
+            reject(e);
+        }
     });
 };
 
@@ -58,8 +90,9 @@ module.exports.replace = function(key, id, newObj) {
                 if (found) {
                     store[key][id] = newObj;
                     resolve(newObj);
+                } else {
+                    reject();
                 }
-                resolve(null);
             })
             .catch(reject);
     });
@@ -74,11 +107,12 @@ module.exports.update = function(key, id, diffObj) {
         exists(key, id)
         .then((found) => {
             if (!found) {
-                resolve(null);
+                reject({message: util.format("Did not find stored object %s[%s] to update", key, id)});
             } else {
-                Object.keys(diffObj).forEach(a => {store[key][id] = a;})
+                Object.keys(diffObj).forEach(k => {store[key][id][k] = diffObj[k];})
                 resolve(store[key][id]);
             }
         })
         .catch(reject);
+    });
 };

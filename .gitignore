@@ -1,2 +1,3 @@
 .swagger-codegen/
 node_modules/
+.vscode/
