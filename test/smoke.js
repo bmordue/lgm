@@ -23,7 +23,10 @@ describe("smoke - integration", () => {
     it("join Game 0 (first player)", (done) => {
         lgm.joinGame(0)
             .then((res) => {
-                assert.deepEqual(res, {gameId: 0, playerId: 0, turn: 1});
+                assert.equal(res.gameId, 0);
+                assert.equal(res.playerId, 0);
+                assert.equal(res.turn, 1);
+                assert(res.world != null);
                 done();
             }).catch(done);
     });
@@ -31,7 +34,10 @@ describe("smoke - integration", () => {
     it("join Game 0 (second player)", (done) => {
         lgm.joinGame(0)
             .then((res) => {
-                assert.deepEqual(res, {gameId: 0, playerId: 1, turn: 1});
+                assert.equal(res.gameId, 0);
+                assert.equal(res.playerId, 1);
+                assert.equal(res.turn, 1);
+                assert(res.world != null);
                 done();
             }).catch(done);
     });
@@ -39,7 +45,11 @@ describe("smoke - integration", () => {
     it("join Game 1 (first player)", (done) => {
         lgm.joinGame(1)
             .then((res) => {
-                assert.deepEqual(res, {gameId: 1, playerId: 2, turn: 1});
+                assert.equal(res.gameId, 1);
+                assert.equal(res.playerId, 2);
+                assert.equal(res.turn, 1);
+                assert(res.world != null);
+
                 done();
             }).catch(done);
     });
@@ -49,7 +59,7 @@ describe("smoke - integration", () => {
         .then((res) => {
             assert.deepEqual(res, {message: "turn results not available", success: false});
             done();
-        }).catch(done);
+        }).catch((resp) => done(new Error(resp.message)));
     });
 
     it("get turn result for the wrong game/player (Player 1 is not in Game 1)", (done) => {
@@ -57,18 +67,20 @@ describe("smoke - integration", () => {
         .then((res) => {
             assert.deepEqual(res, {message: "turn results not available", success: false});
             done();
-        }).catch(done);
+        }).catch((resp) => done(new Error(resp.message)));
     });
 
     it("post orders for the wrong game/player (Player 1 is not in Game 1)", (done) => {
         lgm.postOrders({}, 1, 1, 1)
-        .then((res) => {
-            assert.deepEqual(res, {message: "turn results not available", success: false});
+        .then(() => {
+            done(new Error("Expected postOrders to reject"));
+        }).catch((resp) => {
+            assert.deepEqual(resp, {message: "postOrders: order validation failed", valid: false});
             done();
-        }).catch(done);
+        });
     });
 
-    it("post turn result for Player 1 in Game 0 (turn is not complete)", (done) => {
+    it("post orders for Player 1 in Game 0 (turn is not complete)", (done) => {
         const gameId = 0;
         const playerId = 1;
         const turn = 1;
@@ -80,22 +92,70 @@ describe("smoke - integration", () => {
             assert.equal(res.turnStatus.complete, false);
             assert(res.orders.ordersId != null);
             done();
-        }).catch(done);
+        }).catch((resp) => done(new Error(resp.message)));
     });
 
-    it("post turn result for Player 2 in Game 1 (turn is complete)", (done) => {
+    it("post orders for Player 2 in Game 1 (turn is complete)", (done) => {
         const gameId = 1;
         const playerId = 2;
         const turn = 1;
         lgm.postOrders({}, gameId, turn, playerId)
         .then((res) => {
-            console.log(res);
             assert.equal(res.orders.gameId, gameId);
             assert.equal(res.orders.playerId, playerId);
             assert.equal(res.orders.turn, turn);
             assert.equal(res.turnStatus.complete, true);
             done();
-        }).catch(done);
+        }).catch((resp) => done(new Error(resp.message)));
     });
 
+    it("get turn result for incomplete turn", (done) => {
+        const gameId = 0;
+        const playerId = 1;
+        const turn = 1;
+        lgm.turnResults(gameId, turn, playerId)
+            .then((result) => {
+                assert.deepEqual(result, { success: false, message: "turn results not available" });
+                done();
+            })
+            .catch((err) => done(new Error(err.message)));
+    });
+
+    it("get turn orders for complete turn", (done) => {
+        const gameId = 1;
+        const playerId = 2;
+        const turn = 1;
+        lgm.turnResults(gameId, turn, playerId)
+            .then((result) => {
+                console.log(result);
+                assert.equal(result.success, true);
+                assert.equal(result.results.gameId, gameId);
+                assert.equal(result.results.playerId, playerId);
+                assert.equal(result.results.turn, turn);
+                    done();
+            })
+            .catch((err) => done(new Error(err.message)));
+    });
+
+});
+
+describe("submit orders", () => {
+    let gameId;
+    let playerId;
+    before((done) => {
+        lgm.createGame()
+            .then((result) => {
+                return lgm.joinGame(result.id);
+            })
+            .then((result) => {
+                playerId = result.playerId;
+                gameId = result.gameId;
+                done();
+            })
+            .catch((err) => {done(new Error(err.message))});
+    });
+
+    it("post orders for first turn");
+
+    it("get turn result for first turn");
 });

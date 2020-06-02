@@ -27,11 +27,20 @@ function allTurnOrdersReceived(gameId, turn) {
     });
 }
 
+function calculateOutcome() {
+    return new Promise((resolve, reject) => {
+        resolve("unknown!");
+    });
+}
+
 function recordPlayerTurnResult(game, turn, playerId) {
-    return store.create(store.keys.turnResults, {gameId: game.id, turn: turn, playerId: playerId, outcome: "unknown!"});
-    // return new Promise((resolve, reject) => {
-    //     resolve();
-    // });
+    return new Promise((resolve, reject) => {
+        calculateOutcome(game, turn, playerId)
+            .then((outcome) => {
+                resolve(store.create(store.keys.turnResults, {gameId: game.id, turn: turn, playerId: playerId, outcome: outcome}));
+            })
+            .catch(reject);
+    });
 }
 
 function processGameTurn(gameId) {
@@ -43,11 +52,7 @@ function processGameTurn(gameId) {
                 logger.debug("rules.processGameTurn: update turn result for each player");
                 return Promise.all(game.players.map((p) => recordPlayerTurnResult(game, game.turn, p)));
             })
-            // .then((results) => {
-            //     logger.debug("rules.processGameTurn: record turn results");
-            //     return store.create(store.keys.turnResults, {gameId: game.id, turn: game.turn, results: results});
-            // })
-            .then((turnResultsId) => {
+            .then((idArray) => {
                 logger.debug("rules.processGameTurn: incr turn number");
                 return store.update(store.keys.games, game.id, {turn: game.turn + 1});
             })
@@ -90,7 +95,8 @@ function generateTerrain() {
     return new Promise((resolve, reject) => {
         let terrain = [];
         for (let i = 0; i < 10; i++) {
-            terrain.push(new Array(10));
+            let row = '..........';
+            terrain.push(row);
         }
         resolve(terrain);
     });
@@ -104,3 +110,25 @@ module.exports.createWorld = function() {
             }).catch(reject);
     });
 };
+
+function filterWorldForPlayer(world, playerId) {
+    return world; // everyone can see everything!
+}
+
+module.exports.filterGameForPlayer = function(gameId, playerId) {
+    return new Promise((resolve, reject) => {
+        let game;
+        store.read(store.keys.games, gameId)
+            .then((g) => {
+                game = g;
+                return store.read(store.keys.worlds, game.worldId);
+            })
+            .then((world) => {
+                return filterWorldForPlayer(world, playerId);
+            })
+            .then((filteredWorld) => {
+                resolve({ gameId: game.id, playerId: playerId, turn: game.turn, world: filteredWorld});
+            })
+            .catch(reject);
+    });
+}
