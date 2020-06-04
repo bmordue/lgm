@@ -27,17 +27,23 @@ describe("smoke - integration", () => {
                 assert.equal(res.playerId, 0);
                 assert.equal(res.turn, 1);
                 assert(res.world != null);
+                assert.equal(res.world.id, 0);
+                assert(res.world.terrain != null);
+                assert(res.world.actors != null);
                 done();
             }).catch(done);
     });
 
-    it("join Game 0 (second player)", (done) => {
+    it("join Game 0 (second player) 111", (done) => {
         lgm.joinGame(0)
             .then((res) => {
                 assert.equal(res.gameId, 0);
                 assert.equal(res.playerId, 1);
                 assert.equal(res.turn, 1);
                 assert(res.world != null);
+                assert.equal(res.world.id, 0);
+                assert(res.world.terrain != null);
+                assert(res.world.actors != null);
                 done();
             }).catch(done);
     });
@@ -49,7 +55,9 @@ describe("smoke - integration", () => {
                 assert.equal(res.playerId, 2);
                 assert.equal(res.turn, 1);
                 assert(res.world != null);
-
+                assert(res.world.terrain != null);
+                assert(res.world.actors != null);
+                assert.equal(res.world.id, 1);
                 done();
             }).catch(done);
     });

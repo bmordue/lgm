@@ -106,7 +106,7 @@ module.exports.createWorld = function() {
     return new Promise((resolve, reject) => {
         generateTerrain()
             .then((terrain) => {
-                resolve(store.create(store.keys.worlds, {terrain: terrain, actors: {}}));
+                resolve(store.create(store.keys.worlds, {terrain: terrain, actors: []}));
             }).catch(reject);
     });
 };
@@ -131,4 +131,11 @@ module.exports.filterGameForPlayer = function(gameId, playerId) {
             })
             .catch(reject);
     });
-}
+};
+
+module.exports.setupActors = function(game, playerId) {
+    return [];
+    // return new Promise((resolve, reject) => {
+    //     resolve([]);
+    // }).catch(reject);
+};

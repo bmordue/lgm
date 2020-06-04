@@ -38,20 +38,35 @@ module.exports.joinGame = function (gameId) {
     logger.debug("joinGame");
     return new Promise(function (resolve, reject) {
         let playerId;
+        let game;
+        let world;
         logger.debug("joinGame promise cb");
         Promise.all([
             store.read(store.keys.games, gameId),
             store.create(store.keys.players, { gameId: gameId }),
         ]).then((results) => {
             logger.debug("joinGame add player to game");
-            const game = results[0];
+            game = results[0];
             playerId = results[1];
             return addPlayerToGame(game, playerId);
         }).then((updatedGame) => {
             logger.debug("joinGame update game");
             return store.replace(store.keys.games, gameId, updatedGame);
-        }).then((game) => {
-            logger.debug("joinGame resolve");
+        }).then((g) => {
+            logger.debug("joinGame: read world object");
+            return store.read(store.keys.worlds, game.worldId);
+        }).then((w) => {
+            world = w;
+            logger.debug("joinGame: set up actors for player");
+            return rules.setupActors(game, playerId);
+        })
+        .then((actors) => {
+            logger.debug("joinGame: add new actors to world");
+            world.actors.push[actors];
+            return store.replace(store.keys.worlds, game.worldId, world);
+        })
+        .then((updatedWorld) => {
+            logger.debug("joinGame resolve with filtered game");
             resolve(rules.filterGameForPlayer(gameId, playerId));
         })
         .catch((e) => {
