@@ -76,7 +76,6 @@ module.exports.process = function(ordersId) {
             .then((o) => {
                 logger.debug("rules.process: retrieved orders");
                 orders = o;
-                const gameId = orders.gameId;
                 return allTurnOrdersReceived(orders.gameId, orders.turn);
             })
             .then((complete) => {
@@ -133,8 +132,44 @@ module.exports.filterGameForPlayer = function(gameId, playerId) {
     });
 };
 
-module.exports.setupActors = function(game, playerId) {
-    return [];
+function inBox(item, left, bottom, right, top) {
+    return item.pos.x >= left
+        && item.pos.x <= right
+        && item.pos.y >= bottom
+        && item.pos.y <= top;
+}
+
+module.exports.setupActors = async function(game, playerId) {
+    let actors = [];
+    let world = await store.read(store.keys.worlds, game.worldId);
+    const existingActors = world.actors;
+    // find an unoccupied spot
+    const MAX_ATTEMPTS = 5;
+    let done = false;
+    let attempts = 0;
+    let x = 0;
+    let y = 0;
+    while (!done) {
+        let empty = existingActors
+            .filter(actor => inBox(actor, x, y, x + 2, y + 2))
+            .length == 0;
+
+        if (empty) {
+            done = true;
+            logger.debug(util.format("Found an empty box: (%s, %s), (%s, %s)", x, y, x + 2, y + 2));
+        }
+
+        attempts++;
+        if (attempts >= MAX_ATTEMPTS) {
+            const msg = "failed to place actors for new player";
+            logger.error(msg);
+        }
+    }
+
+    for (let i = 0; i < 9; i++) {
+        actors.push({owner: playerId, id: playerId * 1000 + i, pos: {x: Math.floor(i/3), y: i % 3}});
+    }
+    return actors;
     // return new Promise((resolve, reject) => {
     //     resolve([]);
     // }).catch(reject);
