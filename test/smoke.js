@@ -147,7 +147,7 @@ describe("smoke - integration", () => {
 
 });
 
-describe("complete first turn with one player", () => {
+describe("complete first two turns with one player", () => {
     let gameId;
     let playerId;
     before((done) => {
@@ -168,9 +168,9 @@ describe("complete first turn with one player", () => {
             .then((result) => {
                 const expected = {
                     orders: {
-                        gameId: 2,
+                        gameId: gameId,
                         ordersId: 2,
-                        playerId: 3,
+                        playerId: playerId,
                         turn: 1
                     },
                     turnStatus: {
@@ -190,10 +190,10 @@ describe("complete first turn with one player", () => {
             .then((result) => {
                 const expected = {
                     results: {
-                        gameId: 2,
+                        gameId: gameId,
                         id: 1,
                         outcome: "unknown!",
-                        playerId: 3,
+                        playerId: playerId,
                         turn: 1
                     },
                     success: true
@@ -203,4 +203,46 @@ describe("complete first turn with one player", () => {
             })
             .catch((err) => {done(new Error(err.message))});
     });
+
+    it("post orders for second turn", (done) => {
+        lgm.postOrders({}, gameId, 2, playerId)
+        .then((result) => {
+            const expected = {
+                orders: {
+                    gameId: gameId,
+                    ordersId: 3,
+                    playerId: playerId,
+                    turn: 2
+                },
+                turnStatus: {
+                    complete: true,
+                    msg: "Turn complete",
+                    turn: 3
+                }
+            };
+            assert.deepEqual(result, expected);
+            done();
+        })
+        .catch((err) => {done(new Error(err.message))});
+    });
+
+    it("get turn result for second turn", (done) => {
+        lgm.turnResults(gameId, 2, playerId)
+            .then((result) => {
+                const expected = {
+                    results: {
+                        gameId: gameId,
+                        id: 2,
+                        outcome: "unknown!",
+                        playerId: playerId,
+                        turn: 2
+                    },
+                    success: true
+                };
+                assert.deepEqual(result, expected);
+                done();
+            })
+            .catch((err) => {done(new Error(err.message))});
+    });
 });
+
