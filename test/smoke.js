@@ -150,99 +150,78 @@ describe("smoke - integration", () => {
 describe("complete first two turns with one player", () => {
     let gameId;
     let playerId;
-    before((done) => {
-        lgm.createGame()
-            .then((result) => {
-                return lgm.joinGame(result.id);
-            })
-            .then((result) => {
-                playerId = result.playerId;
-                gameId = result.gameId;
-                done();
-            })
-            .catch((err) => {done(new Error(err.message))});
+    before(async function() {
+        let game = await lgm.createGame();
+        gameId = game.id;
+        let invitation = await lgm.joinGame(gameId);
+        playerId = invitation.playerId;
     });
 
-    it("post orders for first turn", (done) => {
-        lgm.postOrders({}, gameId, 1, playerId)
-            .then((result) => {
-                const expected = {
-                    orders: {
-                        gameId: gameId,
-                        ordersId: 2,
-                        playerId: playerId,
-                        turn: 1
-                    },
-                    turnStatus: {
-                        complete: true,
-                        msg: "Turn complete",
-                        turn: 2
-                    }
-                };
-                assert.deepEqual(result, expected);
-                done();
-            })
-            .catch((err) => {done(new Error(err.message))});
+    it("post orders for first turn", async function() {
+        let result = await lgm.postOrders({}, gameId, 1, playerId);
+
+        const expected = {
+            orders: {
+                gameId: gameId,
+                ordersId: 2,
+                playerId: playerId,
+                turn: 1
+            },
+            turnStatus: {
+                complete: true,
+                msg: "Turn complete",
+                turn: 2
+            }
+        };
+        assert.deepEqual(result, expected);
     });
 
-    it("get turn result for first turn", (done) => {
-        lgm.turnResults(gameId, 1, playerId)
-            .then((result) => {
-                const expected = {
-                    results: {
-                        gameId: gameId,
-                        id: 1,
-                        outcome: "unknown!",
-                        playerId: playerId,
-                        turn: 1
-                    },
-                    success: true
-                };
-                assert.deepEqual(result, expected);
-                done();
-            })
-            .catch((err) => {done(new Error(err.message))});
+    it("get turn result for first turn", async function() {
+        let firstTurnResult = await lgm.turnResults(gameId, 1, playerId);
+
+        const expected = {
+            results: {
+                gameId: gameId,
+                id: 1,
+                outcome: "unknown!",
+                playerId: playerId,
+                turn: 1
+            },
+            success: true
+        };
+        assert.deepEqual(firstTurnResult, expected);
     });
 
-    it("post orders for second turn", (done) => {
-        lgm.postOrders({}, gameId, 2, playerId)
-        .then((result) => {
-            const expected = {
-                orders: {
-                    gameId: gameId,
-                    ordersId: 3,
-                    playerId: playerId,
-                    turn: 2
-                },
-                turnStatus: {
-                    complete: true,
-                    msg: "Turn complete",
-                    turn: 3
-                }
-            };
-            assert.deepEqual(result, expected);
-            done();
-        })
-        .catch((err) => {done(new Error(err.message))});
+    it("post orders for second turn", async function() {
+        let ordersResponse = await lgm.postOrders({}, gameId, 2, playerId);
+        const expected = {
+            orders: {
+                gameId: gameId,
+                ordersId: 3,
+                playerId: playerId,
+                turn: 2
+            },
+            turnStatus: {
+                complete: true,
+                msg: "Turn complete",
+                turn: 3
+            }
+        };
+        assert.deepEqual(ordersResponse, expected);
     });
 
-    it("get turn result for second turn", (done) => {
-        lgm.turnResults(gameId, 2, playerId)
-            .then((result) => {
-                const expected = {
-                    results: {
-                        gameId: gameId,
-                        id: 2,
-                        outcome: "unknown!",
-                        playerId: playerId,
-                        turn: 2
-                    },
-                    success: true
-                };
-                assert.deepEqual(result, expected);
-                done();
-            })
-            .catch((err) => {done(new Error(err.message))});
+    it("get turn result for second turn", async function() {
+        let secondTurnResult = await lgm.turnResults(gameId, 2, playerId);
+        const expected = {
+            results: {
+                gameId: gameId,
+                id: 2,
+                outcome: "unknown!",
+                playerId: playerId,
+                turn: 2
+            },
+            success: true
+        };
+        assert.deepEqual(secondTurnResult, expected);
     });
 });
-
