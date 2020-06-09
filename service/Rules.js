@@ -170,7 +170,4 @@ module.exports.setupActors = async function(game, playerId) {
         actors.push({owner: playerId, id: playerId * 1000 + i, pos: {x: Math.floor(i/3), y: i % 3}});
     }
     return actors;
-    // return new Promise((resolve, reject) => {
-    //     resolve([]);
-    // }).catch(reject);
 };

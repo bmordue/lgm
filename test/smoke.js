@@ -147,7 +147,7 @@ describe("smoke - integration", () => {
 
 });
 
-describe("submit orders", () => {
+describe("complete first turn with one player", () => {
     let gameId;
     let playerId;
     before((done) => {
@@ -163,7 +163,44 @@ describe("submit orders", () => {
             .catch((err) => {done(new Error(err.message))});
     });
 
-    it("post orders for first turn");
+    it("post orders for first turn", (done) => {
+        lgm.postOrders({}, gameId, 1, playerId)
+            .then((result) => {
+                const expected = {
+                    orders: {
+                        gameId: 2,
+                        ordersId: 2,
+                        playerId: 3,
+                        turn: 1
+                    },
+                    turnStatus: {
+                        complete: true,
+                        msg: "Turn complete",
+                        turn: 2
+                    }
+                };
+                assert.deepEqual(result, expected);
+                done();
+            })
+            .catch((err) => {done(new Error(err.message))});
+    });
 
-    it("get turn result for first turn");
+    it("get turn result for first turn", (done) => {
+        lgm.turnResults(gameId, 1, playerId)
+            .then((result) => {
+                const expected = {
+                    results: {
+                        gameId: 2,
+                        id: 1,
+                        outcome: "unknown!",
+                        playerId: 3,
+                        turn: 1
+                    },
+                    success: true
+                };
+                assert.deepEqual(result, expected);
+                done();
+            })
+            .catch((err) => {done(new Error(err.message))});
+    });
 });
