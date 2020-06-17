@@ -10,7 +10,7 @@ const util = require('util');
  *
  * returns GameCreatedResponse
  **/
-module.exports.createGame = function () {
+export function createGame() {
     return new Promise((resolve, reject) => {
         rules.createWorld()
             .then((worldId) => {
@@ -34,7 +34,7 @@ module.exports.createGame = function () {
  * id Integer 
  * no response value expected for this operation
  **/
-module.exports.joinGame = function (gameId) {
+export function joinGame(gameId) {
     logger.debug("joinGame");
     return new Promise(function (resolve, reject) {
         let playerId;
@@ -125,7 +125,7 @@ function validateOrders(body, gameId, turn, playerId) {
 
 function storeOrders(body, gameId, turn, playerId) {
     return new Promise(function (resolve, reject) {
-        let summary = { gameId: gameId, turn: turn, playerId: playerId};
+        let summary = { gameId: gameId, turn: turn, playerId: playerId, ordersId: null};
         store.readAll(store.keys.turnOrders, anyExistingOrders(gameId, turn, playerId))
             .then((existing) => {
                 if (existing.length > 0) {
@@ -157,7 +157,7 @@ function storeOrders(body, gameId, turn, playerId) {
     });
 }
 
-module.exports.postOrders = function (body, gameId, turn, playerId) {
+export function postOrders(body, gameId, turn, playerId) {
     return new Promise(function (resolve, reject) {
         logger.debug("postOrders promise");
         validateOrders(body, gameId, turn, playerId)
@@ -180,7 +180,7 @@ module.exports.postOrders = function (body, gameId, turn, playerId) {
  * returns TurnResultsResponse
  **/
 
-module.exports.turnResults = function (gameId, turn, playerId) {
+export function turnResults(gameId, turn, playerId) {
     return new Promise(function (resolve, reject) {
         store.readAll(store.keys.turnResults, (r) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; })
             .then((results) => {

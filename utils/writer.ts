@@ -3,11 +3,11 @@ var ResponsePayload = function(code, payload) {
   this.payload = payload;
 }
 
-exports.respondWithCode = function(code, payload) {
+export function respondWithCode(code, payload) {
   return new ResponsePayload(code, payload);
 }
 
-var writeJson = exports.writeJson = function(response, arg1, arg2) {
+export function writeJson(response, arg1, arg2 = null) {
   var code;
   var payload;
 

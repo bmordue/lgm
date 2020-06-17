@@ -1,7 +1,7 @@
 'use strict';
 
-var utils = require('../utils/writer.js');
-var Default = require('../service/DefaultService');
+import utils = require('../utils/writer');
+import Default = require('../service/DefaultService');
 
 module.exports.createGame = function createGame(req, res, next) {
     Default.createGame()

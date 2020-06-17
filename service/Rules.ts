@@ -1,8 +1,8 @@
 'use strict';
 
-const store = require('./Store.js');
-const logger = require('../utils/Logger.js');
-const util = require('util');
+import store = require('./Store');
+import logger = require('../utils/Logger');
+import util = require('util');
 
 function findOrdersForTurn(gameId, turn) {
     logger.debug("rules.ordersForTurn");

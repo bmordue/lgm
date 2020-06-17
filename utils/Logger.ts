@@ -4,7 +4,7 @@ function log(level, obj) {
     console.log(util.format("%s: %j", level, obj));
 }
 
-module.exports.debug = log.bind(null, "DEBUG");
-module.exports.info = log.bind(null, "INFO");
-module.exports.warn = log.bind(null, "WARN");
-module.exports.error = log.bind(null, "ERROR");
+export function debug(obj) { log("DEBUG", obj); }
+export function info(obj) { log("INFO", obj); }
+export function warn(obj) { log("WARN", obj); }
+export function error(obj) { log("ERROR", obj); }

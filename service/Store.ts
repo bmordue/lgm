@@ -1,7 +1,7 @@
 'use strict';
 
-const util = require('util');
-const logger = require('../utils/Logger.js')
+import util = require('util');
+import logger = require('../utils/Logger.js')
 
 const STORE_DEBUG = false;
 
@@ -9,11 +9,11 @@ var store = {}; // { "someKey": [{},...] }
 
 let store_debug = (obj) => {if (STORE_DEBUG) logger.debug(obj)};
 
-module.exports.keys = {
-    games: "games",
-    turnResults: "turnResults",
-    turnOrders: "turnOrders",
-    worlds: "worlds"
+export enum keys {
+    games = "games",
+    turnResults = "turnResults",
+    turnOrders = "turnOrders",
+    worlds = "worlds"
 }
 
 function initSlot(x) {
@@ -37,7 +37,7 @@ function exists(key, id) {
     });
 }
 
-module.exports.create = function(key, obj) {
+export function create(key, obj) {
     store_debug("store.create");
     return new Promise(function(resolve, reject) {
         store_debug("store.create promise");
@@ -48,7 +48,7 @@ module.exports.create = function(key, obj) {
     });
 };
 
-module.exports.read = function(key, id) {
+export function read(key, id) {
     store_debug("store.read");
     return new Promise(function(resolve, reject) {
         store_debug("store.read promise");
@@ -64,7 +64,7 @@ module.exports.read = function(key, id) {
     });
 };
 
-module.exports.readAll = function(key, filterFunc) {
+export function readAll(key, filterFunc) {
     return new Promise((resolve, reject) => {
         store_debug("store.readAll promise");
         try {
@@ -83,7 +83,7 @@ module.exports.readAll = function(key, filterFunc) {
     });
 };
 
-module.exports.replace = function(key, id, newObj) {
+export function replace(key, id, newObj) {
     return new Promise(function(resolve, reject) {
         exists(key, id)
             .then((found) => {
@@ -102,7 +102,7 @@ module.exports.replace = function(key, id, newObj) {
 // a = { b: { c: 1, d = 2} }
 // aDiff = {b: { d: 3}}
 // a after applying aDiff = {b: { d: 3}}, NOT { b: { c: 1, d = 3} }
-module.exports.update = function(key, id, diffObj) {
+export function update(key, id, diffObj) {
     return new Promise(function(resolve, reject) {
         exists(key, id)
         .then((found) => {
