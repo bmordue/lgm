@@ -1,4 +1,4 @@
-const util = require('util');
+import util = require('util');
 
 function log(level, obj) {
     console.log(util.format("%s: %j", level, obj));
