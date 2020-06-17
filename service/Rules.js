@@ -27,8 +27,17 @@ function allTurnOrdersReceived(gameId, turn) {
     });
 }
 
-function calculateOutcome() {
-    return new Promise((resolve, reject) => {
+// function filterOrdersForPlayerTurn(orders) {
+//     return orders.
+// }
+
+function calculateOutcome(game, turn, playerId) {
+    return new Promise(async function(resolve, reject) {
+        // const player = await store.read(store.keys.players, playerId);
+        // const orders = await store.readAll(store.keys.turnOrders, (o) => {
+        //     return filterOrdersForPlayerTurn(o, );
+        // });
+
         resolve("unknown!");
     });
 }
@@ -44,27 +53,21 @@ function recordPlayerTurnResult(game, turn, playerId) {
 }
 
 function processGameTurn(gameId) {
-    return new Promise((resolve, reject) => {
-        let game;
-        store.read(store.keys.games, gameId)
-            .then((g) => {
-                game = g;
-                logger.debug("rules.processGameTurn: update turn result for each player");
-                return Promise.all(game.players.map((p) => recordPlayerTurnResult(game, game.turn, p)));
-            })
-            .then((idArray) => {
-                logger.debug("rules.processGameTurn: incr turn number");
-                return store.update(store.keys.games, game.id, {turn: game.turn + 1});
-            })
-            .then((game) => {
-                logger.debug("rules.processGameTurn: resolve with turn status");
-                resolve({complete: true, msg: "Turn complete", turn: game.turn});
-            })
-            .catch((e) => {
-                logger.error("Failed to process game turn");
-                logger.error(e);
-                reject(e);
-            });
+    return new Promise(async function(resolve, reject) {
+        try {
+            let game = await store.read(store.keys.games, gameId);
+            logger.debug("rules.processGameTurn: update turn result for each player");
+            const idArray = await Promise.all(game.players.map((p) => recordPlayerTurnResult(game, game.turn, p)));
+            logger.debug("rules.processGameTurn: incr turn number");
+
+            await store.update(store.keys.games, game.id, {turn: game.turn + 1});
+            logger.debug("rules.processGameTurn: resolve with turn status");
+            resolve({complete: true, msg: "Turn complete", turn: game.turn});
+        } catch(e) {
+            logger.error("Failed to process game turn");
+            logger.error(e);
+            reject(e);
+        }
     });
 }
 

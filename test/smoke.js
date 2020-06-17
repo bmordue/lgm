@@ -225,3 +225,7 @@ describe("complete first two turns with one player", () => {
         assert.deepEqual(secondTurnResult, expected);
     });
 });
+
+describe("apply rules to orders", function() {
+    it("", function() {});
+});
