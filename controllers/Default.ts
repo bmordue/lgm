@@ -9,7 +9,7 @@ module.exports.createGame = function createGame(req, res, next) {
             utils.writeJson(res, response);
         })
         .catch(function (response) {
-            utils.writeJson(res, response);
+            utils.writeJson(res, response, 500);
         });
 };
 
@@ -19,7 +19,7 @@ module.exports.joinGame = function joinGame(req, res, next, id) {
             utils.writeJson(res, response);
         })
         .catch(function (response) {
-            utils.writeJson(res, response);
+            utils.writeJson(res, response, 500);
         });
 };
 
@@ -29,7 +29,7 @@ module.exports.postOrders = function postOrders(req, res, next, body, gameId, tu
             utils.writeJson(res, response);
         })
         .catch(function (response) {
-            utils.writeJson(res, response);
+            utils.writeJson(res, response, 500);
         });
 };
 
@@ -39,6 +39,6 @@ module.exports.turnResults = function turnResults(req, res, next, gameId, turn, 
             utils.writeJson(res, response);
         })
         .catch(function (response) {
-            utils.writeJson(res, response);
+            utils.writeJson(res, response, 500);
         });
 };

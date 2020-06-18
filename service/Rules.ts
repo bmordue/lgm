@@ -12,18 +12,17 @@ function findOrdersForTurn(gameId, turn) {
     });
 }
 
-function allTurnOrdersReceived(gameId, turn) {
-    return new Promise((resolve, reject) => {
+function allTurnOrdersReceived(gameId :number, turn :number) {
+    return new Promise(async function(resolve, reject) {
         logger.debug("rules.allTurnOrdersReceived promise");
-        Promise.all([
+        const results = await Promise.all([
             findOrdersForTurn(gameId, turn),
             store.read<Game>(store.keys.games, gameId)
-        ]).then((results) => {
-            let orders = results[0];
-            const game = results[1];
-            logger.debug(util.format("rules.allTurnOrdersReceived: orders.length: %s; game.players.length: %s", orders.length, game.players.length));
-            resolve(orders.length == game.players.length);
-        }).catch(reject);
+        ])
+        const orders = results[0];
+        const game = results[1];
+        logger.debug(util.format("rules.allTurnOrdersReceived: orders.length: %s; game.players.length: %s", orders.length, game.players.length));
+        resolve(orders.length == game.players.length);
     });
 }
 
@@ -73,29 +72,23 @@ function processGameTurn(gameId) {
 }
 
 module.exports.process = function(ordersId) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(async function(resolve, reject) {
         logger.debug("rules.process promise");
-        let orders;
-        store.read(store.keys.turnOrders, ordersId)
-            .then((o) => {
-                logger.debug("rules.process: retrieved orders");
-                orders = o;
-                return allTurnOrdersReceived(orders.gameId, orders.turn);
-            })
-            .then((complete) => {
-            if (complete) {
-                logger.debug("rules.process: Turn is complete; process orders");
-                resolve(processGameTurn(orders.gameId));
-            } else {
-                logger.debug("rules.process: Turn is not yet complete");
-                resolve({complete: false, msg: "Not all turn orders have been submitted."});
-            }
-        }).catch(reject);
+        const orders = await store.read<TurnOrders>(store.keys.turnOrders, ordersId);
+        logger.debug("rules.process: retrieved orders");
+        const complete = await allTurnOrdersReceived(orders.gameId, orders.turn);
+        if (complete) {
+            logger.debug("rules.process: Turn is complete; process orders");
+            resolve(processGameTurn(orders.gameId));
+        } else {
+            logger.debug("rules.process: Turn is not yet complete");
+            resolve({complete: false, msg: "Not all turn orders have been submitted."});
+        }
     });
 };
 
 function generateTerrain() {
-    return new Promise((resolve, reject) => {
+    return new Promise(async function(resolve, reject) {
         let terrain = [];
         for (let i = 0; i < 10; i++) {
             let row = '..........';

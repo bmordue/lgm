@@ -50,17 +50,13 @@ export function create<T>(key, obj :T) :Promise<number> {
 
 export function read<T>(key, id) :Promise<T> {
     store_debug("store.read");
-    return new Promise(function(resolve, reject) {
+    return new Promise(async function(resolve, reject) {
         store_debug("store.read promise");
-        exists(key, id)
-            .then((found) => {
-                if (found) {
-                    resolve(store[key][id]);
-                } else {
-                    reject({message: util.format("id %s not found for key %s", id, key)});
-                } 
-            })
-            .catch(reject);
+        if (await exists(key, id)) {
+            resolve(store[key][id]);
+        } else {
+            reject({message: util.format("id %s not found for key %s", id, key)});
+        } 
     });
 };
 
@@ -84,17 +80,13 @@ export function readAll<T>(key, filterFunc) :Promise<Array<T>> {
 };
 
 export function replace<T>(key, id, newObj :T) :Promise<T> {
-    return new Promise(function(resolve, reject) {
-        exists(key, id)
-            .then((found) => {
-                if (found) {
-                    store[key][id] = newObj;
-                    resolve(newObj);
-                } else {
-                    reject();
-                }
-            })
-            .catch(reject);
+    return new Promise(async function(resolve, reject) {
+        if (await exists(key, id)) {
+            store[key][id] = newObj;
+            resolve(newObj);
+        } else {
+            reject();
+        }
     });
 };
 
@@ -102,17 +94,14 @@ export function replace<T>(key, id, newObj :T) :Promise<T> {
 // a = { b: { c: 1, d = 2} }
 // aDiff = {b: { d: 3}}
 // a after applying aDiff = {b: { d: 3}}, NOT { b: { c: 1, d = 3} }
-export function update<T>(key, id, diffObj :T) {
-    return new Promise(function(resolve, reject) {
-        exists(key, id)
-        .then((found) => {
-            if (!found) {
-                reject({message: util.format("Did not find stored object %s[%s] to update", key, id)});
-            } else {
-                Object.keys(diffObj).forEach(k => {store[key][id][k] = diffObj[k];})
-                resolve(store[key][id]);
-            }
-        })
-        .catch(reject);
+export function update<T>(key :string, id: number, diffObj :T) :Promise<number> {
+    return new Promise(async function(resolve, reject) {
+        const found = await exists(key, id);
+        if (!found) {
+            reject({message: util.format("Did not find stored object %s[%s] to update", key, id)});
+        } else {
+            Object.keys(diffObj).forEach(k => {store[key][id][k] = diffObj[k];})
+            resolve(store[key][id]);
+        }
     });
 };

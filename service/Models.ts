@@ -13,3 +13,9 @@ interface World {
 interface Actor {
     id :number;
 }
+
+interface TurnOrders {
+    id :number;
+    gameId :number;
+    turn :number;
+}

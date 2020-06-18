@@ -10,7 +10,7 @@ var serverPort = 8080;
 
 // swaggerRouter configuration
 var options = {
-    controllers: path.join(__dirname, './controllers')
+    controllers: path.join(__dirname, './built/controllers')
 };
 
 var expressAppConfig = oas3Tools.expressAppConfig(path.join(__dirname, 'api/openapi.yaml'), options);

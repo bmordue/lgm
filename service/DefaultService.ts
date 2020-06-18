@@ -11,19 +11,10 @@ const util = require('util');
  * returns GameCreatedResponse
  **/
 export function createGame() {
-    return new Promise((resolve, reject) => {
-        rules.createWorld()
-            .then((worldId) => {
-                return store.create(store.keys.games, { turn: 1, turnComplete: false, worldId: worldId })
-            })
-            .then((gameId) => {
-                resolve({ id: gameId });
-            })
-            .catch((e) => {
-                logger.error("Error in createGame");
-                logger.error(e);
-                reject(e);
-            });
+    return new Promise(async function(resolve, reject) {
+        const worldId = await rules.createWorld();
+        const gameId = await store.create(store.keys.games, { turn: 1, turnComplete: false, worldId: worldId });
+        resolve({ id: gameId });
     });
 }
 
@@ -36,49 +27,36 @@ export function createGame() {
  **/
 export function joinGame(gameId) {
     logger.debug("joinGame");
-    return new Promise(function (resolve, reject) {
-        let playerId;
-        let game;
-        let world;
-        logger.debug("joinGame promise cb");
-        Promise.all([
-            store.read(store.keys.games, gameId),
-            store.create(store.keys.players, { gameId: gameId }),
-        ]).then((results) => {
+    return new Promise(async function(resolve, reject) {
+        try {
+            logger.debug("joinGame promise cb");
+            const results = await Promise.all([
+                store.read(store.keys.games, gameId),
+                store.create(store.keys.players, { gameId: gameId }),
+            ])
             logger.debug("joinGame add player to game");
-            game = results[0];
-            playerId = results[1];
-            return addPlayerToGame(game, playerId);
-        }).then((updatedGame) => {
+            const game = results[0];
+            const playerId = results[1];
+            const updatedGame = await addPlayerToGame(game, playerId);
             logger.debug("joinGame update game");
-            return store.replace(store.keys.games, gameId, updatedGame);
-        }).then((g) => {
+            await store.replace(store.keys.games, gameId, updatedGame);
             logger.debug("joinGame: read world object");
-            return store.read(store.keys.worlds, game.worldId);
-        }).then((w) => {
-            world = w;
+            const world = await store.read(store.keys.worlds, game.worldId);
             logger.debug("joinGame: set up actors for player");
-            return rules.setupActors(game, playerId);
-        })
-        .then((actors) => {
+            const actors = await rules.setupActors(game, playerId);
             logger.debug("joinGame: add new actors to world");
             world.actors.push[actors];
-            return store.replace(store.keys.worlds, game.worldId, world);
-        })
-        .then((updatedWorld) => {
+            const updatedWorld = await store.replace(store.keys.worlds, game.worldId, world);
             logger.debug("joinGame resolve with filtered game");
             resolve(rules.filterGameForPlayer(gameId, playerId));
-        })
-        .catch((e) => {
-            logger.error("Error in joinGame");
-            logger.error(e);
+        } catch(e) {
             reject(e);
-        });
+        }
     });
 }
 
 function addPlayerToGame(game, playerId) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(function(resolve, reject) {
         logger.debug("addPlayerToGame promise");
 
         if (game.players) {
@@ -105,70 +83,52 @@ function addPlayerToGame(game, playerId) {
 }
 
 function validateOrders(body, gameId, turn, playerId) {
-    return new Promise(function (resolve, reject) {
-        store.read(store.keys.games, gameId).then((game) => {
-            if (!game.players.includes(playerId)) {
-                console.log("validateOrders: playerId is not in game.players array");
-                return resolve(false);
-            }
+    return new Promise(async function(resolve, reject) {
+        const game = await store.read(store.keys.games, gameId);
+        if (!game.players.includes(playerId)) {
+            console.log("validateOrders: playerId is not in game.players array");
+            return resolve(false);
+        }
 
-            if (game.turn != turn) {
-                console.log("validateOrders: orders turn does not match game turn");
-                return resolve(false);
-            }
+        if (game.turn != turn) {
+            console.log("validateOrders: orders turn does not match game turn");
+            return resolve(false);
+        }
 
-            return resolve(true);
-
-        }).catch(reject);
+        return resolve(true);
     });
 }
 
 function storeOrders(body, gameId, turn, playerId) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(async function(resolve, reject) {
         let summary = { gameId: gameId, turn: turn, playerId: playerId, ordersId: null};
-        store.readAll(store.keys.turnOrders, anyExistingOrders(gameId, turn, playerId))
-            .then((existing) => {
-                if (existing.length > 0) {
-                    logger.debug("postOrders: replace existing orders");
-                    store.update(store.keys.turnOrders, existing[0].id, {body: body})
-                        .then(() => {
-                            summary.ordersId = existing[0].id;
-                            return;
-                        }, reject);
-                } else {
-                    logger.debug("postOrders: create new orders");
-                    store.create(store.keys.turnOrders, { gameId: gameId, turn: turn, playerId: playerId, body: body })
-                        .then((ordersId) => {
-                            logger.debug("postOrders: created new orders");
-                            summary.ordersId = ordersId;
-                            return;
-                        }, reject);
-                }
-            })
-            .then(() => {
-                logger.debug("postOrders: process rules");
-                return rules.process(summary.ordersId);
-            })
-            .then((turnSummary) => {
-                logger.debug("postOrders: provide summary");
-                resolve({turnStatus: turnSummary, orders: summary});
-            })
-            .catch(reject);
+        const existing = await store.readAll(store.keys.turnOrders, anyExistingOrders(gameId, turn, playerId));
+        if (existing.length > 0) {
+            logger.debug("postOrders: replace existing orders");
+            await store.update(store.keys.turnOrders, existing[0].id, {body: body});
+            summary.ordersId = existing[0].id;
+        } else {
+            logger.debug("postOrders: create new orders");
+            const ordersId = await store.create(store.keys.turnOrders, { gameId: gameId, turn: turn, playerId: playerId, body: body });
+            logger.debug("postOrders: created new orders");
+            summary.ordersId = ordersId;
+        }
+        logger.debug("postOrders: process rules");
+        const turnSummary = await rules.process(summary.ordersId);
+        logger.debug("postOrders: provide summary");
+        resolve({turnStatus: turnSummary, orders: summary});
     });
 }
 
 export function postOrders(body, gameId, turn, playerId) {
-    return new Promise(function (resolve, reject) {
+    return new Promise(async function(resolve, reject) {
         logger.debug("postOrders promise");
-        validateOrders(body, gameId, turn, playerId)
-            .then((result) => {
-                if (result) {
-                    resolve(storeOrders(body, gameId, turn, playerId));
-                } else {
-                    reject({valid: false, message: "postOrders: order validation failed"});
-                }
-            })
-            .catch(reject);
+        const result = await validateOrders(body, gameId, turn, playerId);
+        if (result) {
+            resolve(storeOrders(body, gameId, turn, playerId));
+        } else {
+            reject({valid: false, message: "postOrders: order validation failed"});
+        }
     });
 }
 
@@ -181,18 +141,15 @@ export function postOrders(body, gameId, turn, playerId) {
  **/
 
 export function turnResults(gameId, turn, playerId) {
-    return new Promise(function (resolve, reject) {
-        store.readAll(store.keys.turnResults, (r) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; })
-            .then((results) => {
-                logger.debug(util.format("turnResults: found %s results", results.length));
-                if (results.length == 0) {
-                    resolve({ success: false, message: "turn results not available" });
-                } else if (results.length == 1) {
-                    resolve({ success: true, results: results[0]});
-                } else {
-                    reject({message: "expected a single result for turn results", results: results});
-                }
-            })
-            .catch(reject);
+    return new Promise(async function(resolve, reject) {
+        const results = store.readAll(store.keys.turnResults, (r) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; });
+        logger.debug(util.format("turnResults: found %s results", results.length));
+        if (results.length == 0) {
+            resolve({ success: false, message: "turn results not available" });
+        } else if (results.length == 1) {
+            resolve({ success: true, results: results[0]});
+        } else {
+            reject({message: "expected a single result for turn results", results: results});
+        }
     });
 }
