@@ -43,19 +43,20 @@ function calculateOutcome(game, turn, playerId) {
 }
 
 function recordPlayerTurnResult(game, turn, playerId) {
-    return new Promise((resolve, reject) => {
-        calculateOutcome(game, turn, playerId)
-            .then((outcome) => {
-                resolve(store.create(store.keys.turnResults, {gameId: game.id, turn: turn, playerId: playerId, outcome: outcome}));
-            })
-            .catch(reject);
+    return new Promise(async function(resolve, reject) {
+        try {
+            const outcome = await calculateOutcome(game, turn, playerId);
+            resolve(store.create(store.keys.turnResults, {gameId: game.id, turn: turn, playerId: playerId, outcome: outcome}));
+        } catch (e) {
+            reject(e);
+        }
     });
 }
 
 function processGameTurn(gameId) {
     return new Promise(async function(resolve, reject) {
         try {
-            let game = await store.read<Game>(store.keys.games, gameId);
+            const game = await store.read<Game>(store.keys.games, gameId);
             logger.debug("rules.processGameTurn: update turn result for each player");
             const idArray = await Promise.all(game.players.map((p) => recordPlayerTurnResult(game, game.turn, p)));
             logger.debug("rules.processGameTurn: incr turn number");
@@ -105,33 +106,30 @@ function generateTerrain() {
 };
 
 module.exports.createWorld = function() {
-    return new Promise((resolve, reject) => {
-        generateTerrain()
-            .then((terrain) => {
-                resolve(store.create(store.keys.worlds, {terrain: terrain, actors: []}));
-            }).catch(reject);
+    return new Promise(async function(resolve, reject) {
+        try {
+            let terrain = await generateTerrain();
+            resolve(store.create(store.keys.worlds, {terrain: terrain, actors: []}));
+        } catch (e) {
+            reject(e);
+        }
     });
 };
 
 function filterWorldForPlayer(world, playerId) {
-    return world; // everyone can see everything!
+    return world; // TODO: everyone can see everything!
 }
 
 module.exports.filterGameForPlayer = function(gameId, playerId) {
-    return new Promise((resolve, reject) => {
-        let game;
-        store.read(store.keys.games, gameId)
-            .then((g) => {
-                game = g;
-                return store.read(store.keys.worlds, game.worldId);
-            })
-            .then((world) => {
-                return filterWorldForPlayer(world, playerId);
-            })
-            .then((filteredWorld) => {
-                resolve({ gameId: game.id, playerId: playerId, turn: game.turn, world: filteredWorld});
-            })
-            .catch(reject);
+    return new Promise(async function(resolve, reject) {
+        try {
+            let game = await store.read<Game>(store.keys.games, gameId);
+            let world = await store.read(store.keys.worlds, game.worldId);
+            let filteredWorld = await filterWorldForPlayer(world, playerId);
+            resolve({ gameId: game.id, playerId: playerId, turn: game.turn, world: filteredWorld});
+        } catch (e) {
+            reject(e);
+        }
     });
 };
 

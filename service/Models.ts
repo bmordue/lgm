@@ -2,6 +2,7 @@ interface Game {
     id :number;
     players :Array<number>;
     turn :number;
+    worldId :number;
 }
 
 interface World {
