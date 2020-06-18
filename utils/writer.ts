@@ -1,6 +1,10 @@
-var ResponsePayload = function(code, payload) {
-  this.code = code;
-  this.payload = payload;
+class ResponsePayload {
+  code :any;
+  payload :any;
+  constructor(code, payload) {
+    this.code = code;
+    this.payload = payload;
+  }
 }
 
 export function respondWithCode(code, payload) {

@@ -37,7 +37,7 @@ function exists(key, id) {
     });
 }
 
-export function create(key, obj) {
+export function create<T>(key, obj :T) :Promise<number> {
     store_debug("store.create");
     return new Promise(function(resolve, reject) {
         store_debug("store.create promise");
@@ -48,7 +48,7 @@ export function create(key, obj) {
     });
 };
 
-export function read(key, id) {
+export function read<T>(key, id) :Promise<T> {
     store_debug("store.read");
     return new Promise(function(resolve, reject) {
         store_debug("store.read promise");
@@ -64,7 +64,7 @@ export function read(key, id) {
     });
 };
 
-export function readAll(key, filterFunc) {
+export function readAll<T>(key, filterFunc) :Promise<Array<T>> {
     return new Promise((resolve, reject) => {
         store_debug("store.readAll promise");
         try {
@@ -83,7 +83,7 @@ export function readAll(key, filterFunc) {
     });
 };
 
-export function replace(key, id, newObj) {
+export function replace<T>(key, id, newObj :T) :Promise<T> {
     return new Promise(function(resolve, reject) {
         exists(key, id)
             .then((found) => {
@@ -102,7 +102,7 @@ export function replace(key, id, newObj) {
 // a = { b: { c: 1, d = 2} }
 // aDiff = {b: { d: 3}}
 // a after applying aDiff = {b: { d: 3}}, NOT { b: { c: 1, d = 3} }
-export function update(key, id, diffObj) {
+export function update<T>(key, id, diffObj :T) {
     return new Promise(function(resolve, reject) {
         exists(key, id)
         .then((found) => {

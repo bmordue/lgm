@@ -17,9 +17,9 @@ function allTurnOrdersReceived(gameId, turn) {
         logger.debug("rules.allTurnOrdersReceived promise");
         Promise.all([
             findOrdersForTurn(gameId, turn),
-            store.read(store.keys.games, gameId)
+            store.read<Game>(store.keys.games, gameId)
         ]).then((results) => {
-            const orders = results[0];
+            let orders = results[0];
             const game = results[1];
             logger.debug(util.format("rules.allTurnOrdersReceived: orders.length: %s; game.players.length: %s", orders.length, game.players.length));
             resolve(orders.length == game.players.length);
@@ -55,7 +55,7 @@ function recordPlayerTurnResult(game, turn, playerId) {
 function processGameTurn(gameId) {
     return new Promise(async function(resolve, reject) {
         try {
-            let game = await store.read(store.keys.games, gameId);
+            let game = await store.read<Game>(store.keys.games, gameId);
             logger.debug("rules.processGameTurn: update turn result for each player");
             const idArray = await Promise.all(game.players.map((p) => recordPlayerTurnResult(game, game.turn, p)));
             logger.debug("rules.processGameTurn: incr turn number");
@@ -144,7 +144,7 @@ function inBox(item, left, bottom, right, top) {
 
 module.exports.setupActors = async function(game, playerId) {
     let actors = [];
-    let world = await store.read(store.keys.worlds, game.worldId);
+    let world = await store.read<World>(store.keys.worlds, game.worldId);
     const existingActors = world.actors;
     // find an unoccupied spot
     const MAX_ATTEMPTS = 5;
