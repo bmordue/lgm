@@ -13,14 +13,15 @@ export enum keys {
     games = "games",
     turnResults = "turnResults",
     turnOrders = "turnOrders",
-    worlds = "worlds"
+    worlds = "worlds",
+    players = "players"
 }
 
 function initSlot(x) {
     if (!store[x]) store[x] = [];
 }
 
-function exists(key, id) {
+function exists(key :keys, id :number) {
     return new Promise(function(resolve, reject) {
         store_debug("store.exists()");
         if (!store[key]) {
@@ -37,7 +38,7 @@ function exists(key, id) {
     });
 }
 
-export function create<T>(key, obj :T) :Promise<number> {
+export function create<T>(key :keys, obj :T) :Promise<number> {
     store_debug("store.create");
     return new Promise(function(resolve, reject) {
         store_debug("store.create promise");
@@ -48,7 +49,7 @@ export function create<T>(key, obj :T) :Promise<number> {
     });
 };
 
-export function read<T>(key, id) :Promise<T> {
+export function read<T>(key :keys, id :number) :Promise<T> {
     store_debug("store.read");
     return new Promise(async function(resolve, reject) {
         store_debug("store.read promise");
@@ -60,7 +61,7 @@ export function read<T>(key, id) :Promise<T> {
     });
 };
 
-export function readAll<T>(key, filterFunc) :Promise<Array<T>> {
+export function readAll<T>(key :keys, filterFunc :Function) :Promise<Array<T>> {
     return new Promise((resolve, reject) => {
         store_debug("store.readAll promise");
         try {
@@ -79,7 +80,7 @@ export function readAll<T>(key, filterFunc) :Promise<Array<T>> {
     });
 };
 
-export function replace<T>(key, id, newObj :T) :Promise<T> {
+export function replace<T>(key :keys, id :number, newObj :T) :Promise<T> {
     return new Promise(async function(resolve, reject) {
         if (await exists(key, id)) {
             store[key][id] = newObj;
@@ -94,7 +95,7 @@ export function replace<T>(key, id, newObj :T) :Promise<T> {
 // a = { b: { c: 1, d = 2} }
 // aDiff = {b: { d: 3}}
 // a after applying aDiff = {b: { d: 3}}, NOT { b: { c: 1, d = 3} }
-export function update<T>(key :string, id: number, diffObj :T) :Promise<number> {
+export function update<T>(key :keys, id: number, diffObj :T) :Promise<number> {
     return new Promise(async function(resolve, reject) {
         const found = await exists(key, id);
         if (!found) {

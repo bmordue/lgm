@@ -1,9 +1,9 @@
 'use strict';
 
-const store = require('./Store.js');
-const rules = require('./Rules.js');
-const logger = require('../utils/Logger.js');
-const util = require('util');
+import store = require('./Store.js');
+import rules = require('./Rules.js');
+import logger = require('../utils/Logger.js');
+import util = require('util');
 
 /**
  * create a new game
@@ -13,7 +13,8 @@ const util = require('util');
 export function createGame() {
     return new Promise(async function(resolve, reject) {
         const worldId = await rules.createWorld();
-        const gameId = await store.create(store.keys.games, { turn: 1, turnComplete: false, worldId: worldId });
+//        const gameId = await store.create<Game>(store.keys.games, { turn: 1, turnComplete: false, worldId: worldId });
+        const gameId = await store.create<Game>(store.keys.games, { turn: 1, worldId: worldId });
         resolve({ id: gameId });
     });
 }
@@ -31,7 +32,7 @@ export function joinGame(gameId) {
         try {
             logger.debug("joinGame promise cb");
             const results = await Promise.all([
-                store.read(store.keys.games, gameId),
+                store.read<Game>(store.keys.games, gameId),
                 store.create(store.keys.players, { gameId: gameId }),
             ])
             logger.debug("joinGame add player to game");
@@ -41,12 +42,12 @@ export function joinGame(gameId) {
             logger.debug("joinGame update game");
             await store.replace(store.keys.games, gameId, updatedGame);
             logger.debug("joinGame: read world object");
-            const world = await store.read(store.keys.worlds, game.worldId);
+            const world = await store.read<World>(store.keys.worlds, game.worldId);
             logger.debug("joinGame: set up actors for player");
             const actors = await rules.setupActors(game, playerId);
             logger.debug("joinGame: add new actors to world");
-            world.actors.push[actors];
-            const updatedWorld = await store.replace(store.keys.worlds, game.worldId, world);
+            world.actors = world.actors.concat(actors);
+            await store.replace(store.keys.worlds, game.worldId, world);
             logger.debug("joinGame resolve with filtered game");
             resolve(rules.filterGameForPlayer(gameId, playerId));
         } catch(e) {
@@ -84,7 +85,7 @@ function addPlayerToGame(game, playerId) {
 
 function validateOrders(body, gameId, turn, playerId) {
     return new Promise(async function(resolve, reject) {
-        const game = await store.read(store.keys.games, gameId);
+        const game = await store.read<Game>(store.keys.games, gameId);
         if (!game.players.includes(playerId)) {
             console.log("validateOrders: playerId is not in game.players array");
             return resolve(false);
@@ -102,14 +103,15 @@ function validateOrders(body, gameId, turn, playerId) {
 function storeOrders(body, gameId, turn, playerId) {
     return new Promise(async function(resolve, reject) {
         let summary = { gameId: gameId, turn: turn, playerId: playerId, ordersId: null};
-        const existing = await store.readAll(store.keys.turnOrders, anyExistingOrders(gameId, turn, playerId));
+        const existing = await store.readAll<TurnOrders>(store.keys.turnOrders, anyExistingOrders(gameId, turn, playerId));
         if (existing.length > 0) {
             logger.debug("postOrders: replace existing orders");
             await store.update(store.keys.turnOrders, existing[0].id, {body: body});
             summary.ordersId = existing[0].id;
         } else {
             logger.debug("postOrders: create new orders");
-            const ordersId = await store.create(store.keys.turnOrders, { gameId: gameId, turn: turn, playerId: playerId, body: body });
+            const turnOrders :TurnOrders = { gameId: gameId, turn: turn, playerId: playerId, body: body, id: null };
+            const ordersId = await store.create(store.keys.turnOrders,  turnOrders);
             logger.debug("postOrders: created new orders");
             summary.ordersId = ordersId;
         }

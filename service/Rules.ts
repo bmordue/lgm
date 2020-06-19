@@ -56,6 +56,7 @@ function processGameTurn(gameId) {
     return new Promise(async function(resolve, reject) {
         try {
             const game = await store.read<Game>(store.keys.games, gameId);
+            //const orders = await store.readAll(store.keys.turnOrders, filterFn);
             logger.debug("rules.processGameTurn: update turn result for each player");
             const idArray = await Promise.all(game.players.map((p) => recordPlayerTurnResult(game, game.turn, p)));
             logger.debug("rules.processGameTurn: incr turn number");
@@ -71,7 +72,7 @@ function processGameTurn(gameId) {
     });
 }
 
-module.exports.process = function(ordersId) {
+export function process (ordersId) {
     return new Promise(async function(resolve, reject) {
         logger.debug("rules.process promise");
         const orders = await store.read<TurnOrders>(store.keys.turnOrders, ordersId);
@@ -98,7 +99,7 @@ function generateTerrain() {
     });
 };
 
-module.exports.createWorld = function() {
+export function createWorld() :Promise<number> {
     return new Promise(async function(resolve, reject) {
         try {
             let terrain = await generateTerrain();
@@ -113,7 +114,7 @@ function filterWorldForPlayer(world, playerId) {
     return world; // TODO: everyone can see everything!
 }
 
-module.exports.filterGameForPlayer = function(gameId, playerId) {
+export function filterGameForPlayer (gameId, playerId) {
     return new Promise(async function(resolve, reject) {
         try {
             let game = await store.read<Game>(store.keys.games, gameId);
@@ -133,7 +134,7 @@ function inBox(item, left, bottom, right, top) {
         && item.pos.y <= top;
 }
 
-module.exports.setupActors = async function(game, playerId) {
+export async function setupActors(game, playerId) {
     let actors = [];
     let world = await store.read<World>(store.keys.worlds, game.worldId);
     const existingActors = world.actors;
@@ -157,6 +158,7 @@ module.exports.setupActors = async function(game, playerId) {
         if (attempts >= MAX_ATTEMPTS) {
             const msg = "failed to place actors for new player";
             logger.error(msg);
+            done = true;
         }
     }
 
