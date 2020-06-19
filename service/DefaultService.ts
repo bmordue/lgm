@@ -142,7 +142,7 @@ export function postOrders(body, gameId, turn, playerId) {
 
 export function turnResults(gameId, turn, playerId) {
     return new Promise(async function(resolve, reject) {
-        const results = store.readAll(store.keys.turnResults, (r) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; });
+        const results = await store.readAll(store.keys.turnResults, (r) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; });
         logger.debug(util.format("turnResults: found %s results", results.length));
         if (results.length == 0) {
             resolve({ success: false, message: "turn results not available" });
