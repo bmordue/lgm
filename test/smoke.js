@@ -183,7 +183,7 @@ describe("complete first two turns with one player", () => {
             results: {
                 gameId: gameId,
                 id: 1,
-                outcome: "unknown!",
+                updatedActors: [],
                 playerId: playerId,
                 turn: 1
             },
@@ -216,7 +216,7 @@ describe("complete first two turns with one player", () => {
             results: {
                 gameId: gameId,
                 id: 2,
-                outcome: "unknown!",
+                updatedActors: [],
                 playerId: playerId,
                 turn: 2
             },

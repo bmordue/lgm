@@ -12,6 +12,9 @@ interface World {
 
 interface Actor {
     id? :number;
+    pos :GridPosition,
+    state :ActorState,
+    owner :number // playerId
 }
 
 interface TurnOrders {
@@ -19,15 +22,31 @@ interface TurnOrders {
     gameId :number;
     turn :number;
     playerId :number;
-    body :Array<ActorOrders>;
+    orders :Array<ActorOrders>;
 }
 
-enum direction {
+interface TurnResult {
+    id? :number,
+    gameId :number,
+    turn :number,
+    playerId :number,
+    updatedActors :Array<Actor>
+}
+
+enum Direction {
     UP_LEFT, UP_RIGHT, LEFT, RIGHT, DOWN_LEFT, DOWN_RIGHT
 }
 
+enum ActorState {
+    DEAD, ALIVE
+}
+
+interface GridPosition {
+    x :number,
+    y :number
+}
+
 interface ActorOrders {
-    id? :number;
     actorId :number;
-    ordersList :Array<direction>;
+    ordersList :Array<Direction>;
 }

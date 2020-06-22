@@ -110,7 +110,7 @@ function storeOrders(body, gameId, turn, playerId) {
             summary.ordersId = existing[0].id;
         } else {
             logger.debug("postOrders: create new orders");
-            const turnOrders :TurnOrders = { gameId: gameId, turn: turn, playerId: playerId, body: body, id: null };
+            const turnOrders :TurnOrders = { gameId: gameId, turn: turn, playerId: playerId, orders: body, id: null };
             const ordersId = await store.create(store.keys.turnOrders,  turnOrders);
             logger.debug("postOrders: created new orders");
             summary.ordersId = ordersId;
@@ -144,7 +144,7 @@ export function postOrders(body, gameId, turn, playerId) {
 
 export function turnResults(gameId, turn, playerId) {
     return new Promise(async function(resolve, reject) {
-        const results = await store.readAll(store.keys.turnResults, (r) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; });
+        const results = await store.readAll<TurnResult>(store.keys.turnResults, (r) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; });
         logger.debug(util.format("turnResults: found %s results", results.length));
         if (results.length == 0) {
             resolve({ success: false, message: "turn results not available" });
