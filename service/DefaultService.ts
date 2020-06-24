@@ -83,7 +83,7 @@ function addPlayerToGame(game, playerId) {
     return (o) => { return o.gameId == gameId && o.turn == turn && o.playerId == playerId; };
 }
 
-function validateOrders(body, gameId, turn, playerId) {
+function validateOrders(orders, gameId, turn, playerId) {
     return new Promise(async function(resolve, reject) {
         const game = await store.read<Game>(store.keys.games, gameId);
         if (!game.players.includes(playerId)) {
@@ -122,7 +122,11 @@ function storeOrders(body, gameId, turn, playerId) {
     });
 }
 
-export function postOrders(body, gameId, turn, playerId) {
+interface postOrdersBody {
+    orders: TurnOrders;
+}
+
+export function postOrders(body :postOrdersBody, gameId, turn, playerId) {
     return new Promise(async function(resolve, reject) {
         logger.debug("postOrders promise");
         const result = await validateOrders(body, gameId, turn, playerId);
