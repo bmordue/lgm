@@ -5,12 +5,40 @@ import rules = require('./Rules.js');
 import logger = require('../utils/Logger.js');
 import util = require('util');
 
+export interface PostOrdersBody {
+    orders: Array<ActorOrders>;
+}
+
+export interface PostOrdersResponse {
+    orders: TurnOrders,
+    turnStatus: {
+        complete: Boolean
+    }
+}
+
+export interface CreateGameResponse {
+    id :number;
+}
+
+export interface JoinGameResponse {
+    gameId :number;
+    playerId :number;
+    turn :number;
+    world :World;
+    id :number;
+}
+
+export interface TurnResultsResponse {
+    success :Boolean;
+    results :TurnResult
+}
+
 /**
  * create a new game
  *
  * returns GameCreatedResponse
  **/
-export function createGame() {
+export function createGame() :Promise<CreateGameResponse> {
     return new Promise(async function(resolve, reject) {
         const worldId = await rules.createWorld();
 //        const gameId = await store.create<Game>(store.keys.games, { turn: 1, turnComplete: false, worldId: worldId });
@@ -26,7 +54,11 @@ export function createGame() {
  * id Integer 
  * no response value expected for this operation
  **/
-export function joinGame(gameId) {
+async function joinGameResponseOf(resp) :Promise<JoinGameResponse> {
+    return resp;
+}
+
+export function joinGame(gameId) :Promise<JoinGameResponse> {
     logger.debug("joinGame");
     return new Promise(async function(resolve, reject) {
         try {
@@ -49,7 +81,7 @@ export function joinGame(gameId) {
             world.actors = world.actors.concat(actors);
             await store.replace(store.keys.worlds, game.worldId, world);
             logger.debug("joinGame resolve with filtered game");
-            resolve(rules.filterGameForPlayer(gameId, playerId));
+            resolve(joinGameResponseOf(rules.filterGameForPlayer(gameId, playerId)));
         } catch(e) {
             reject(e);
         }
@@ -122,16 +154,16 @@ function storeOrders(body, gameId, turn, playerId) {
     });
 }
 
-interface postOrdersBody {
-    orders: TurnOrders;
+async function postOrdersResponseOf(response) :Promise<PostOrdersResponse> {
+    return response;
 }
 
-export function postOrders(body :postOrdersBody, gameId, turn, playerId) {
+export function postOrders(body :PostOrdersBody, gameId, turn, playerId) :Promise<PostOrdersResponse> {
     return new Promise(async function(resolve, reject) {
         logger.debug("postOrders promise");
         const result = await validateOrders(body, gameId, turn, playerId);
         if (result) {
-            resolve(storeOrders(body, gameId, turn, playerId));
+            resolve(postOrdersResponseOf(storeOrders(body, gameId, turn, playerId)));
         } else {
             reject({valid: false, message: "postOrders: order validation failed"});
         }
