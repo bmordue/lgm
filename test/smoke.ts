@@ -192,6 +192,18 @@ describe("complete first two turns with one player", () => {
     });
 
     it("post orders for second turn", async function() {
+        const orderOne :ActorOrders = {
+            actor: {},
+            ordersList: []
+        };
+        const ordersBody = {
+            orders: [
+                {
+                    actor: {id: 100},
+
+                }
+            ]
+        };
         let ordersResponse = await lgm.postOrders({orders: []}, gameId, 2, playerId);
         const expected = {
             orders: {

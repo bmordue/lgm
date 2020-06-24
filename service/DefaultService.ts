@@ -5,8 +5,13 @@ import rules = require('./Rules.js');
 import logger = require('../utils/Logger.js');
 import util = require('util');
 
+export interface RequestActorOrders {
+    actorId: number;
+    ordersList: Array<number>;
+}
+
 export interface PostOrdersBody {
-    orders: Array<ActorOrders>;
+    orders: Array<RequestActorOrders>;
 }
 
 export interface PostOrdersResponse {
@@ -115,20 +120,41 @@ function addPlayerToGame(game, playerId) {
     return (o) => { return o.gameId == gameId && o.turn == turn && o.playerId == playerId; };
 }
 
-function validateOrders(orders, gameId, turn, playerId) {
+function numbersToDirections(orderNos :Array<number>) :Array<Direction> {
+    return orderNos.map((n) => <Direction> n);
+}
+
+function validateRequestOrders(requestOrders :Array<RequestActorOrders>) :Promise<Array<ActorOrders> {
+    const outs :Array<ActorOrder> = requestOrders.map((o) => {
+        const out = {
+            actor: await store.read<Actor>(store.keys.actors, o.actorId),
+            orders: numbersToDirections(o.ordersList)
+        };
+        return <ActorOrder> out;
+    });
+    return Promise.all();
+}
+
+function validateOrders(requestOrders :Array<RequestActorOrders>, gameId, turn, playerId) :Promise<TurnOrders> {
     return new Promise(async function(resolve, reject) {
         const game = await store.read<Game>(store.keys.games, gameId);
+        let turnOrders :TurnOrders = {
+            gameId: gameId,
+            turn: turn,
+            playerId: playerId,
+            orders: []
+        };
         if (!game.players.includes(playerId)) {
-            console.log("validateOrders: playerId is not in game.players array");
-            return resolve(false);
+            return reject("playerId is not in game.players array");
         }
 
         if (game.turn != turn) {
-            console.log("validateOrders: orders turn does not match game turn");
-            return resolve(false);
+            return reject("orders turn does not match game turn");
         }
 
-        return resolve(true);
+        turnOrders.orders = await validateRequestOrders(requestOrders);
+
+        return resolve(turnOrders);
     });
 }
 
