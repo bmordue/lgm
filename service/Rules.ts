@@ -58,18 +58,15 @@ function processGameTurnOrder(turnOrders :TurnOrders) :Array<Actor> {
     return [];
 }
 
-// "deduplicate" turn order results
-// filter updated actors by owner
 function turnResultsPerPlayer(game :Game, updatedActors :Array<Actor>) :Array<TurnResult> {
-    // return game.players.map((playerId) => {
-    //     let turnResult :TurnResult;
-    //     turnResult.gameId = game.id;
-    //     turnResult.playerId = playerId;
-    //     turnResult.turn = game.turn;
-    //     turnResult.updatedActors = updatedActors.filter((a) => a.owner == playerId);
-    //     return turnResult;
-    // });
-    return [];
+    return game.players.map((playerId) => {
+        return {
+            gameId: game.id,
+            playerId: playerId,
+            turn: game.turn,
+            updatedActors: updatedActors.filter((a) => a.owner == playerId)
+        };
+    });
 }
 
 function filterOrdersForGameTurn(o, gameId, turn) {
@@ -89,27 +86,17 @@ function processGameTurn(gameId) {
     return new Promise(async function(resolve, reject) {
         try {
             const game = await store.read<Game>(store.keys.games, gameId);
-            //const orders = await store.readAll(store.keys.turnOrders, filterFn);
             const gameTurnOrderIds = await store.readAll<TurnOrders>(store.keys.turnOrders, (o) => {
                 return filterOrdersForGameTurn(o, gameId, game.turn);
             });
             const results = await Promise.all(gameTurnOrderIds.map(processGameTurnOrder));
-            // flatten array of arrays of Actor to array of Actor
             const actorUpdates = unique(flatten(results));
 
             const playerTurnResults = await turnResultsPerPlayer(game, actorUpdates);
+            logger.debug(util.format("playerTurnResults length: %s", playerTurnResults.length));
             await Promise.all(playerTurnResults.map((turnResult) => {
                 store.create<TurnResult>(store.keys.turnResults, turnResult); 
             }));
-
-            // TODO: sticky plaster to keep tests passing for now
-            await Promise.all(game.players.map((playerId) => {
-                store.create<TurnResult>(store.keys.turnResults, {gameId: game.id, turn: game.turn, playerId: playerId, updatedActors: []});
-            }));
-
-            // logger.debug("rules.processGameTurn: update turn result for each player");
-            // const idArray = await Promise.all(game.players.map((p) => recordPlayerTurnResult(game, game.turn, p)));
-            // logger.debug("rules.processGameTurn: incr turn number");
 
             await store.update(store.keys.games, game.id, {turn: game.turn + 1});
             logger.debug("rules.processGameTurn: resolve with turn status");
