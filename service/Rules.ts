@@ -76,6 +76,15 @@ function filterOrdersForGameTurn(o, gameId, turn) {
     return o.gameId == gameId && o.turn == turn;
 }
 
+function flatten(arr :Array<any>) {
+    // cf mdn article on Array.flat()
+    return arr.reduce((acc, val) => acc.concat(val, []));
+}
+
+export function unique(arr :Array<any>) {
+    return arr.filter((val, i, arr) => arr.indexOf(val) === i);
+}
+
 function processGameTurn(gameId) {
     return new Promise(async function(resolve, reject) {
         try {
@@ -86,7 +95,7 @@ function processGameTurn(gameId) {
             });
             const results = await Promise.all(gameTurnOrderIds.map(processGameTurnOrder));
             // flatten array of arrays of Actor to array of Actor
-            const actorUpdates = results.reduce((acc, val) => acc.concat(val, []));
+            const actorUpdates = unique(flatten(results));
 
             const playerTurnResults = await turnResultsPerPlayer(game, actorUpdates);
             await Promise.all(playerTurnResults.map((turnResult) => {
