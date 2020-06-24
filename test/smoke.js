@@ -92,7 +92,7 @@ describe("smoke - integration", () => {
         const gameId = 0;
         const playerId = 1;
         const turn = 1;
-        lgm.postOrders({}, gameId, turn, playerId)
+        lgm.postOrders({orders: []} , gameId, turn, playerId)
         .then((res) => {
             assert.equal(res.orders.gameId, gameId);
             assert.equal(res.orders.playerId, playerId);
@@ -107,7 +107,7 @@ describe("smoke - integration", () => {
         const gameId = 1;
         const playerId = 2;
         const turn = 1;
-        lgm.postOrders({}, gameId, turn, playerId)
+        lgm.postOrders({orders:[]}, gameId, turn, playerId)
         .then((res) => {
             assert.equal(res.orders.gameId, gameId);
             assert.equal(res.orders.playerId, playerId);
@@ -158,7 +158,7 @@ describe("complete first two turns with one player", () => {
     });
 
     it("post orders for first turn", async function() {
-        let result = await lgm.postOrders({}, gameId, 1, playerId);
+        let result = await lgm.postOrders({orders: []}, gameId, 1, playerId);
 
         const expected = {
             orders: {
@@ -193,7 +193,7 @@ describe("complete first two turns with one player", () => {
     });
 
     it("post orders for second turn", async function() {
-        let ordersResponse = await lgm.postOrders({}, gameId, 2, playerId);
+        let ordersResponse = await lgm.postOrders({orders: []}, gameId, 2, playerId);
         const expected = {
             orders: {
                 gameId: gameId,

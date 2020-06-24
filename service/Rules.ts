@@ -4,6 +4,8 @@ import store = require('./Store');
 import logger = require('../utils/Logger');
 import util = require('util');
 
+const TIMESTEP_MAX = 10;
+
 function findOrdersForTurn(gameId, turn) {
     logger.debug("rules.ordersForTurn");
     return store.readAll(store.keys.turnOrders, (o) => {
@@ -26,36 +28,89 @@ function allTurnOrdersReceived(gameId :number, turn :number) {
     });
 }
 
-// function filterOrdersForPlayerTurn(orders) {
-//     return orders.
-// }
-
-function calculateOutcome(game, turn, playerId) {
-    return new Promise(async function(resolve, reject) {
-        // const player = await store.read(store.keys.players, playerId);
-        // const orders = await store.readAll(store.keys.turnOrders, (o) => {
-        //     return filterOrdersForPlayerTurn(o, );
-        // });
-
-        resolve("unknown!");
-    });
+function applyDirection(oldPos :GridPosition, direction :Direction) :GridPosition {
+    let newPos = {
+        x: oldPos.x,
+        y: oldPos.y
+    };
+    const applyDir = function(pos, xOffset, yOffset) {
+        pos.x += xOffset;
+        pos.y += yOffset;
+        return pos;
+    }
+    switch (direction) {
+        case Direction.DOWN_LEFT: {
+            newPos = applyDir(oldPos, -1, -1);
+        }
+        case Direction.DOWN_RIGHT: {
+            newPos = applyDir(oldPos, 1, -1);
+        }
+        case Direction.LEFT: {
+            newPos = applyDir(oldPos, -1, 0);
+        }
+        case Direction.RIGHT: {
+            newPos = applyDir(oldPos, 1, 0);
+        }
+        case Direction.UP_LEFT: {
+            newPos = applyDir(oldPos, -1, 1);
+        }
+        case Direction.UP_RIGHT: {
+            newPos = applyDir(oldPos, 1, 1);
+        }
+        case Direction.NONE: {
+            // no op
+        }
+        default: {
+            logger.error(util.format("applyDirection(): unrecognised direction", direction));
+        }
+    }
+    return newPos;
 }
 
-function recordPlayerTurnResult(game, turn, playerId) {
-    return new Promise(async function(resolve, reject) {
-        try {
-            const outcome = await calculateOutcome(game, turn, playerId);
-            resolve(store.create(store.keys.turnResults, {gameId: game.id, turn: turn, playerId: playerId, outcome: outcome}));
-        } catch (e) {
-            reject(e);
-        }
-    });
+async function applyMovementOrders(actorOrders :ActorOrders, game :Game, world :World, timestep :number, ) :Promise<Actor>{
+   const moveDirection = actorOrders.ordersList[timestep];
+   const actor = actorOrders.actor;
+   const newGridPos = applyDirection(actorOrders.actor.pos, moveDirection)
+   const newPosTerrain = world.terrain[newGridPos.x][newGridPos.y];
+
+   switch (newPosTerrain) {
+       case Terrain.EMPTY: {
+           actor.pos = newGridPos;
+       }
+
+       case Terrain.BLOCKED: {
+            logger.debug(util.format("Actor ID %s attempted to move to blocked position at (%s,%s); remained at (%s,%s) instead",
+                actor.id, newGridPos.x, newGridPos.y, actor.pos.x, actor.pos.y));
+       }
+       default: {
+           logger.error(util.format("Unrecognised terrain type: %s", newPosTerrain));
+       }
+   }
+   return actor;
+}
+
+async function applyFiringRules(actorOrders :ActorOrders, game :Game, world :World, timestep :number, ) :Promise<Actor> {
+    const visibleEnemies = [];
+    if (visibleEnemies.length > 0) {
+        const target :Actor = visibleEnemies[0];
+        target.state = ActorState.DEAD;
+    }
+    return actorOrders.actor;    
 }
 
 // update actors based on turn orders
-function processGameTurnOrder(turnOrders :TurnOrders) :Array<Actor> {
+async function applyRulesToActorOrders(game :Game, world :World, allActorOrders :Array<ActorOrders>) :Promise<Array<Actor>> {
+    if (!allActorOrders) {
+        return [];
+    }
 
-    return [];
+    // iterate over timesteps!
+    for (let ts = 0; ts < TIMESTEP_MAX; ts++) {
+        await Promise.all(allActorOrders.map((a) => applyMovementOrders(a, game, world, ts)));
+        await Promise.all(allActorOrders.map((a) => applyFiringRules(a, game, world, ts)));
+    }
+
+    return allActorOrders.map((a) => a.actor);
 }
 
 function turnResultsPerPlayer(game :Game, updatedActors :Array<Actor>) :Array<TurnResult> {
@@ -69,7 +124,7 @@ function turnResultsPerPlayer(game :Game, updatedActors :Array<Actor>) :Array<Tu
     });
 }
 
-function filterOrdersForGameTurn(o, gameId, turn) {
+function filterOrdersForGameTurn(o :TurnOrders, gameId, turn) {
     return o.gameId == gameId && o.turn == turn;
 }
 
@@ -85,14 +140,23 @@ export function unique(arr :Array<any>) {
 function processGameTurn(gameId) {
     return new Promise(async function(resolve, reject) {
         try {
+            // load in relevant objects and do some rearranging
             const game = await store.read<Game>(store.keys.games, gameId);
-            const gameTurnOrderIds = await store.readAll<TurnOrders>(store.keys.turnOrders, (o) => {
+            const world = await store.read<World>(store.keys.worlds, game.worldId);
+
+            const gameTurnOrders = await store.readAll<TurnOrders>(store.keys.turnOrders, (o) => {
                 return filterOrdersForGameTurn(o, gameId, game.turn);
             });
-            const results = await Promise.all(gameTurnOrderIds.map(processGameTurnOrder));
-            const actorUpdates = unique(flatten(results));
+            const actorOrdersLists = gameTurnOrders.map((gto) => gto.orders);
+            const flattenedActorOrders :Array<ActorOrders> = flatten(actorOrdersLists);
 
-            const playerTurnResults = await turnResultsPerPlayer(game, actorUpdates);
+            // apply rules
+            logger.debug("processGameTurn: about to apply rules");
+            const updatedActors :Array<Actor> = await applyRulesToActorOrders(game, world, flattenedActorOrders);
+
+            // record results
+            logger.debug("processGameTurn: record results");
+            const playerTurnResults = await turnResultsPerPlayer(game, updatedActors);
             logger.debug(util.format("playerTurnResults length: %s", playerTurnResults.length));
             await Promise.all(playerTurnResults.map((turnResult) => {
                 store.create<TurnResult>(store.keys.turnResults, turnResult); 
@@ -102,7 +166,7 @@ function processGameTurn(gameId) {
             logger.debug("rules.processGameTurn: resolve with turn status");
             resolve({complete: true, msg: "Turn complete", turn: game.turn});
         } catch(e) {
-            logger.error("Failed to process game turn");
+            logger.error("processGameTurn: Failed to process game turn");
             logger.error(e);
             reject(e);
         }

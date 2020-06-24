@@ -106,12 +106,12 @@ function storeOrders(body, gameId, turn, playerId) {
         const existing = await store.readAll<TurnOrders>(store.keys.turnOrders, anyExistingOrders(gameId, turn, playerId));
         if (existing.length > 0) {
             logger.debug("postOrders: replace existing orders");
-            await store.update(store.keys.turnOrders, existing[0].id, {body: body});
+            await store.update(store.keys.turnOrders, existing[0].id, {orders: body.orders});
             summary.ordersId = existing[0].id;
         } else {
             logger.debug("postOrders: create new orders");
-            const turnOrders :TurnOrders = { gameId: gameId, turn: turn, playerId: playerId, orders: body, id: null };
-            const ordersId = await store.create(store.keys.turnOrders,  turnOrders);
+            const turnOrders :TurnOrders = { gameId: gameId, turn: turn, playerId: playerId, orders: body.orders, id: null };
+            const ordersId = await store.create<TurnOrders>(store.keys.turnOrders,  turnOrders);
             logger.debug("postOrders: created new orders");
             summary.ordersId = ordersId;
         }

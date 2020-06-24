@@ -8,10 +8,15 @@ interface Game {
 interface World {
     id? :number;
     actors :Array<Actor>;
+    terrain :Array<Array<Terrain>>
+}
+
+enum Terrain {
+    EMPTY, BLOCKED
 }
 
 interface Actor {
-    id? :number;
+    id :number;
     pos :GridPosition,
     state :ActorState,
     owner :number // playerId
@@ -34,7 +39,7 @@ interface TurnResult {
 }
 
 enum Direction {
-    UP_LEFT, UP_RIGHT, LEFT, RIGHT, DOWN_LEFT, DOWN_RIGHT
+    UP_LEFT, UP_RIGHT, LEFT, RIGHT, DOWN_LEFT, DOWN_RIGHT, NONE
 }
 
 enum ActorState {
@@ -47,6 +52,6 @@ interface GridPosition {
 }
 
 interface ActorOrders {
-    actorId :number;
+    actor :Actor;
     ordersList :Array<Direction>;
 }

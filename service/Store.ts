@@ -14,7 +14,8 @@ export enum keys {
     turnResults = "turnResults",
     turnOrders = "turnOrders",
     worlds = "worlds",
-    players = "players"
+    players = "players",
+    actors = "actors"
 }
 
 function initSlot(x) {
