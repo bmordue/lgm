@@ -4,7 +4,7 @@ import store = require('./Store');
 import logger = require('../utils/Logger');
 import util = require('util');
 
-const TIMESTEP_MAX = 10;
+export const TIMESTEP_MAX = 10;
 
 function findOrdersForTurn(gameId, turn) {
     logger.debug("rules.ordersForTurn");

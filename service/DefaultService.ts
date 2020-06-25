@@ -1,8 +1,8 @@
 'use strict';
 
-import store = require('./Store.js');
-import rules = require('./Rules.js');
-import logger = require('../utils/Logger.js');
+import store = require('./Store');
+import rules = require('./Rules');
+import logger = require('../utils/Logger');
 import util = require('util');
 
 export interface RequestActorOrders {
@@ -88,7 +88,8 @@ export function joinGame(gameId) :Promise<JoinGameResponse> {
             logger.debug("joinGame resolve with filtered game");
             resolve(joinGameResponseOf(rules.filterGameForPlayer(gameId, playerId)));
         } catch(e) {
-            reject(e);
+            logger.error(util.format("failed to join game: %j", e));
+            reject("failed to join game");
         }
     });
 }
@@ -124,20 +125,36 @@ function numbersToDirections(orderNos :Array<number>) :Array<Direction> {
     return orderNos.map((n) => <Direction> n);
 }
 
-function validateRequestOrders(requestOrders :Array<RequestActorOrders>) :Promise<Array<ActorOrders> {
-    const outs :Array<ActorOrder> = requestOrders.map((o) => {
+export function fillOrTruncateOrdersList(ordersList :Array<Direction>) {
+    var corrected = new Array(rules.TIMESTEP_MAX);
+    for (let i = 0; i < corrected.length; i++) {
+        corrected[i] = i < ordersList.length ? ordersList[i] : 6; //Direction.NONE;
+    }
+    return corrected;
+}
+
+function validateRequestOrders(requestOrders :Array<RequestActorOrders>) :Promise<Array<ActorOrders>> {
+    const outs = requestOrders.map(async function(o) {
         const out = {
             actor: await store.read<Actor>(store.keys.actors, o.actorId),
-            orders: numbersToDirections(o.ordersList)
+            ordersList: fillOrTruncateOrdersList(numbersToDirections(o.ordersList))
         };
-        return <ActorOrder> out;
+        
+        return <ActorOrders> out;
     });
-    return Promise.all();
+    return Promise.all(outs);
 }
 
 function validateOrders(requestOrders :Array<RequestActorOrders>, gameId, turn, playerId) :Promise<TurnOrders> {
     return new Promise(async function(resolve, reject) {
-        const game = await store.read<Game>(store.keys.games, gameId);
+        logger.debug("validateOrders()");
+        let game;
+        try {
+            game = await store.read<Game>(store.keys.games, gameId);
+        } catch (e) {
+            logger.debug(util.format("validateOrders: failed to load game object: %j", e));
+            return reject("failed to load game object");
+        }
         let turnOrders :TurnOrders = {
             gameId: gameId,
             turn: turn,
@@ -145,20 +162,27 @@ function validateOrders(requestOrders :Array<RequestActorOrders>, gameId, turn, 
             orders: []
         };
         if (!game.players.includes(playerId)) {
+            logger.debug("reject: playerId is not in game.players array");
             return reject("playerId is not in game.players array");
         }
 
         if (game.turn != turn) {
+            logger.debug(util.format("reject: orders turn (%s) does not match game turn (%s)", turn, game.turn));
             return reject("orders turn does not match game turn");
         }
 
-        turnOrders.orders = await validateRequestOrders(requestOrders);
+        try {
+            turnOrders.orders = await validateRequestOrders(requestOrders);
+        } catch (e) {
+            logger.debug(util.format("validateOrders: failed validate request orders: %j", e));
+            return reject("failed to validate request orders");
+        }
 
         return resolve(turnOrders);
     });
 }
 
-function storeOrders(body, gameId, turn, playerId) {
+function storeOrders(body, gameId, turn, playerId) {//:Promise<PostOrdersResponse> {
     return new Promise(async function(resolve, reject) {
         let summary = { gameId: gameId, turn: turn, playerId: playerId, ordersId: null};
         const existing = await store.readAll<TurnOrders>(store.keys.turnOrders, anyExistingOrders(gameId, turn, playerId));
@@ -187,12 +211,12 @@ async function postOrdersResponseOf(response) :Promise<PostOrdersResponse> {
 export function postOrders(body :PostOrdersBody, gameId, turn, playerId) :Promise<PostOrdersResponse> {
     return new Promise(async function(resolve, reject) {
         logger.debug("postOrders promise");
-        const result = await validateOrders(body, gameId, turn, playerId);
-        if (result) {
-            resolve(postOrdersResponseOf(storeOrders(body, gameId, turn, playerId)));
-        } else {
-            reject({valid: false, message: "postOrders: order validation failed"});
+        try {
+            const result = await validateOrders(body.orders, gameId, turn, playerId);
+        } catch (e) {
+            reject("postOrders: order validation failed");
         }
+        resolve(postOrdersResponseOf(storeOrders(body, gameId, turn, playerId)));
     });
 }
 
@@ -213,7 +237,7 @@ export function turnResults(gameId, turn, playerId) {
         } else if (results.length == 1) {
             resolve({ success: true, results: results[0]});
         } else {
-            reject({message: "expected a single result for turn results", results: results});
+            reject("expected a single result for turn results");
         }
     });
 }

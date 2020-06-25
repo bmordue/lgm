@@ -20,4 +20,5 @@ describe("unit tests", function() {
             assert.deepEqual(rules.unique(input), expected);
         });
     });
+
 });

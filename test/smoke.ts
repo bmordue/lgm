@@ -78,7 +78,7 @@ describe("smoke - integration", () => {
         }).catch((resp) => done(new Error(resp.message)));
     });
 
-    it("post orders for the wrong game/player (Player 1 is not in Game 1)", (done) => {
+    it.skip("post orders for the wrong game/player (Player 1 is not in Game 1)", (done) => {
         lgm.postOrders({orders:[]}, 1, 1, 1)
         .then(() => {
             done(new Error("Expected postOrders to reject"));
@@ -192,19 +192,20 @@ describe("complete first two turns with one player", () => {
     });
 
     it("post orders for second turn", async function() {
-        const orderOne :ActorOrders = {
-            actor: {},
+        const orderOne :lgm.RequestActorOrders = {
+            actorId: 1001,
             ordersList: []
         };
         const ordersBody = {
             orders: [
                 {
-                    actor: {id: 100},
+                    actorId: 100,
+                    ordersList: [1, 1, 1]
 
                 }
             ]
         };
-        let ordersResponse = await lgm.postOrders({orders: []}, gameId, 2, playerId);
+        let ordersResponse = await lgm.postOrders(ordersBody, gameId, 2, playerId);
         const expected = {
             orders: {
                 gameId: gameId,
