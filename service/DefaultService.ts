@@ -15,7 +15,6 @@ export interface PostOrdersBody {
 }
 
 export interface PostOrdersResponse {
-    orders: TurnOrders,
     turnStatus: {
         complete: Boolean
     }
@@ -81,9 +80,9 @@ export function joinGame(gameId) :Promise<JoinGameResponse> {
             logger.debug("joinGame: read world object");
             const world = await store.read<World>(store.keys.worlds, game.worldId);
             logger.debug("joinGame: set up actors for player");
-            const actors = await rules.setupActors(game, playerId);
+            const actors = await rules.setupActors(game, playerId); // TODO: should return ids, not objects
             logger.debug("joinGame: add new actors to world");
-            world.actors = world.actors.concat(actors);
+            world.actors = world.actors.concat(actors);  // TODO: world.actors should be world.actorIds -- ids, not objects
             await store.replace(store.keys.worlds, game.worldId, world);
             logger.debug("joinGame resolve with filtered game");
             resolve(joinGameResponseOf(rules.filterGameForPlayer(gameId, playerId)));
@@ -117,8 +116,8 @@ function addPlayerToGame(game, playerId) {
  * no response value expected for this operation
  **/
 
- function anyExistingOrders(gameId, turn, playerId) {
-    return (o) => { return o.gameId == gameId && o.turn == turn && o.playerId == playerId; };
+ function anyExistingOrders(to :TurnOrders) {
+    return (o) => { return o.gameId == to.gameId && o.turn == to.turn && o.playerId == to.playerId; };
 }
 
 function numbersToDirections(orderNos :Array<number>) :Array<Direction> {
@@ -139,6 +138,7 @@ function validateRequestOrders(requestOrders :Array<RequestActorOrders>) :Promis
             actor: await store.read<Actor>(store.keys.actors, o.actorId),
             ordersList: fillOrTruncateOrdersList(numbersToDirections(o.ordersList))
         };
+        logger.debug(util.format("ActorOrder: %j", out));
         
         return <ActorOrders> out;
     });
@@ -182,25 +182,24 @@ function validateOrders(requestOrders :Array<RequestActorOrders>, gameId, turn, 
     });
 }
 
-function storeOrders(body, gameId, turn, playerId) {//:Promise<PostOrdersResponse> {
+
+function storeOrders(turnOrders :TurnOrders) :Promise<PostOrdersResponse> {
     return new Promise(async function(resolve, reject) {
-        let summary = { gameId: gameId, turn: turn, playerId: playerId, ordersId: null};
-        const existing = await store.readAll<TurnOrders>(store.keys.turnOrders, anyExistingOrders(gameId, turn, playerId));
+        logger.debug("storeOrders()");
+
+        const existing = await store.readAll<TurnOrders>(store.keys.turnOrders, anyExistingOrders(turnOrders));
         if (existing.length > 0) {
-            logger.debug("postOrders: replace existing orders");
-            await store.update(store.keys.turnOrders, existing[0].id, {orders: body.orders});
-            summary.ordersId = existing[0].id;
-        } else {
-            logger.debug("postOrders: create new orders");
-            const turnOrders :TurnOrders = { gameId: gameId, turn: turn, playerId: playerId, orders: body.orders, id: null };
-            const ordersId = await store.create<TurnOrders>(store.keys.turnOrders,  turnOrders);
-            logger.debug("postOrders: created new orders");
-            summary.ordersId = ordersId;
+            const msg = "storeOrders: turnOrders already exists for this game-turn-player";
+            return reject(msg);
+            // logger.debug("storeOrders: replace existing orders");
+            // await store.update(store.keys.turnOrders, existing[0].id, {orders: body.orders});
+            // summary.ordersId = existing[0].id;
         }
-        logger.debug("postOrders: process rules");
-        const turnSummary = await rules.process(summary.ordersId);
-        logger.debug("postOrders: provide summary");
-        resolve({turnStatus: turnSummary, orders: summary});
+//            logger.debug("storeOrders: create new orders");
+//            const turnOrders :TurnOrders = { gameId: gameId, turn: turn, playerId: playerId, orders: body.orders, id: null };
+        const ordersId = await store.create<TurnOrders>(store.keys.turnOrders, turnOrders);
+        const turnStatus = await rules.process(ordersId);
+        resolve({turnStatus: turnStatus});
     });
 }
 
@@ -211,12 +210,13 @@ async function postOrdersResponseOf(response) :Promise<PostOrdersResponse> {
 export function postOrders(body :PostOrdersBody, gameId, turn, playerId) :Promise<PostOrdersResponse> {
     return new Promise(async function(resolve, reject) {
         logger.debug("postOrders promise");
+        let validatedOrders :TurnOrders;
         try {
-            const result = await validateOrders(body.orders, gameId, turn, playerId);
+            validatedOrders = await validateOrders(body.orders, gameId, turn, playerId);
         } catch (e) {
-            reject("postOrders: order validation failed");
+            return reject("postOrders: order validation failed");
         }
-        resolve(postOrdersResponseOf(storeOrders(body, gameId, turn, playerId)));
+        resolve(postOrdersResponseOf(storeOrders(validatedOrders)));
     });
 }
 

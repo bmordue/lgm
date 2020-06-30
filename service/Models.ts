@@ -38,6 +38,12 @@ interface TurnResult {
     updatedActors :Array<Actor>
 }
 
+interface TurnStatus {
+    complete :Boolean,
+    msg? :string,
+    turn? :number
+}
+
 enum Direction {
     UP_LEFT, UP_RIGHT, LEFT, RIGHT, DOWN_LEFT, DOWN_RIGHT, NONE
 }

@@ -9,7 +9,6 @@ export const TIMESTEP_MAX = 10;
 function findOrdersForTurn(gameId, turn) {
     logger.debug("rules.ordersForTurn");
     return store.readAll(store.keys.turnOrders, (o) => {
-        logger.debug("findOrdersForTurn filter applied");
         return o.gameId == gameId && o.turn == turn;
     });
 }
@@ -70,6 +69,14 @@ function applyDirection(oldPos :GridPosition, direction :Direction) :GridPositio
 async function applyMovementOrders(actorOrders :ActorOrders, game :Game, world :World, timestep :number, ) :Promise<Actor>{
    const moveDirection = actorOrders.ordersList[timestep];
    const actor = actorOrders.actor;
+
+   if (!actor) {
+       const msg = "Rules.applyMovementOrders(): actor is not present in actorOrders";
+       logger.error(util.format(msg));
+       logger.error(util.format("%j", actorOrders));
+       throw new Error(msg);
+   }
+
    const newGridPos = applyDirection(actorOrders.actor.pos, moveDirection)
    const newPosTerrain = world.terrain[newGridPos.x][newGridPos.y];
 
@@ -106,8 +113,11 @@ async function applyRulesToActorOrders(game :Game, world :World, allActorOrders 
 
     // iterate over timesteps!
     for (let ts = 0; ts < TIMESTEP_MAX; ts++) {
-        await Promise.all(allActorOrders.map((a) => applyMovementOrders(a, game, world, ts)));
-        await Promise.all(allActorOrders.map((a) => applyFiringRules(a, game, world, ts)));
+        for (let i = 0; i < allActorOrders.length; i++) {
+            let ao = allActorOrders[i];
+            await applyMovementOrders(ao, game, world, ts);
+            await applyFiringRules(ao, game, world, ts);
+        }
     }
 
     return allActorOrders.map((a) => a.actor);
@@ -137,43 +147,69 @@ export function unique(arr :Array<any>) {
     return arr.filter((val, i, arr) => arr.indexOf(val) === i);
 }
 
-function processGameTurn(gameId) {
+function processGameTurn(gameId) :Promise<TurnStatus> {
     return new Promise(async function(resolve, reject) {
+        // load in relevant objects and do some rearranging
+        let game;
+        let world;
+        let gameTurnOrders;
         try {
-            // load in relevant objects and do some rearranging
-            const game = await store.read<Game>(store.keys.games, gameId);
-            const world = await store.read<World>(store.keys.worlds, game.worldId);
-
-            const gameTurnOrders = await store.readAll<TurnOrders>(store.keys.turnOrders, (o) => {
+            game = await store.read<Game>(store.keys.games, gameId);
+            world = await store.read<World>(store.keys.worlds, game.worldId);
+    
+            gameTurnOrders = await store.readAll<TurnOrders>(store.keys.turnOrders, (o) => {
                 return filterOrdersForGameTurn(o, gameId, game.turn);
             });
-            const actorOrdersLists = gameTurnOrders.map((gto) => gto.orders);
-            const flattenedActorOrders :Array<ActorOrders> = flatten(actorOrdersLists);
+        } catch (e) {
+            logger.error("processGameTurn: failed to load stored objects");
+            return reject(e);
+        }
 
-            // apply rules
-            logger.debug("processGameTurn: about to apply rules");
-            const updatedActors :Array<Actor> = await applyRulesToActorOrders(game, world, flattenedActorOrders);
+        const actorOrdersLists = gameTurnOrders.map((gto) => gto.orders);
+        const flattenedActorOrders :Array<ActorOrders> = flatten(actorOrdersLists);
 
-            // record results
-            logger.debug("processGameTurn: record results");
-            const playerTurnResults = await turnResultsPerPlayer(game, updatedActors);
-            logger.debug(util.format("playerTurnResults length: %s", playerTurnResults.length));
+        // apply rules
+        let updatedActors :Array<Actor>;
+        logger.debug("processGameTurn: about to apply rules");
+        try {
+            updatedActors = await applyRulesToActorOrders(game, world, flattenedActorOrders);
+        } catch (e) {
+            logger.error("processGameTurn: exception thrown by applyRulesToActorOrders()");
+            return reject(e.message);
+        }
+
+        // record results
+        logger.debug("processGameTurn: record results");
+        let playerTurnResults;
+        try {
+            playerTurnResults = await turnResultsPerPlayer(game, updatedActors);
+        } catch (e) {
+            logger.error("processGameTurn: failed to record results");
+            return reject(e.message);
+        }
+
+        logger.debug(util.format("playerTurnResults length: %s", playerTurnResults.length));
+        try {
             await Promise.all(playerTurnResults.map((turnResult) => {
                 store.create<TurnResult>(store.keys.turnResults, turnResult); 
             }));
-
-            await store.update(store.keys.games, game.id, {turn: game.turn + 1});
-            logger.debug("rules.processGameTurn: resolve with turn status");
-            resolve({complete: true, msg: "Turn complete", turn: game.turn});
-        } catch(e) {
-            logger.error("processGameTurn: Failed to process game turn");
-            logger.error(e);
-            reject(e);
+            } catch (e) {
+            logger.error("processGameTurn: failed to store turnResults");
+            return reject(e.message);
         }
+
+        try {
+            await store.update(store.keys.games, game.id, {turn: game.turn + 1});
+        } catch (e) {
+            logger.error("processGameTurn: failed to update game object");
+            return reject(e.message);
+        }
+        logger.debug("rules.processGameTurn: resolve with turn status");
+        resolve(<TurnStatus>{complete: true, msg: "Turn complete", turn: game.turn});
     });
 }
 
-export function process (ordersId) {
+export function process (ordersId) :Promise<TurnStatus> {
     return new Promise(async function(resolve, reject) {
         logger.debug("rules.process promise");
         const orders = await store.read<TurnOrders>(store.keys.turnOrders, ordersId);
@@ -181,7 +217,8 @@ export function process (ordersId) {
         const complete = await allTurnOrdersReceived(orders.gameId, orders.turn);
         if (complete) {
             logger.debug("rules.process: Turn is complete; process orders");
-            resolve(processGameTurn(orders.gameId));
+            const status :TurnStatus = await processGameTurn(orders.gameId);
+            resolve(status);
         } else {
             logger.debug("rules.process: Turn is not yet complete");
             resolve({complete: false, msg: "Not all turn orders have been submitted."});
@@ -264,7 +301,10 @@ export async function setupActors(game, playerId) {
     }
 
     for (let i = 0; i < 9; i++) {
-        actors.push({owner: playerId, id: playerId * 1000 + i, pos: {x: Math.floor(i/3), y: i % 3}});
+        actors.push({owner: playerId, pos: {x: Math.floor(i/3), y: i % 3}});
     }
+    await Promise.all(actors.map((a) => {
+        return store.create<Actor>(store.keys.actors, a);
+    }));
     return actors;
 };
