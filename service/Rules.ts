@@ -3,6 +3,8 @@
 import store = require('./Store');
 import logger = require('../utils/Logger');
 import util = require('util');
+import { Game, GridPosition, Direction, ActorOrders, Actor, ActorState, World,
+    Terrain, TurnStatus, TurnOrders, TurnResult } from './Models';
 
 export const TIMESTEP_MAX = 10;
 
@@ -100,7 +102,7 @@ async function applyFiringRules(actorOrders :ActorOrders, game :Game, world :Wor
     const visibleEnemies = [];
     if (visibleEnemies.length > 0) {
         const target :Actor = visibleEnemies[0];
-        target.state = ActorState.DEAD;
+        target.state = ActorState.DEAD; // insta-kill!
     }
     return actorOrders.actor;    
 }

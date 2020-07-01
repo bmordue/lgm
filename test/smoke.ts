@@ -160,12 +160,6 @@ describe("complete first two turns with one player", () => {
         let result = await lgm.postOrders({orders: []}, gameId, 1, playerId);
 
         const expected = {
-            orders: {
-                gameId: gameId,
-                ordersId: 2,
-                playerId: playerId,
-                turn: 1
-            },
             turnStatus: {
                 complete: true,
                 msg: "Turn complete",
@@ -207,12 +201,6 @@ describe("complete first two turns with one player", () => {
         };
         let ordersResponse = await lgm.postOrders(ordersBody, gameId, 2, playerId);
         const expected = {
-            orders: {
-                gameId: gameId,
-                ordersId: 3,
-                playerId: playerId,
-                turn: 2
-            },
             turnStatus: {
                 complete: true,
                 msg: "Turn complete",

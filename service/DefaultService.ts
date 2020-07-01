@@ -5,6 +5,9 @@ import rules = require('./Rules');
 import logger = require('../utils/Logger');
 import util = require('util');
 
+import { Game, Direction, ActorOrders, Actor, World, TurnOrders, TurnResult } from './Models';
+
+
 export interface RequestActorOrders {
     actorId: number;
     ordersList: Array<number>;
@@ -43,7 +46,7 @@ export interface TurnResultsResponse {
  * returns GameCreatedResponse
  **/
 export function createGame() :Promise<CreateGameResponse> {
-    return new Promise(async function(resolve, reject) {
+    return new Promise(async function(resolve) {
         const worldId = await rules.createWorld();
 //        const gameId = await store.create<Game>(store.keys.games, { turn: 1, turnComplete: false, worldId: worldId });
         const gameId = await store.create<Game>(store.keys.games, { turn: 1, worldId: worldId });
@@ -94,7 +97,7 @@ export function joinGame(gameId) :Promise<JoinGameResponse> {
 }
 
 function addPlayerToGame(game, playerId) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
         logger.debug("addPlayerToGame promise");
 
         if (game.players) {

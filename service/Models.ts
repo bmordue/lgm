@@ -1,28 +1,36 @@
-interface Game {
+export enum Terrain {
+    EMPTY, BLOCKED
+}
+
+export enum Direction {
+    UP_LEFT, UP_RIGHT, LEFT, RIGHT, DOWN_LEFT, DOWN_RIGHT, NONE
+}
+
+export enum ActorState {
+    DEAD, ALIVE
+}
+
+export interface Game {
     id? :number;
     players? :Array<number>;
     turn :number;
     worldId :number;
 }
 
-interface World {
+export interface World {
     id? :number;
     actors :Array<Actor>;
     terrain :Array<Array<Terrain>>
 }
 
-enum Terrain {
-    EMPTY, BLOCKED
-}
-
-interface Actor {
+export interface Actor {
     id :number;
     pos :GridPosition,
     state :ActorState,
     owner :number // playerId
 }
 
-interface TurnOrders {
+export interface TurnOrders {
     id? :number;
     gameId :number;
     turn :number;
@@ -30,7 +38,7 @@ interface TurnOrders {
     orders :Array<ActorOrders>;
 }
 
-interface TurnResult {
+export interface TurnResult {
     id? :number,
     gameId :number,
     turn :number,
@@ -38,26 +46,18 @@ interface TurnResult {
     updatedActors :Array<Actor>
 }
 
-interface TurnStatus {
+export interface TurnStatus {
     complete :Boolean,
     msg? :string,
     turn? :number
 }
 
-enum Direction {
-    UP_LEFT, UP_RIGHT, LEFT, RIGHT, DOWN_LEFT, DOWN_RIGHT, NONE
-}
-
-enum ActorState {
-    DEAD, ALIVE
-}
-
-interface GridPosition {
+export interface GridPosition {
     x :number,
     y :number
 }
 
-interface ActorOrders {
+export interface ActorOrders {
     actor :Actor;
     ordersList :Array<Direction>;
 }
