@@ -78,12 +78,12 @@ describe("smoke - integration", () => {
         }).catch((resp) => done(new Error(resp.message)));
     });
 
-    it.skip("post orders for the wrong game/player (Player 1 is not in Game 1)", (done) => {
+    it("post orders for the wrong game/player (Player 1 is not in Game 1)", (done) => {
         lgm.postOrders({orders:[]}, 1, 1, 1)
         .then(() => {
             done(new Error("Expected postOrders to reject"));
         }).catch((resp) => {
-            assert.deepEqual(resp, {message: "postOrders: order validation failed", valid: false});
+            assert.deepEqual(resp, "postOrders: order validation failed");
             done();
         });
     });
@@ -94,9 +94,6 @@ describe("smoke - integration", () => {
         const turn = 1;
         lgm.postOrders({orders: []}, gameId, turn, playerId)
         .then((res :lgm.PostOrdersResponse) => {
-            // assert.equal(res.orders.gameId, gameId);
-            // assert.equal(res.orders.playerId, playerId);
-            // assert.equal(res.orders.turn, turn);
             assert.equal(res.turnStatus.complete, false);
             done();
         }).catch((resp) => done(new Error(resp.message)));
@@ -108,9 +105,6 @@ describe("smoke - integration", () => {
         const turn = 1;
         lgm.postOrders({orders:[]}, gameId, turn, playerId)
         .then((res) => {
-            // assert.equal(res.orders.gameId, gameId);
-            // assert.equal(res.orders.playerId, playerId);
-            // assert.equal(res.orders.turn, turn);
             assert.equal(res.turnStatus.complete, true);
             done();
         }).catch((resp) => done(new Error(resp.message)));
@@ -150,8 +144,8 @@ describe("complete first two turns with one player", () => {
     let gameId;
     let playerId;
     before(async function() {
-        let game :lgm.CreateGameResponse = await lgm.createGame();
-        gameId = game.id;
+        let resp :lgm.CreateGameResponse = await lgm.createGame();
+        gameId = resp.id;
         let invitation :lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
     });

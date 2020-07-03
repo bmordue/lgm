@@ -42,27 +42,35 @@ function applyDirection(oldPos :GridPosition, direction :Direction) :GridPositio
     switch (direction) {
         case Direction.DOWN_LEFT: {
             newPos = applyDir(oldPos, -1, -1);
+            break;
         }
         case Direction.DOWN_RIGHT: {
             newPos = applyDir(oldPos, 1, -1);
+            break;
         }
         case Direction.LEFT: {
             newPos = applyDir(oldPos, -1, 0);
+            break;
         }
         case Direction.RIGHT: {
             newPos = applyDir(oldPos, 1, 0);
+            break;
         }
         case Direction.UP_LEFT: {
             newPos = applyDir(oldPos, -1, 1);
+            break;
         }
         case Direction.UP_RIGHT: {
             newPos = applyDir(oldPos, 1, 1);
+            break;
         }
         case Direction.NONE: {
             // no op
+            break;
         }
         default: {
-            logger.error(util.format("applyDirection(): unrecognised direction", direction));
+            const msg = util.format("applyDirection(): unrecognised direction", direction);
+            throw new Error(msg);
         }
     }
     return newPos;
@@ -79,17 +87,19 @@ async function applyMovementOrders(actorOrders :ActorOrders, game :Game, world :
        throw new Error(msg);
    }
 
-   const newGridPos = applyDirection(actorOrders.actor.pos, moveDirection)
+   const newGridPos = applyDirection(actorOrders.actor.pos, moveDirection);
    const newPosTerrain = world.terrain[newGridPos.x][newGridPos.y];
 
    switch (newPosTerrain) {
        case Terrain.EMPTY: {
            actor.pos = newGridPos;
-       }
+           break;
+        }
 
        case Terrain.BLOCKED: {
             logger.debug(util.format("Actor ID %s attempted to move to blocked position at (%s,%s); remained at (%s,%s) instead",
                 actor.id, newGridPos.x, newGridPos.y, actor.pos.x, actor.pos.y));
+            break;
        }
        default: {
            logger.error(util.format("Unrecognised terrain type: %s", newPosTerrain));
@@ -232,7 +242,10 @@ function generateTerrain() {
     return new Promise(async function(resolve, reject) {
         let terrain = [];
         for (let i = 0; i < 10; i++) {
-            let row = '..........';
+            let row = [];
+            for (let j = 0; j < 10; j++) {
+                row.push(Terrain.EMPTY);
+            }
             terrain.push(row);
         }
         resolve(terrain);
@@ -291,14 +304,17 @@ export async function setupActors(game, playerId) {
 
         if (empty) {
             done = true;
-            logger.debug(util.format("Found an empty box: (%s, %s), (%s, %s)", x, y, x + 2, y + 2));
-        }
+            logger.debug(util.format("Actor placement: found an empty box: (%s, %s), (%s, %s)", x, y, x + 2, y + 2));
+        } else {
+            x += 2; // TODO this is a real poor way to place actors!!
+            y += 2;
 
-        attempts++;
-        if (attempts >= MAX_ATTEMPTS) {
-            const msg = "failed to place actors for new player";
-            logger.error(msg);
-            done = true;
+            attempts++;
+            if (attempts >= MAX_ATTEMPTS) {
+                const msg = "Actor placement: failed to place actors for new player";
+                logger.error(msg);
+                done = true;
+            }
         }
     }
 
