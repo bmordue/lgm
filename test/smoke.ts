@@ -128,7 +128,6 @@ describe("smoke - integration", () => {
         const turn = 1;
         lgm.turnResults(gameId, turn, playerId)
             .then((result :lgm.TurnResultsResponse) => {
-                console.log(result);
                 assert.equal(result.success, true);
                 assert.equal(result.results.gameId, gameId);
                 assert.equal(result.results.playerId, playerId);

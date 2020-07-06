@@ -238,16 +238,37 @@ export function process (ordersId) :Promise<TurnStatus> {
     });
 };
 
-function generateTerrain() {
-    return new Promise(async function(resolve, reject) {
-        let terrain = [];
-        for (let i = 0; i < 10; i++) {
-            let row = [];
-            for (let j = 0; j < 10; j++) {
-                row.push(Terrain.EMPTY);
-            }
-            terrain.push(row);
+function emptyGrid(xMax, yMax) {
+    let terrain = [];
+    terrain.push();
+    for (let i = 0; i < xMax; i++) {
+        let row = [];
+        for (let j = 0; j < yMax; j++) {
+            row.push(Terrain.EMPTY);
         }
+        terrain.push(row);
+    }
+    return terrain;
+}
+
+function generateTerrain() :Promise<Array<Array<Terrain>>> {
+    return new Promise(async function(resolve, reject) {
+        let terrain = emptyGrid(10, 10);
+        terrain[1][3] = Terrain.BLOCKED;
+        terrain[2][3] = Terrain.BLOCKED;
+        terrain[3][0] = Terrain.BLOCKED;
+        terrain[3][1] = Terrain.BLOCKED;
+        terrain[3][4] = Terrain.BLOCKED;
+        terrain[4][6] = Terrain.BLOCKED;
+        terrain[4][7] = Terrain.BLOCKED;
+        terrain[5][2] = Terrain.BLOCKED;
+        terrain[5][3] = Terrain.BLOCKED;
+        terrain[5][7] = Terrain.BLOCKED;
+        terrain[5][8] = Terrain.BLOCKED;
+        terrain[6][5] = Terrain.BLOCKED;
+        terrain[7][4] = Terrain.BLOCKED;
+        terrain[8][4] = Terrain.BLOCKED;
+
         resolve(terrain);
     });
 };
@@ -256,7 +277,7 @@ export function createWorld() :Promise<number> {
     return new Promise(async function(resolve, reject) {
         try {
             let terrain = await generateTerrain();
-            resolve(store.create(store.keys.worlds, {terrain: terrain, actors: []}));
+            resolve(store.create<World>(store.keys.worlds, {terrain: terrain, actors: []}));
         } catch (e) {
             reject(e);
         }
