@@ -32,8 +32,12 @@ paths:
         schema:
           type: integer
       responses:
-        "204":
-          description: join request accepted
+        "200":
+          description: join request accepted; auth_token provided
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinGameResponse'
         "400":
           description: bad request
           content:
@@ -47,9 +51,9 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorMessageResponse'
       x-swagger-router-controller: Default
-  /games/{gameId}/turns/{turn}/players/{playerId}:
+  /games/{gameId}/turns/{turn}:
     get:
-      summary: get turn results
+      summary: get turn results; provide auth_token for player
       operationId: turnResults
       parameters:
       - name: gameId
@@ -66,13 +70,6 @@ paths:
         explode: false
         schema:
           type: integer
-      - name: playerId
-        in: path
-        required: true
-        style: simple
-        explode: false
-        schema:
-          type: integer
       responses:
         "200":
           description: turn results
@@ -80,6 +77,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TurnResultsResponse'
+        "300":
+          description: turn results not yet available
       x-swagger-router-controller: Default
     post:
       summary: post turn orders
@@ -159,6 +158,11 @@ components:
       properties:
         placeholder:
           type: string
+    JoinGameResponse:
+      properties:
+        player_key:
+          type: string
+          format: uuid
   securitySchemes:
     bearerAuth:
       type: http
