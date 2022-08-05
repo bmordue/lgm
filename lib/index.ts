@@ -37,7 +37,7 @@ async function createServer() {
     app.use(bodyParser.urlencoded({
         extended: true
     }));
-    app.use(cookieParser('keyboard mouse'));
+//    app.use(cookieParser('keyboard mouse'));
 
     // Return a 404
     app.use((req, res) => {
