@@ -16,7 +16,7 @@
   "dependencies": {
     "connect": "^3.7.0",
     "express": "^4.17.1",
-    "express-openid-connect": "^2.5.1",
+    "express-openid-connect": "^2.7.2",
     "js-yaml": "^4.1.0",
     "oas3-tools": "^2.2.3"
   },
