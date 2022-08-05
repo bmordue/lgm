@@ -4,13 +4,14 @@ info:
   version: 0.0.1
 servers:
 - url: /
-security:
-- bearerAuth: []
+# security:
+# - bearerAuth: []
 paths:
   /games:
     post:
       summary: create a new game
       operationId: createGame
+      x-exegesis-controller: Default
       responses:
         "200":
           description: metadata about newly created game
@@ -23,6 +24,7 @@ paths:
     put:
       summary: join a game
       operationId: joinGame
+      x-exegesis-controller: Default
       parameters:
       - name: id
         in: path
@@ -51,6 +53,7 @@ paths:
     get:
       summary: get turn results
       operationId: turnResults
+      x-exegesis-controller: Default
       parameters:
       - name: gameId
         in: path
@@ -84,6 +87,7 @@ paths:
     post:
       summary: post turn orders
       operationId: postOrders
+      x-exegesis-controller: Default
       parameters:
       - name: gameId
         in: path
@@ -159,7 +163,7 @@ components:
       properties:
         placeholder:
           type: string
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
+  # securitySchemes:
+  #   bearerAuth:
+  #     type: http
+  #     scheme: bearer
