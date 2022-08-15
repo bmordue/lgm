@@ -33,10 +33,10 @@
     "@types/method-override": "0.0.32",
     "@types/mocha": "^9.1.1",
     "@types/morgan": "^1.9.3",
-    "@types/node": "^18.6.4",
+    "@types/node": "^18.7.4",
     "mocha": "^10.0.0",
     "nodemon": "^2.0.19",
-    "snyk": "^1.984.0",
+    "snyk": "^1.986.0",
     "superagent": "^8.0.0",
     "typescript": "^4.7.4"
   }
