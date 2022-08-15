@@ -3,12 +3,10 @@
         "outDir": "./built",
         "allowJs": true,
         "target": "es5",
-        "noFallthroughCasesInSwitch": true
+        "noFallthroughCasesInSwitch": true,
+        "module": "commonjs"
     },
     "include": [
-        "./service/**/*",
-        "./controllers/**/*",
-        "./utils/**/*",
-        "./test/**/*"
+        "lib/**/*ts"
     ]
 }

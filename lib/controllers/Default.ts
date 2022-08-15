@@ -3,14 +3,14 @@
 import utils = require('../utils/writer');
 import Default = require('../service/DefaultService');
 
-module.exports.createGame = function createGame(req, res, next) {
-    Default.createGame()
-        .then(function (response) {
-            utils.writeJson(res, response);
-        })
-        .catch(function (response) {
-            utils.writeJson(res, response, 500);
-        });
+module.exports.createGame = function createGame(context) {
+    return Default.createGame();
+        // .then(function (response) {
+        //     utils.writeJson(response);
+        // })
+        // .catch(function (response) {
+        //     utils.writeJson(response, 500);
+        // });
 };
 
 module.exports.joinGame = function joinGame(req, res, next, id) {

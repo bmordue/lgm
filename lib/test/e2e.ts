@@ -2,16 +2,18 @@ import superagent = require('superagent');
 import assert = require('assert');
 import util = require('util');
 
+const TEST_AUTH_TOKEN = 'dummy auth';
+
 function createAGame() {
     return superagent.post('http://localhost:8080/games')
-        .set('Authorization', 'Bearer dummy')
+        .set('Authorization', TEST_AUTH_TOKEN)
         .set('Content-Type', 'application/json')
         .send();
 }
 
 function joinAGame(gameId) {
     return superagent.put('http://localhost:8080/games/' + gameId)
-        .set('Authorization', 'Bearer dummy')
+        .set('Authorization', TEST_AUTH_TOKEN)
         .set('Content-Type', 'application/json')
         .send();
 }
@@ -19,7 +21,7 @@ function joinAGame(gameId) {
 function sendOrders(gameId, playerId, turn, orders) {
 //    /games/{gameId}/turns/{turn}/players/{playerId}
     return superagent.post(util.format('http://localhost:8080/games/%s/turns/%s/players/%s', gameId, turn, playerId))
-        .set('Authorization', 'Bearer dummy')
+        .set('Authorization', TEST_AUTH_TOKEN)
         .set('Content-Type', 'application/json')
         .send(orders);
 }
