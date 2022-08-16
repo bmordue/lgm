@@ -5,12 +5,12 @@
   "main": "index.js",
   "scripts": {
     "prestart": "npm install && tsc",
-    "start": "node index.js",
+    "start": "node built/index.js",
     "test": "snyk test && mocha built/test",
     "build": "tsc",
     "watch": "tsc -w",
-    "serve": "node ./dist/index.js",
-    "monitor": "nodemon --config nodemon.json dist/index.js"
+    "serve": "node built/index.js",
+    "monitor": "nodemon --config nodemon.json built/index.js"
   },
   "keywords": [
     "swagger"
