@@ -3,5 +3,9 @@ module.exports = {
   parser: '@typescript-eslint/parser',
   plugins: ['@typescript-eslint'],
   root: true,
+  overrides: [{
+    "files": "lib/**/*.ts",
+    "excludedFiles": "**/built/**/*"
+  }]
 };
 
