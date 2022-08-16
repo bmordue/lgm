@@ -47,7 +47,7 @@ describe('Smoke - API', () => {
     });
 
     it.skip('send orders for first turn', (done) => {
-        let orders = {};
+        const orders = {};
         sendOrders(gameId, playerId, 1, orders).then((response) => {
             //console.log(util.format("%j", response.body));
             assert.equal(response.statusCode, 200);

@@ -3,7 +3,7 @@
 import utils = require('../utils/writer');
 import Default = require('../service/DefaultService');
 
-module.exports.createGame = function createGame(context) {
+module.exports.createGame = function createGame() {
     return Default.createGame();
         // .then(function (response) {
         //     utils.writeJson(response);

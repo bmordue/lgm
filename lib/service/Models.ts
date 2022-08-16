@@ -11,53 +11,53 @@ export enum ActorState {
 }
 
 export interface Game {
-    id? :number;
-    players? :Array<number>;
-    turn :number;
-    worldId :number;
+    id?: number;
+    players?: Array<number>;
+    turn: number;
+    worldId: number;
 }
 
 export interface World {
-    id? :number;
-    actors :Array<Actor>; // TODO: should be actor IDs instead?
-    terrain :Array<Array<Terrain>>
+    id?: number;
+    actors: Array<Actor>; // TODO: should be actor IDs instead?
+    terrain: Array<Array<Terrain>>
 }
 
 export interface Actor {
-    id :number;
-    pos :GridPosition,
-    state :ActorState,
-    owner :number // playerId
+    id: number;
+    pos: GridPosition,
+    state: ActorState,
+    owner: number // playerId
 }
 
 export interface TurnOrders {
-    id? :number;
-    gameId :number;
-    turn :number;
-    playerId :number;
-    orders :Array<ActorOrders>;
+    id?: number;
+    gameId: number;
+    turn: number;
+    playerId: number;
+    orders: Array<ActorOrders>;
 }
 
 export interface TurnResult {
-    id? :number,
-    gameId :number,
-    turn :number,
-    playerId :number,
-    updatedActors :Array<Actor>
+    id?: number,
+    gameId: number,
+    turn: number,
+    playerId: number,
+    updatedActors: Array<Actor>
 }
 
 export interface TurnStatus {
-    complete :Boolean,
-    msg? :string,
-    turn? :number
+    complete: boolean,
+    msg?: string,
+    turn?: number
 }
 
 export interface GridPosition {
-    x :number,
-    y :number
+    x: number,
+    y: number
 }
 
 export interface ActorOrders {
-    actor :Actor;
-    ordersList :Array<Direction>;
+    actor: Actor;
+    ordersList: Array<Direction>;
 }

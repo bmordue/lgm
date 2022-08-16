@@ -10,7 +10,7 @@ function fileLog(level, obj) {
 }
 
 function log(level, obj) {
-//    consoleLog(level, obj);
+    //    consoleLog(level, obj);
     fileLog(level, obj);
 }
 
