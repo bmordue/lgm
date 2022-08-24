@@ -10,8 +10,8 @@ function fileLog(level, obj) {
 }
 
 function log(level, obj) {
-    //    consoleLog(level, obj);
-    fileLog(level, obj);
+    consoleLog(level, obj);
+    // fileLog(level, obj);
 }
 
 export function debug(obj) { log("DEBUG", obj); }

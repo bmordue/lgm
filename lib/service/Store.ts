@@ -1,5 +1,6 @@
 'use strict';
 
+import { inspect } from 'util';
 import util = require('util');
 import logger = require('../utils/Logger.js')
 
@@ -52,8 +53,9 @@ export function create<T>(key: keys, obj: T): Promise<number> {
 
 export async function read<T>(key: keys, id: number): Promise<T> {
     store_debug("store.read");
-    store_debug("store.read promise");
     if (await exists(key, id)) {
+        store_debug(`key: ${key}; id: ${inspect(id)}; store[key]: ${inspect(store[key])}`);
+        store_debug(`store[key][id]: ${inspect(store[key][id])}`);
         return Promise.resolve(store[key][id]);
     } else {
         return Promise.reject({ message: util.format("id %s not found for key %s", id, key) });

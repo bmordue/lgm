@@ -6,6 +6,7 @@ import logger = require('../utils/Logger');
 import util = require('util');
 
 import { Game, Direction, ActorOrders, Actor, World, TurnOrders, TurnResult } from './Models';
+import { inspect } from 'util';
 
 
 export interface RequestActorOrders {
@@ -32,7 +33,7 @@ export interface JoinGameResponse {
     playerId: number;
     turn: number;
     world: World;
-    id: number;
+    //    id: number;
 }
 
 export interface TurnResultsResponse {
@@ -60,21 +61,16 @@ export async function createGame(): Promise<CreateGameResponse> {
  * id Integer 
  * no response value expected for this operation
  **/
-async function joinGameResponseOf(resp): Promise<JoinGameResponse> {
+function joinGameResponseOf(resp: JoinGameResponse): JoinGameResponse {
     return resp;
 }
 
-export async function joinGame(gameId): Promise<JoinGameResponse> {
+export async function joinGame(gameId: number): Promise<JoinGameResponse> {
     logger.debug("joinGame");
     try {
-        logger.debug("joinGame promise cb");
-        const results = await Promise.all([
-            store.read<Game>(store.keys.games, gameId),
-            store.create(store.keys.players, { gameId: gameId }),
-        ])
-        logger.debug("joinGame add player to game");
-        const game = results[0];
-        const playerId = results[1];
+        logger.debug(`gameId: ${inspect(gameId)}`);
+        const game = await store.read<Game>(store.keys.games, gameId);
+        const playerId = await store.create(store.keys.players, { gameId: gameId });
         const updatedGame = await addPlayerToGame(game, playerId);
         logger.debug("joinGame update game");
         await store.replace(store.keys.games, gameId, updatedGame);
@@ -86,26 +82,29 @@ export async function joinGame(gameId): Promise<JoinGameResponse> {
         world.actors = world.actors.concat(actors);  // TODO: world.actors should be world.actorIds -- ids, not objects
         await store.replace(store.keys.worlds, game.worldId, world);
         logger.debug("joinGame resolve with filtered game");
-        return Promise.resolve(joinGameResponseOf(rules.filterGameForPlayer(gameId, playerId)));
+        return Promise.resolve(joinGameResponseOf(await rules.filterGameForPlayer(gameId, playerId)));
     } catch (e) {
         logger.error(util.format("failed to join game: %j", e));
         return Promise.reject("failed to join game");
     }
 }
 
-function addPlayerToGame(game, playerId) {
-    return new Promise(function (resolve) {
-        logger.debug("addPlayerToGame promise");
+function addPlayerToGame(game: Game, playerId: number) {
+    // return new Promise(function (resolve) {
+    logger.debug("addPlayerToGame");
 
-        if (game.players) {
-            logger.debug("addPlayerToGame append to existing");
-            game.players.push(playerId);
-        } else {
-            logger.debug("addPlayerToGame new list");
-            game.players = [playerId];
-        }
-        resolve(game);
-    });
+    if (!game) console.log("ruh roh");
+
+    if (game.players) {
+        logger.debug("addPlayerToGame append to existing");
+        game.players.push(playerId);
+    } else {
+        logger.debug("addPlayerToGame new list");
+        game.players = [playerId];
+    }
+    return game;
+    // resolve(game);
+    // });
 }
 
 /**
@@ -117,7 +116,7 @@ function addPlayerToGame(game, playerId) {
  **/
 
 function anyExistingOrders(to: TurnOrders) {
-    return (o) => { return o.gameId == to.gameId && o.turn == to.turn && o.playerId == to.playerId; };
+    return (o: { gameId: number; turn: number; playerId: number; }) => { return o.gameId == to.gameId && o.turn == to.turn && o.playerId == to.playerId; };
 }
 
 function numbersToDirections(orderNos: Array<number>): Array<Direction> {
@@ -145,9 +144,9 @@ function validateRequestOrders(requestOrders: Array<RequestActorOrders>): Promis
     return Promise.all(outs);
 }
 
-async function validateOrders(requestOrders: Array<RequestActorOrders>, gameId, turn, playerId): Promise<TurnOrders> {
+async function validateOrders(requestOrders: Array<RequestActorOrders>, gameId: number, turn: number, playerId: number): Promise<TurnOrders> {
     logger.debug("validateOrders()");
-    let game;
+    let game: Game;
     try {
         game = await store.read<Game>(store.keys.games, gameId);
     } catch (e) {
@@ -199,11 +198,11 @@ async function storeOrders(turnOrders: TurnOrders): Promise<PostOrdersResponse> 
     return Promise.resolve({ turnStatus: turnStatus });
 }
 
-async function postOrdersResponseOf(response): Promise<PostOrdersResponse> {
+async function postOrdersResponseOf(response: PostOrdersResponse | PromiseLike<PostOrdersResponse>): Promise<PostOrdersResponse> {
     return response;
 }
 
-export async function postOrders(body: PostOrdersBody, gameId, turn, playerId): Promise<PostOrdersResponse> {
+export async function postOrders(body: PostOrdersBody, gameId: number, turn: number, playerId: number): Promise<PostOrdersResponse> {
     logger.debug("postOrders promise");
     let validatedOrders: TurnOrders;
     try {
@@ -222,8 +221,8 @@ export async function postOrders(body: PostOrdersBody, gameId, turn, playerId): 
  * returns TurnResultsResponse
  **/
 
-export async function turnResults(gameId, turn, playerId): Promise<TurnResultsResponse> {
-    const results = await store.readAll<TurnResult>(store.keys.turnResults, (r) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; });
+export async function turnResults(gameId: number, turn: number, playerId: number): Promise<TurnResultsResponse> {
+    const results = await store.readAll<TurnResult>(store.keys.turnResults, (r: { gameId: any; turn: any; playerId: any; }) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; });
     logger.debug(util.format("turnResults: found %s results", results.length));
     if (results.length == 0) {
         return Promise.resolve({ success: false, message: "turn results not available" });

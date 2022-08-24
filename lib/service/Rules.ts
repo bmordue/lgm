@@ -7,6 +7,7 @@ import {
     Game, GridPosition, Direction, ActorOrders, Actor, ActorState, World,
     Terrain, TurnStatus, TurnOrders, TurnResult
 } from './Models';
+import { JoinGameResponse } from './DefaultService';
 
 export const TIMESTEP_MAX = 10;
 
@@ -280,7 +281,7 @@ function filterWorldForPlayer(world, playerId) {
     return world; // TODO: everyone can see everything!
 }
 
-export async function filterGameForPlayer(gameId, playerId) {
+export async function filterGameForPlayer(gameId, playerId): Promise<JoinGameResponse> {
     try {
         const game = await store.read<Game>(store.keys.games, gameId);
         const world = await store.read(store.keys.worlds, game.worldId);
