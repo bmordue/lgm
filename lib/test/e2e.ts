@@ -76,7 +76,7 @@ describe('Smoke - API', () => {
     it('get results for first turn', (done) => {
         getTurnResults(gameId, playerId, 1).then((response) => {
             assert.equal(response.statusCode, 200);
-            // console.log(inspect(response.body));
+            console.log(inspect(response.body));
             done();
         }).catch(done);
     });

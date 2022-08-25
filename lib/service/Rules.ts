@@ -11,9 +11,9 @@ import { JoinGameResponse } from './DefaultService';
 
 export const TIMESTEP_MAX = 10;
 
-function findOrdersForTurn(gameId, turn) {
+function findOrdersForTurn(gameId: number, turn: number) {
     logger.debug("rules.ordersForTurn");
-    return store.readAll(store.keys.turnOrders, (o) => {
+    return store.readAll<TurnOrders>(store.keys.turnOrders, (o: { gameId: number; turn: number; }) => {
         return o.gameId == gameId && o.turn == turn;
     });
 }
@@ -35,7 +35,7 @@ function applyDirection(oldPos: GridPosition, direction: Direction): GridPositio
         x: oldPos.x,
         y: oldPos.y
     };
-    const applyDir = function (pos, xOffset, yOffset) {
+    const applyDir = function (pos: GridPosition, xOffset: number, yOffset: number) {
         pos.x += xOffset;
         pos.y += yOffset;
         return pos;
@@ -147,29 +147,29 @@ function turnResultsPerPlayer(game: Game, updatedActors: Array<Actor>): Array<Tu
     });
 }
 
-function filterOrdersForGameTurn(o: TurnOrders, gameId, turn) {
+function filterOrdersForGameTurn(o: TurnOrders, gameId: number, turn: number) {
     return o.gameId == gameId && o.turn == turn;
 }
 
-function flatten(arr: Array<any>) {
+function flatten<T>(arr: Array<Array<T>>): Array<T> {
     // cf mdn article on Array.flat()
-    return arr.reduce((acc, val) => acc.concat(val, []));
+    return arr.reduce((acc: Array<T>, val: Array<T>) => acc.concat(val, [])) as Array<T>;
 }
 
-export function unique(arr: Array<any>) {
+export function unique(arr: Array<unknown>) {
     return arr.filter((val, i, arr) => arr.indexOf(val) === i);
 }
 
-async function processGameTurn(gameId): Promise<TurnStatus> {
+async function processGameTurn(gameId: number): Promise<TurnStatus> {
     // load in relevant objects and do some rearranging
-    let game;
-    let world;
-    let gameTurnOrders;
+    let game: Game;
+    let world: World;
+    let gameTurnOrders: Array<TurnOrders>;
     try {
         game = await store.read<Game>(store.keys.games, gameId);
         world = await store.read<World>(store.keys.worlds, game.worldId);
 
-        gameTurnOrders = await store.readAll<TurnOrders>(store.keys.turnOrders, (o) => {
+        gameTurnOrders = await store.readAll<TurnOrders>(store.keys.turnOrders, (o: TurnOrders) => {
             return filterOrdersForGameTurn(o, gameId, game.turn);
         });
     } catch (e) {
@@ -177,7 +177,7 @@ async function processGameTurn(gameId): Promise<TurnStatus> {
         return Promise.reject(e);
     }
 
-    const actorOrdersLists = gameTurnOrders.map((gto) => gto.orders);
+    const actorOrdersLists = gameTurnOrders.map((gto: { orders: any; }) => gto.orders);
     const flattenedActorOrders: Array<ActorOrders> = flatten(actorOrdersLists);
 
     // apply rules
@@ -192,7 +192,7 @@ async function processGameTurn(gameId): Promise<TurnStatus> {
 
     // record results
     logger.debug("processGameTurn: record results");
-    let playerTurnResults;
+    let playerTurnResults: TurnResult[];
     try {
         playerTurnResults = await turnResultsPerPlayer(game, updatedActors);
     } catch (e) {
@@ -202,7 +202,7 @@ async function processGameTurn(gameId): Promise<TurnStatus> {
 
     logger.debug(util.format("playerTurnResults length: %s", playerTurnResults.length));
     try {
-        await Promise.all(playerTurnResults.map((turnResult) => {
+        await Promise.all(playerTurnResults.map((turnResult: TurnResult) => {
             store.create<TurnResult>(store.keys.turnResults, turnResult);
         }));
     } catch (e) {
@@ -220,7 +220,7 @@ async function processGameTurn(gameId): Promise<TurnStatus> {
     return Promise.resolve(<TurnStatus>{ complete: true, msg: "Turn complete", turn: game.turn });
 }
 
-export async function process(ordersId): Promise<TurnStatus> {
+export async function process(ordersId: number): Promise<TurnStatus> {
     logger.debug("rules.process promise");
     const orders = await store.read<TurnOrders>(store.keys.turnOrders, ordersId);
     logger.debug("rules.process: retrieved orders");
@@ -235,7 +235,7 @@ export async function process(ordersId): Promise<TurnStatus> {
     }
 }
 
-function emptyGrid(xMax, yMax) {
+function emptyGrid(xMax: number, yMax: number) {
     const terrain = [];
     terrain.push();
     for (let i = 0; i < xMax; i++) {
@@ -277,14 +277,14 @@ export async function createWorld(): Promise<number> {
     }
 }
 
-function filterWorldForPlayer(world, playerId) {
-    return world; // TODO: everyone can see everything!
+async function filterWorldForPlayer(world: World, playerId: number): Promise<World> {
+    return Promise.resolve(world); // TODO: everyone can see everything!
 }
 
-export async function filterGameForPlayer(gameId, playerId): Promise<JoinGameResponse> {
+export async function filterGameForPlayer(gameId: number, playerId: number): Promise<JoinGameResponse> {
     try {
         const game = await store.read<Game>(store.keys.games, gameId);
-        const world = await store.read(store.keys.worlds, game.worldId);
+        const world = await store.read<World>(store.keys.worlds, game.worldId);
         const filteredWorld = await filterWorldForPlayer(world, playerId);
         return Promise.resolve({ gameId: game.id, playerId: playerId, turn: game.turn, world: filteredWorld });
     } catch (e) {
@@ -292,14 +292,14 @@ export async function filterGameForPlayer(gameId, playerId): Promise<JoinGameRes
     }
 }
 
-function inBox(item, left, bottom, right, top) {
+function inBox(item: Actor, left: number, bottom: number, right: number, top: number) {
     return item.pos.x >= left
         && item.pos.x <= right
         && item.pos.y >= bottom
         && item.pos.y <= top;
 }
 
-export async function setupActors(game, playerId) {
+export async function setupActors(game: Game, playerId: number) {
     const actors = [];
     const world = await store.read<World>(store.keys.worlds, game.worldId);
     const existingActors = world.actors;
