@@ -1,44 +1,29 @@
-'use strict';
-
-import utils = require('../utils/writer');
+import { ExegesisContext } from 'exegesis';
+import { inspect } from 'util';
 import Default = require('../service/DefaultService');
 
 module.exports.createGame = function createGame() {
     return Default.createGame();
-        // .then(function (response) {
-        //     utils.writeJson(response);
-        // })
-        // .catch(function (response) {
-        //     utils.writeJson(response, 500);
-        // });
 };
 
-module.exports.joinGame = function joinGame(req, res, next, id) {
-    Default.joinGame(id)
-        .then(function (response) {
-            utils.writeJson(res, response);
-        })
-        .catch(function (response) {
-            utils.writeJson(res, response, 500);
-        });
+module.exports.joinGame = function joinGame(context: ExegesisContext) {
+    console.log(inspect(context));
+    return Default.joinGame(context.params.path.id);
 };
 
-module.exports.postOrders = function postOrders(req, res, next, body, gameId, turn, playerId) {
-    Default.postOrders(body, gameId, turn, playerId)
-        .then(function (response) {
-            utils.writeJson(res, response);
-        })
-        .catch(function (response) {
-            utils.writeJson(res, response, 500);
-        });
+module.exports.postOrders = function postOrders(context: ExegesisContext) {
+    const body = context.requestBody;
+    const gameId = context.params.path.gameId;
+    const turn = context.params.path.turn;
+    const playerId = context.params.path.playerId;
+
+    return Default.postOrders(body, gameId, turn, playerId);
 };
 
-module.exports.turnResults = function turnResults(req, res, next, gameId, turn, playerId) {
-    Default.turnResults(gameId, turn, playerId)
-        .then(function (response) {
-            utils.writeJson(res, response);
-        })
-        .catch(function (response) {
-            utils.writeJson(res, response, 500);
-        });
+module.exports.turnResults = function turnResults(context: ExegesisContext) {
+    //gameId: number, turn: number, playerId: number) {
+    const gameId = context.params.path.gameId;
+    const turn = context.params.path.turn;
+    const playerId = context.params.path.playerId;
+    return Default.turnResults(gameId, turn, playerId);
 };
