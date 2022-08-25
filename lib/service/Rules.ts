@@ -248,7 +248,7 @@ function emptyGrid(xMax: number, yMax: number) {
     return terrain;
 }
 
-async function generateTerrain(): Promise<Array<Array<Terrain>>> {
+export async function generateTerrain(): Promise<Array<Array<Terrain>>> {
     const terrain = emptyGrid(10, 10);
     terrain[1][3] = Terrain.BLOCKED;
     terrain[2][3] = Terrain.BLOCKED;

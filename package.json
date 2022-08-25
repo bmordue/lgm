@@ -6,11 +6,24 @@
   "scripts": {
     "prestart": "npm install && tsc",
     "start": "node built/index.js",
-    "test": "snyk test && mocha built/test",
+    "test": "nyc mocha built/test",
     "build": "tsc",
     "watch": "tsc -w",
     "serve": "node built/index.js",
     "monitor": "nodemon --config nodemon.json built/index.js"
+  },
+  "nyc": {
+    "extension": [
+      ".ts",
+      ".tsx"
+    ],
+    "exclude": [
+      "**/*.d.ts"
+    ],
+    "reporter": [
+      "html"
+    ],
+    "all": true
   },
   "keywords": [
     "swagger"
@@ -40,7 +53,9 @@
     "eslint": "^8.22.0",
     "mocha": "^10.0.0",
     "nodemon": "^2.0.19",
+    "nyc": "^15.1.0",
     "snyk": "^1.986.0",
+    "source-map-support": "^0.5.21",
     "superagent": "^8.0.0",
     "typescript": "^4.7.4"
   }

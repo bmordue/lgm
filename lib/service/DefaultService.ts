@@ -68,20 +68,20 @@ function joinGameResponseOf(resp: JoinGameResponse): JoinGameResponse {
 export async function joinGame(gameId: number): Promise<JoinGameResponse> {
     logger.debug("joinGame");
     try {
-        // logger.debug(`gameId: ${inspect(gameId)}`);
+        logger.debug(`gameId: ${inspect(gameId)}`);
         const game = await store.read<Game>(store.keys.games, gameId);
         const playerId = await store.create(store.keys.players, { gameId: gameId });
         const updatedGame = await addPlayerToGame(game, playerId);
-        // logger.debug("joinGame update game");
+        logger.debug("joinGame update game");
         await store.replace(store.keys.games, gameId, updatedGame);
-        // logger.debug("joinGame: read world object");
+        logger.debug("joinGame: read world object");
         const world = await store.read<World>(store.keys.worlds, game.worldId);
-        // logger.debug("joinGame: set up actors for player");
+        logger.debug("joinGame: set up actors for player");
         const actors = await rules.setupActors(game, playerId); // TODO: should return ids, not objects
-        // logger.debug("joinGame: add new actors to world");
+        logger.debug("joinGame: add new actors to world");
         world.actors = world.actors.concat(actors);  // TODO: world.actors should be world.actorIds -- ids, not objects
         await store.replace(store.keys.worlds, game.worldId, world);
-        // logger.debug("joinGame resolve with filtered game");
+        logger.debug("joinGame resolve with filtered game");
         return Promise.resolve(joinGameResponseOf(await rules.filterGameForPlayer(gameId, playerId)));
     } catch (e) {
         logger.error(util.format("failed to join game: %j", e));
@@ -231,4 +231,9 @@ export async function turnResults(gameId: number, turn: number, playerId: number
     } else {
         return Promise.reject("expected a single result for turn results");
     }
+}
+
+// DANGER - testing only; drop everything in the store
+export function deleteStore() {
+    store.deleteAll();
 }

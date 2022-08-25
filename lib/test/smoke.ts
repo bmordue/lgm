@@ -2,6 +2,10 @@ import lgm = require('../service/DefaultService');
 import assert = require('assert');
 
 describe("smoke - integration", () => {
+    before(() => {
+        lgm.deleteStore();
+    });
+
     it("create a game", (done) => {
         lgm.createGame()
             .then((res) => {
