@@ -3,26 +3,31 @@ import assert = require('assert');
 import util = require('util');
 import { TurnOrders } from '../service/Models';
 import { CreateGameResponse, JoinGameResponse } from '../service/DefaultService';
+import { inspect } from 'util';
 
 // const TEST_AUTH_TOKEN = 'dummy auth';
 
 function createAGame() {
-    console.log('createAGame');
     return superagent.post('http://localhost:3000/games')
         .send();
 }
 
 function joinAGame(gameId: number) {
-    console.log('joinAGame');
     return superagent.put('http://localhost:3000/games/' + gameId)
         .send();
 }
 
 function sendOrders(gameId: number, playerId: number, turn: number, orders: TurnOrders) {
-    //    /games/{gameId}/turns/{turn}/players/{playerId}
-    console.log('sendOrders');
+    //    POST /games/{gameId}/turns/{turn}/players/{playerId}
     return superagent.post(util.format('http://localhost:3000/games/%s/turns/%s/players/%s', gameId, turn, playerId))
         .send(orders);
+}
+
+function getTurnResults(gameId: number, playerId: number, turn: number) {
+    // GET /games/{gameId}/turns/{turn}/players/{playerId}:
+
+    return superagent.get(util.format('http://localhost:3000/games/%s/turns/%s/players/%s', gameId, turn, playerId))
+        .send();
 }
 
 describe('Smoke - API', () => {
@@ -34,10 +39,7 @@ describe('Smoke - API', () => {
             .then(() => {
                 done();
             })
-            .catch((err: Error) => {
-                console.log(err);
-                done(err);
-            });
+            .catch(done);
     });
 
     it('create a new game and join it', (done) => {
@@ -54,11 +56,7 @@ describe('Smoke - API', () => {
                 assert.equal(response.body.turn, 1);
                 done();
             })
-
-            .catch((err) => {
-                // console.log(err);
-                done(err);
-            });
+            .catch(done);
     });
 
     it('send orders for first turn', (done) => {
@@ -71,6 +69,14 @@ describe('Smoke - API', () => {
         sendOrders(gameId, playerId, 1, orders).then((response: { statusCode: unknown; }) => {
             //console.log(util.format("%j", response.body));
             assert.equal(response.statusCode, 200);
+            done();
+        }).catch(done);
+    });
+
+    it('get results for first turn', (done) => {
+        getTurnResults(gameId, playerId, 1).then((response) => {
+            assert.equal(response.statusCode, 200);
+            // console.log(inspect(response.body));
             done();
         }).catch(done);
     });
