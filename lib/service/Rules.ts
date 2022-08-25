@@ -151,7 +151,7 @@ function filterOrdersForGameTurn(o: TurnOrders, gameId: number, turn: number) {
     return o.gameId == gameId && o.turn == turn;
 }
 
-function flatten<T>(arr: Array<Array<T>>): Array<T> {
+export function flatten<T>(arr: Array<Array<T>>): Array<T> {
     // cf mdn article on Array.flat()
     return arr.reduce((acc: Array<T>, val: Array<T>) => acc.concat(val, [])) as Array<T>;
 }
@@ -177,7 +177,7 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         return Promise.reject(e);
     }
 
-    const actorOrdersLists = gameTurnOrders.map((gto: { orders: any; }) => gto.orders);
+    const actorOrdersLists = gameTurnOrders.map((to: TurnOrders) => to.orders);
     const flattenedActorOrders: Array<ActorOrders> = flatten(actorOrdersLists);
 
     // apply rules
