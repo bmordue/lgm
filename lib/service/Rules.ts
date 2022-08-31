@@ -30,15 +30,13 @@ async function allTurnOrdersReceived(gameId: number, turn: number) {
     return Promise.resolve(orders.length == game.players.length);
 }
 
-function applyDirection(oldPos: GridPosition, direction: Direction): GridPosition {
+export function applyDirection(oldPos: GridPosition, direction: Direction): GridPosition {
     let newPos = {
         x: oldPos.x,
         y: oldPos.y
     };
     const applyDir = function (pos: GridPosition, xOffset: number, yOffset: number) {
-        pos.x += xOffset;
-        pos.y += yOffset;
-        return pos;
+        return { x: pos.x + xOffset, y: pos.y + yOffset };
     }
     switch (direction) {
         case Direction.DOWN_LEFT: {
@@ -46,7 +44,7 @@ function applyDirection(oldPos: GridPosition, direction: Direction): GridPositio
             break;
         }
         case Direction.DOWN_RIGHT: {
-            newPos = applyDir(oldPos, 1, -1);
+            newPos = applyDir(oldPos, 0, -1);
             break;
         }
         case Direction.LEFT: {
@@ -62,7 +60,7 @@ function applyDirection(oldPos: GridPosition, direction: Direction): GridPositio
             break;
         }
         case Direction.UP_RIGHT: {
-            newPos = applyDir(oldPos, 1, 1);
+            newPos = applyDir(oldPos, 0, 1);
             break;
         }
         case Direction.NONE: {
@@ -77,8 +75,13 @@ function applyDirection(oldPos: GridPosition, direction: Direction): GridPositio
     return newPos;
 }
 
-async function applyMovementOrders(actorOrders: ActorOrders, game: Game, world: World, timestep: number,): Promise<Actor> {
-    const moveDirection = actorOrders.ordersList[timestep];
+export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, world: World, timestep: number,): Promise<Actor> {
+
+
+    const moveDirection = timestep < actorOrders.ordersList.length
+        ? actorOrders.ordersList[timestep]
+        : Direction.NONE;
+
     const actor = actorOrders.actor;
 
     if (!actor) {
@@ -90,6 +93,8 @@ async function applyMovementOrders(actorOrders: ActorOrders, game: Game, world: 
 
     const newGridPos = applyDirection(actorOrders.actor.pos, moveDirection);
     const newPosTerrain = world.terrain[newGridPos.x][newGridPos.y];
+
+    console.log(util.inspect(newPosTerrain, null, 2));
 
     switch (newPosTerrain) {
         case Terrain.EMPTY: {
@@ -119,8 +124,9 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: Wor
 }
 
 // update actors based on turn orders
-async function applyRulesToActorOrders(game: Game, world: World, allActorOrders: Array<ActorOrders>): Promise<Array<Actor>> {
-    if (!allActorOrders) {
+export async function applyRulesToActorOrders(game: Game, world: World, allActorOrders: Array<ActorOrders>): Promise<Array<Actor>> {
+    if (!allActorOrders || allActorOrders.length === 0) {
+        logger.warn("applyRulesToActorOrders: did not receive any orders");
         return [];
     }
 
@@ -133,7 +139,7 @@ async function applyRulesToActorOrders(game: Game, world: World, allActorOrders:
         }
     }
 
-    return allActorOrders.map((a) => a.actor);
+    return allActorOrders.map((a: ActorOrders) => a.actor);
 }
 
 function turnResultsPerPlayer(game: Game, updatedActors: Array<Actor>): Array<TurnResult> {
@@ -194,7 +200,7 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
     logger.debug("processGameTurn: record results");
     let playerTurnResults: TurnResult[];
     try {
-        playerTurnResults = await turnResultsPerPlayer(game, updatedActors);
+        playerTurnResults = turnResultsPerPlayer(game, updatedActors);
     } catch (e) {
         logger.error("processGameTurn: failed to record results");
         return Promise.reject(e.message);

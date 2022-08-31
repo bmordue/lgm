@@ -222,8 +222,11 @@ export async function postOrders(body: PostOrdersBody, gameId: number, turn: num
  **/
 
 export async function turnResults(gameId: number, turn: number, playerId: number): Promise<TurnResultsResponse> {
-    const results = await store.readAll<TurnResult>(store.keys.turnResults, (r: { gameId: any; turn: any; playerId: any; }) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; });
+    const results = await store.readAll<TurnResult>(store.keys.turnResults,
+        (r: TurnResult) => { return r.gameId == gameId && r.turn == turn && r.playerId == playerId; });
+
     logger.debug(util.format("turnResults: found %s results", results.length));
+
     if (results.length == 0) {
         return Promise.resolve({ success: false, message: "turn results not available" });
     } else if (results.length == 1) {
