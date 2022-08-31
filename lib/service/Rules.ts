@@ -77,9 +77,9 @@ export function applyDirection(oldPos: GridPosition, direction: Direction): Grid
 
 export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, world: World, timestep: number,): Promise<Actor> {
 
-
-    const moveDirection = timestep < actorOrders.ordersList.length
-        ? actorOrders.ordersList[timestep]
+    const moveDirections: Array<Direction> = actorOrders.ordersList;
+    const moveDirection: Direction = timestep < moveDirections.length
+        ? moveDirections[timestep]
         : Direction.NONE;
 
     const actor = actorOrders.actor;
@@ -91,10 +91,20 @@ export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, 
         throw new Error(msg);
     }
 
-    const newGridPos = applyDirection(actorOrders.actor.pos, moveDirection);
-    const newPosTerrain = world.terrain[newGridPos.x][newGridPos.y];
+    const newGridPos = applyDirection(actorOrders.actor.pos, moveDirection as Direction);
 
-    console.log(util.inspect(newPosTerrain, null, 2));
+    // check against world.terrain boundaries
+    if (newGridPos.x < 0
+        || newGridPos.y < 0
+        || newGridPos.x >= world.terrain.length
+        || newGridPos.y >= world.terrain[newGridPos.x].length) {
+
+        logger.debug(util.format("Actor ID %s attempted to move outside world.terrain to (%s,%s); remained at (%s,%s) instead",
+            actor.id, newGridPos.x, newGridPos.y, actor.pos.x, actor.pos.y));
+        return actor;
+    }
+
+    const newPosTerrain = world.terrain[newGridPos.x][newGridPos.y];
 
     switch (newPosTerrain) {
         case Terrain.EMPTY: {

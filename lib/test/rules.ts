@@ -77,38 +77,82 @@ describe("rules tests", function () {
             assert.deepEqual(newGridPos, { x: 1, y: 0 });
         });
 
-        it("move outside of world terrain boundaries");
-
     });
 
     describe("applyMovementOrders", () => {
+
+        const timestep = 0;
 
         beforeEach(() => {
             theActor.pos = { x: 0, y: 0 };
         });
 
-        it("handles timestep with orders present (no movement)", async () => {
-            const ao: ActorOrders = { actor: theActor, ordersList: [Direction.NONE] };
-            const timestep = 0;
+        describe("valid orders", () => {
+            it("handles timestep with orders present (no movement)", async () => {
+                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.NONE] };
+                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
+                assert.deepEqual(updatedActor.pos, { x: 0, y: 0 });
+            });
 
-            const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
-            assert.deepEqual(updatedActor.pos, { x: 0, y: 0 });
+            it("handles timestep with orders present (with movement)", async () => {
+                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.UP_RIGHT] };
+                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
+                assert.deepEqual(updatedActor.pos, { x: 0, y: 1 });
+            });
+
+            it("handles timestep with no orders", async () => {
+                const ao: ActorOrders = { actor: theActor, ordersList: [] };
+                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
+                assert.deepEqual(updatedActor.pos, { x: 0, y: 0 });
+            });
         });
 
-        it("handles timestep with orders present (with movement)", async () => {
-            const ao: ActorOrders = { actor: theActor, ordersList: [Direction.UP_RIGHT] };
-            const timestep = 0;
+        describe("should not be able to move into BLOCKED terrain", () => {
+            it("should remain place if new position is BLOCKED", async () => {
+                // terrain[1][3] = Terrain.BLOCKED; // from rules.generateTerain()
+                const startPos = { x: 1, y: 2 };
+                theActor.pos = startPos;
+                assert.deepEqual(rules.applyDirection(startPos, Direction.UP_RIGHT), { x: 1, y: 3 }); // just checking
 
-            const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
-            assert.deepEqual(updatedActor.pos, { x: 0, y: 1 });
+                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.UP_RIGHT] };
+
+                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
+                assert.deepEqual(updatedActor.pos, startPos);
+            });
         });
 
-        it("handles timestep with no orders", async () => {
-            const ao: ActorOrders = { actor: theActor, ordersList: [] };
-            const timestep = 0;
+        describe("should respect world terrain boundaries", () => {
 
-            const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
-            assert.deepEqual(updatedActor.pos, { x: 0, y: 0 });
+            async function testMoveOutsideTerrain(startPos: GridPosition, direction: Direction) {
+                theActor.pos = startPos;
+                const ao: ActorOrders = { actor: theActor, ordersList: [direction] };
+                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
+                assert.deepEqual(updatedActor.pos, startPos);
+            }
+
+            it("replace DOWN_LEFT move outside of world terrain boundaries with NONE", async () => {
+                testMoveOutsideTerrain({ x: 3, y: 0 }, Direction.DOWN_LEFT);
+            });
+
+            it("replace DOWN_RIGHT move outside of world terrain boundaries with NONE", async () => {
+                testMoveOutsideTerrain({ x: 3, y: 0 }, Direction.DOWN_RIGHT);
+            });
+
+            it("replace LEFT move outside of world terrain boundaries with NONE", async () => {
+                testMoveOutsideTerrain({ x: 0, y: 3 }, Direction.LEFT);
+            });
+
+            it("replace RIGHT move outside of world terrain boundaries with NONE", async () => {
+                testMoveOutsideTerrain({ x: 9, y: 3 }, Direction.RIGHT);
+            });
+
+            it("replace UP_LEFT move outside of world terrain boundaries with NONE", async () => {
+                testMoveOutsideTerrain({ x: 3, y: 9 }, Direction.UP_LEFT);
+            });
+
+            it("replace UP_RIGHT move outside of world terrain boundaries with NONE", async () => {
+                testMoveOutsideTerrain({ x: 3, y: 9 }, Direction.UP_RIGHT);
+            });
         });
     });
 
@@ -147,14 +191,19 @@ describe("rules tests", function () {
             assert.equal(updatedActors.length, allActorOrders.length);
         });
 
-        it("should throw if actor is not present in orders list");
-
-        it("handles several updated actors");
+        it("handles several updated actors", async () => {
+            const actorTwo: Actor = { id: 1, pos: { x: 0, y: 1 }, state: ActorState.ALIVE, owner: 0 };
+            const allActorOrders: Array<ActorOrders> = [
+                { actor: actorTwo, ordersList: [Direction.UP_RIGHT, Direction.DOWN_LEFT] },
+                { actor: theActor, ordersList: [Direction.UP_RIGHT, Direction.UP_LEFT] }
+            ];
+            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders);
+            assert.equal(updatedActors.length, allActorOrders.length);
+        });
 
         it("handles empty orders list", async () => {
             const updatedActors = await rules.applyRulesToActorOrders(game, world, []);
             assert.equal(updatedActors.length, 0);
-
         });
     });
 
