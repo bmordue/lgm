@@ -19,6 +19,12 @@ export enum keys {
     actors = "actors"
 }
 
+export function deleteAll() {
+    Object.keys(store).forEach((key) => {
+        delete store[key];
+    });
+}
+
 function initSlot(x) {
     if (!store[x]) store[x] = [];
 }

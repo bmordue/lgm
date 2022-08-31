@@ -4,3 +4,5 @@ node_modules/
 built/
 *.log
 log/
+coverage/
+.nyc_output/

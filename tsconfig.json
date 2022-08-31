@@ -4,7 +4,8 @@
         "allowJs": true,
         "target": "es5",
         "noFallthroughCasesInSwitch": true,
-        "module": "commonjs"
+        "module": "commonjs",
+        "sourceMap": true
     },
     "include": [
         "lib/**/*ts"

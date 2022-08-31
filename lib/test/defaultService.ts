@@ -1,9 +1,10 @@
 import lgm = require('../service/DefaultService');
 import assert = require('assert');
+import { inspect } from 'util';
 
-describe("unit tests", function() {
-    describe("fillOrTruncateOrdersList()", function() {
-        it("orders list too short", function() {
+describe("DefaultService", function () {
+    describe("fillOrTruncateOrdersList()", function () {
+        it("orders list too short", function () {
             const tooShort = [1, 1, 1];
             const filled = [1, 1, 1, 6, 6, 6, 6, 6, 6, 6];
             assert.equal(filled.length, 10);
@@ -11,7 +12,7 @@ describe("unit tests", function() {
 
         });
 
-        it("orders list too long", function() {
+        it("orders list too long", function () {
             const tooLong = new Array(11).fill(1);
             assert.equal(tooLong.length, 11);
             const truncated = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1];
@@ -19,9 +20,36 @@ describe("unit tests", function() {
             assert.deepEqual(lgm.fillOrTruncateOrdersList(tooLong), truncated);
         });
 
-        it("orders list just right", function() {
+        it("orders list just right", function () {
             const justRight = [2, 2, 2, 2, 2, 2, 2, 2, 2, 2];
             assert.deepEqual(lgm.fillOrTruncateOrdersList(justRight), justRight);
+        });
+    });
+
+    describe("joinGame", () => {
+
+        let gameId: number;
+        before(async () => {
+            gameId = (await lgm.createGame()).id;
+        });
+
+        it("first player should be assigned Actors when joining game", async () => {
+            const joinGameResponse = await lgm.joinGame(gameId);
+            const playerOneId = joinGameResponse.playerId;
+            const allActors = joinGameResponse.world.actors;
+            const myActors = allActors.filter((a) => { return a.owner === playerOneId });
+            assert.equal(allActors.length, 9);
+            assert.equal(myActors.length, 9);
+        });
+
+        it("second player should be assigned Actors when joining game", async () => {
+            const joinGameResponse = await lgm.joinGame(gameId);
+            const playerTwoId = joinGameResponse.playerId;
+            const allActors = joinGameResponse.world.actors;
+            const myActors = allActors.filter((a) => { return a.owner === playerTwoId });
+            assert.equal(allActors.length, 18);
+            assert.equal(myActors.length, 9);
+            console.log(inspect(joinGameResponse.world, null, 4));
         });
     });
 });

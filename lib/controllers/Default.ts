@@ -7,7 +7,6 @@ module.exports.createGame = function createGame() {
 };
 
 module.exports.joinGame = function joinGame(context: ExegesisContext) {
-    console.log(inspect(context));
     return Default.joinGame(context.params.path.id);
 };
 
