@@ -40,11 +40,11 @@ export function applyDirection(oldPos: GridPosition, direction: Direction): Grid
     }
     switch (direction) {
         case Direction.DOWN_LEFT: {
-            newPos = applyDir(oldPos, -1, -1);
+            newPos = applyDir(oldPos, 0, -1);
             break;
         }
         case Direction.DOWN_RIGHT: {
-            newPos = applyDir(oldPos, 0, -1);
+            newPos = applyDir(oldPos, 1, -1);
             break;
         }
         case Direction.LEFT: {

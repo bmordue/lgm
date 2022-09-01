@@ -69,12 +69,12 @@ describe("rules tests", function () {
 
         it("move down-left", () => {
             const newGridPos = rules.applyDirection(oldGridPos, Direction.DOWN_LEFT);
-            assert.deepEqual(newGridPos, { x: 0, y: 0 });
+            assert.deepEqual(newGridPos, { x: 1, y: 0 });
         });
 
         it("move down-right", () => {
             const newGridPos = rules.applyDirection(oldGridPos, Direction.DOWN_RIGHT);
-            assert.deepEqual(newGridPos, { x: 1, y: 0 });
+            assert.deepEqual(newGridPos, { x: 2, y: 0 });
         });
 
     });
