@@ -62,3 +62,50 @@ export function worldSvg(world: World): string {
     svg += '\n</svg>';
     return svg;
 }
+
+// needs to be rationalised to reuse worldSvg
+export function visibilitySvg(terrain: Terrain[][], visibility: boolean[][], fromX: number, fromY: number): string {
+    const sideLength = 10;
+
+    let svg = '<svg version="1.1" width="300" height="200" xmlns="http://www.w3.org/2000/svg">';
+
+    for (let x = 0; x < terrain.length; x++) {
+        for (let y = 0; y < terrain[0].length; y++) {
+            svg += '\n';
+
+            let colour = "gray";
+            if (visibility[x][y]) {
+                colour = "white";
+            }
+            if (terrain[x][y] == Terrain.BLOCKED) {
+                colour = "black";
+            }
+            if (x === fromX && y === fromY) {
+                colour = "red";
+            }
+            svg += hexSvg({ x: x, y: y }, sideLength, colour);
+        }
+    }
+
+    svg += '\n</svg>';
+    return svg;
+}
+
+// extend this later to do more than just colours, eg render an icon inside a hex
+// TODO: needs more work to be useful -- needs to be more general
+export function styledHexesSvg(data: object[][], colorize: (o: object) => string) {
+    const sideLength = 10;
+
+    let svg = '<svg version="1.1" width="300" height="200" xmlns="http://www.w3.org/2000/svg">';
+
+    for (let x = 0; x < data.length; x++) {
+        for (let y = 0; y < data[0].length; y++) {
+            svg += '\n';
+            const colour = colorize(data[x][y]);
+            svg += hexSvg({ x: x, y: y }, sideLength, colour);
+        }
+    }
+
+    svg += '\n</svg>';
+    return svg;
+}

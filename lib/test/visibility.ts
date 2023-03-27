@@ -2,6 +2,8 @@ import { visibility } from '../service/Visibility';
 import { generateTerrain } from '../service/Rules';
 import { inspect } from 'util';
 import { Terrain } from '../service/Models';
+import { visibilitySvg } from '../utils/Draw';
+import { writeFileSync } from 'fs';
 
 function logVisibility(fromX, fromY, grid) {
     for (let x = 0; x < grid.length; x++) {
@@ -39,7 +41,8 @@ describe("visibility tests", async () => {
             it(`should calculate visibility from (${x}, ${y})`, () => {
                 const visible = visibility({ x: x, y: y }, terrain);
 
-                logVisibility(x, y, visible);
+                writeFileSync(`visibility-${x}-${y}.svg`, visibilitySvg(terrain, visible, x, y));
+                //                logVisibility(x, y, visible);
             });
 
         }

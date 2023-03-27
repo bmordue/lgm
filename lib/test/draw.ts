@@ -20,7 +20,6 @@ describe('Draw', async () => {
 
             const svgStr = worldSvg(world);
             assert.ok(svgStr);
-            console.log(svgStr);
             writeFileSync('image_world.svg', svgStr);
         });
     });
