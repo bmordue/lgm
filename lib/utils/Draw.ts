@@ -1,4 +1,4 @@
-import { GridPosition, World } from '../service/Models';
+import { GridPosition, Terrain, World } from '../service/Models';
 
 /*
   x, y pixel coords for hex with vertices A--F at grid pos 0,0, equal sides of length S:
@@ -15,7 +15,7 @@ import { GridPosition, World } from '../service/Models';
     */
 
 // S: length in pixels of a side of a regular hex
-export function hexSvg(pos: GridPosition, S: number): string {
+export function hexSvg(pos: GridPosition, S: number, colour = "black"): string {
     const k = Math.sqrt(3);
 
     const pixelOffsetX = k * S * (pos.x + 0.5 * pos.y);
@@ -30,7 +30,7 @@ export function hexSvg(pos: GridPosition, S: number): string {
     const Cx = k * S + pixelOffsetX;
     const Cy = 0.5 * S + pixelOffsetY;
 
-    const Dx = Cx;
+    const Dx = Cx
     const Dy = Cy + S;
 
     const Ex = Bx;
@@ -39,7 +39,8 @@ export function hexSvg(pos: GridPosition, S: number): string {
     const Fx = Ax;
     const Fy = Ay + S;
 
-    return `<polyline points="${Ax},${Ay} ${Bx},${By} ${Cx},${Cy} ${Dx},${Dy} ${Ex},${Ey} ${Fx},${Fy} ${Ax},${Ay}" />`;
+    const polylineSvg = `<polyline points="${Ax},${Ay} ${Bx},${By} ${Cx},${Cy} ${Dx},${Dy} ${Ex},${Ey} ${Fx},${Fy} ${Ax},${Ay}" fill="${colour}"/>`;
+    return polylineSvg;
 }
 
 export function worldSvg(world: World): string {
@@ -53,7 +54,8 @@ export function worldSvg(world: World): string {
     for (let x = 0; x < world.terrain.length; x++) {
         for (let y = 0; y < world.terrain[x].length; y++) {
             svg += '\n';
-            svg += hexSvg({ x: x, y: y }, sideLength);
+            const colour = world.terrain[x][y] == Terrain.BLOCKED ? "red" : "black";
+            svg += hexSvg({ x: x, y: y }, sideLength, colour);
         }
     }
 

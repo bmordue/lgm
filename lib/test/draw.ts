@@ -4,7 +4,7 @@ import rules = require('../service/Rules');
 import { writeFileSync } from 'fs';
 
 
-describe('Draw', () => {
+describe('Draw', async () => {
     describe('filledHexSvg', () => {
         it('should draw a single hex at grid (0,0)', () => {
             const svgStr = hexSvg({ x: 0, y: 0 }, 10);
@@ -13,13 +13,14 @@ describe('Draw', () => {
         });
     });
 
-    describe('worldSvg', () => {
+    describe('worldSvg', async () => {
         it('should draw world terrain hexes', async () => {
             const terrain = await rules.generateTerrain();
             const world = { id: 0, actors: [], terrain: terrain };
 
             const svgStr = worldSvg(world);
             assert.ok(svgStr);
+            console.log(svgStr);
             writeFileSync('image_world.svg', svgStr);
         });
     });
