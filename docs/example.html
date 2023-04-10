@@ -5,10 +5,11 @@ Learn more about components in the guide!
 <script type="module">
   import { createApp } from 'https://unpkg.com/vue@3/dist/vue.esm-browser.js'
   import TodoItem from './TodoItem.js'
+  import Maze from './Maze.vue'
 
 createApp({
   components: {
-    TodoItem
+    TodoItem, Maze
   },
   data() {
     return {
@@ -36,4 +37,6 @@ createApp({
       :key="item.id"
     ></todo-item>
   </ol>
+
+<Maze />
 </div>
