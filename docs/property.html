@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Property Locations</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    #map {
+      height: 400px;
+      width: 100%;
+    }
+
+    table {
+      margin-top: 10px;
+      width: 100%;
+    }
+
+    th,
+    td {
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+  </style>
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+</head>
+<body>
+  <div id="map"></div>
+
+  <table id="propertyTable">
+    <thead>
+      <tr>
+        <th>Location</th>
+        <th>Expected Yield</th>
+        <th>Median Price (EUR)</th>
+        <th>Max Annual Temp (°C)</th>
+        <th>Total Precipitation (mm)</th>
+        <th>Monastery Location</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    // Load the JSON data from file
+    fetch('who_property.json')
+      .then(response => response.json())
+      .then(data => {
+        // Initialize Leaflet map
+        const map = L.map('map').setView([48.8566, 2.3522], 3); // Set initial map view
+
+        // Add tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Loop through the data and add markers to the map and rows to the table
+        data.data.forEach(property => {
+          const {
+            Location,
+            ExpectedYield,
+            MedianPriceEUR,
+            MaxAnnualTempC,
+            TotalPrecipitationMM,
+            MonasteryLocation
+          } = property;
+          // Extract property data from JSON data
+
+          // Create marker and bind popup
+          L.marker([property.Latitude, property.Longitude])
+            .addTo(map)
+            .bindPopup(`<strong>${Location}</strong>`);
+
+          // Add row to table
+          const row = `<tr>
+            <td>${Location}</td>
+            <td>${ExpectedYield}%</td>
+            <td>${MedianPriceEUR}</td>
+            <td>${MaxAnnualTempC}</td>
+            <td>${TotalPrecipitationMM}</td>
+            <td>${MonasteryLocation}</td>
+          </tr>`;
+          document.getElementById('propertyTable').getElementsByTagName('tbody')[0].insertAdjacentHTML('beforeend', row);
+        });
+      })
+      .catch(error => console.error('Error loading JSON data:', error));
+  </script>
+</body>
+</html>
