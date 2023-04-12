@@ -38,5 +38,44 @@
       })
       .catch(error => console.error('Error loading resortTowns data:', error));
   </script>
+
+<h1>Resorts Table</h1>
+  <table id="resortsTable">
+    <tr>
+      <th>Name</th>
+      <th>Latitude</th>
+      <th>Longitude</th>
+      <th>Avg Beer Price (EUR)</th>
+      <th>Median Salary (EUR)</th>
+      <th>Flight Time from Edinburgh (hours)</th>
+      <th>Transfer Info</th>
+    </tr>
+  </table>
+
+  <script>
+    fetch('resorts.json')
+      .then(response => response.json())
+      .then(data => {
+        const resortsTable = document.getElementById('resortsTable');
+        const resorts = data.resortTowns;
+
+        resorts.forEach(resort => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${resort.name}</td>
+            <td>${resort.latitude}</td>
+            <td>${resort.longitude}</td>
+            <td>${resort.avgBeerPriceEUR}</td>
+            <td>${resort.medianSalaryEUR}</td>
+            <td>${resort.flightTimeEdinburghHours}</td>
+            <td>${resort.transferInfo}</td>
+          `;
+          resortsTable.appendChild(row);
+        });
+      })
+      .catch(error => console.error(error));
+  </script>
+
+
 </body>
 </html>
