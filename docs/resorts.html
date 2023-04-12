@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Eastern Europe Resort Towns</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/leaflet.min.js"></script>
+  <style>
+    #map {
+      height: 500px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <script>
+    // Create Leaflet map
+    const map = L.map('map').setView([42.6507, 18.0944], 8); // Set initial map view to a resort town
+
+    // Add tile layer to the map
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+
+    // Load resortTowns data from resorts.json file
+    fetch('resorts.json')
+      .then(response => response.json())
+      .then(resortTowns => {
+        // Loop through the resort towns data and add markers to the map
+        resortTowns.resortTowns.forEach(resortTown => {
+          const marker = L.marker([resortTown.latitude, resortTown.longitude])
+            .bindPopup(`<b>${resortTown.name}</b><br>
+                        Avg Beer Price: ${resortTown.avgBeerPriceEUR} EUR<br>
+                        Median Salary: ${resortTown.medianSalaryEUR} EUR<br>
+                        Flight Time from Edinburgh: ${resortTown.flightTimeEdinburghHours} hours<br>
+                        Transfer Info: ${resortTown.transferInfo}`)
+            .addTo(map);
+        });
+      })
+      .catch(error => console.error('Error loading resortTowns data:', error));
+  </script>
+</body>
+</html>
