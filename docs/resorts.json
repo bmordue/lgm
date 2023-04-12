@@ -1,0 +1,86 @@
+{
+  "resortTowns": [
+    {
+      "name": "Dubrovnik",
+      "latitude": 42.6507,
+      "longitude": 18.0944,
+      "avgBeerPriceEUR": 3.50,
+      "medianSalaryEUR": 800,
+      "flightTimeEdinburghHours": 4,
+      "transferInfo": "No transfers"
+    },
+    {
+      "name": "Bled",
+      "latitude": 46.3636,
+      "longitude": 14.0937,
+      "avgBeerPriceEUR": 2.50,
+      "medianSalaryEUR": 1000,
+      "flightTimeEdinburghHours": 3,
+      "transferInfo": "No transfers"
+    },
+    {
+      "name": "Krakow",
+      "latitude": 50.0647,
+      "longitude": 19.9450,
+      "avgBeerPriceEUR": 2.00,
+      "medianSalaryEUR": 900,
+      "flightTimeEdinburghHours": 2,
+      "transferInfo": "No transfers"
+    },
+    {
+      "name": "Vilnius",
+      "latitude": 54.6872,
+      "longitude": 25.2797,
+      "avgBeerPriceEUR": 1.50,
+      "medianSalaryEUR": 800,
+      "flightTimeEdinburghHours": 3,
+      "transferInfo": "No transfers"
+    },
+    {
+      "name": "Rila Monastery",
+      "latitude": 42.1347,
+      "longitude": 23.3439,
+      "avgBeerPriceEUR": 1.00,
+      "medianSalaryEUR": 600,
+      "flightTimeEdinburghHours": 4,
+      "transferInfo": "No transfers"
+    },
+    {
+      "name": "Brasov",
+      "latitude": 45.6579,
+      "longitude": 25.6012,
+      "avgBeerPriceEUR": 2.00,
+      "medianSalaryEUR": 700,
+      "flightTimeEdinburghHours": 4,
+      "transferInfo": "No transfers"
+    },
+    {
+      "name": "Ohrid",
+      "latitude": 41.1129,
+      "longitude": 20.7986,
+      "avgBeerPriceEUR": 1.50,
+      "medianSalaryEUR": 600,
+      "flightTimeEdinburghHours": 4,
+      "transferInfo": "No transfers"
+    },
+    {
+      "name": "Veliko Tarnovo",
+      "latitude": 43.0757,
+      "longitude": 25.6172,
+      "avgBeerPriceEUR": 1.50,
+      "medianSalaryEUR": 500,
+      "flightTimeEdinburghHours": 5,
+      "transferInfo": "No transfers"
+    },
+    {
+      "name": "Tallinn",
+      "latitude": 59.4369,
+      "longitude": 24.7536,
+      "avgBeerPriceEUR": 4.00,
+      "medianSalaryEUR": 1000,
+      "flightTimeEdinburghHours": 3,
+      "transferInfo": "No transfers"
+    }
+]
+}
+     
