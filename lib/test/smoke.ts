@@ -234,7 +234,7 @@ describe("complete first turn with one player - standing still orders", () => {
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
         world = invitation.world;
-        myActors = world.actors.filter((a) => { a.owner === playerId });
+        myActors = world.actors.filter((a) => a.owner === playerId);
     });
 
     it("post orders for first turn", async function () {
