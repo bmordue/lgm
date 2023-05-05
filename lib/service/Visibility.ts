@@ -12,6 +12,7 @@ function within(x: number, y: number, grid: Array<Array<unknown>>): boolean {
         && y < grid[0].length; // assumes a square grid
 }
 
+// TODO: doesn't work -- start with bad implementations, work towards correct
 export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][] {
     if (!within(from.x, from.y, terrain)) {
         throw new Error(`Starting point (${from.x},${from.y}) is not within the terrain grid`);
@@ -27,7 +28,7 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
         for (let y = 0; y < terrain[x].length; y++) {
             if (terrain[x][y] === Terrain.BLOCKED) {
                 visible[x][y] = false;
-            }
+            } else visible[x][y] = true;
         }
     }
     // const visible: boolean[][] = new Array(terrain.length).fill(new Array(terrain[0].length).fill(true));

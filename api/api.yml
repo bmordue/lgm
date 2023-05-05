@@ -4,8 +4,11 @@ info:
   version: 0.0.1
 servers:
 - url: /
-# security:
-# - bearerAuth: []
+  securitySchemes:
+    basicAuth: 
+      description: A request with a username and password
+      type: http
+      scheme: basic
 paths:
   /games:
     post:
@@ -20,6 +23,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/GameCreatedResponse'
       x-swagger-router-controller: Default
+      security:
+        - basicAuth: []
   /games/{id}:
     put:
       summary: join a game

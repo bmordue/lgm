@@ -15,10 +15,26 @@ const __dirname = path.dirname(__filename);
 /* */
 
 async function createServer() {
+    async function sessionAuthenticator(pluginContext, info) {
+        const session = pluginContext.req.headers.session;
+        if (!session) {
+            return { type: 'missing', statusCode: 401, message: 'Session key required' };
+        } else if (session === 'secret') {
+            return { type: 'success', user: { name: 'jwalton', roles: ['read', 'write'] } };
+        } else {
+            // Session was supplied, but it's invalid.
+            return { type: 'invalid', statusCode: 401, message: 'Invalid session key' };
+        }
+    }
+
     // See https://github.com/exegesis-js/exegesis/blob/master/docs/Options.md
     const options = {
         controllers: path.resolve(__dirname, 'controllers'),
         allowMissingControllers: false,
+        authenticators: {
+            basicAuth: sessionAuthenticator,
+            // sessionKey: sessionAuthenticator
+        }
     };
 
     // This creates an exegesis middleware, which can be used with express,
@@ -37,7 +53,7 @@ async function createServer() {
     app.use(bodyParser.urlencoded({
         extended: true
     }));
-//    app.use(cookieParser('keyboard mouse'));
+    //    app.use(cookieParser('keyboard mouse'));
 
     // Return a 404
     app.use((req, res) => {

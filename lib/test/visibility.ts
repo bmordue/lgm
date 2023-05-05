@@ -4,6 +4,8 @@ import { inspect } from 'util';
 import { Terrain } from '../service/Models';
 import { visibilitySvg } from '../utils/Draw';
 import { writeFileSync } from 'fs';
+import assert = require('assert');
+
 
 function logVisibility(fromX, fromY, grid) {
     for (let x = 0; x < grid.length; x++) {
@@ -34,6 +36,8 @@ describe("visibility tests", async () => {
 
     logTerrain(terrain);
 
+    const expectedVisible = [[]];
+
     // for (let x = 0; x < terrain.length; x++) {
     //     for (let y = 0; y < terrain[x].length; y++) {
     for (let x = 0; x < 3; x++) {
@@ -41,7 +45,8 @@ describe("visibility tests", async () => {
             it(`should calculate visibility from (${x}, ${y})`, () => {
                 const visible = visibility({ x: x, y: y }, terrain);
 
-                writeFileSync(`visibility-${x}-${y}.svg`, visibilitySvg(terrain, visible, x, y));
+                assert.deepEqual(visible, expectedVisible[x][y])
+                // writeFileSync(`visibility-${x}-${y}.svg`, visibilitySvg(terrain, visible, x, y));
                 //                logVisibility(x, y, visible);
             });
 
