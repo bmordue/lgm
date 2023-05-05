@@ -14,6 +14,8 @@ paths:
     post:
       summary: create a new game
       operationId: createGame
+      security:
+        - basicAuth: []
       x-exegesis-controller: Default
       responses:
         "200":
@@ -23,12 +25,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/GameCreatedResponse'
       x-swagger-router-controller: Default
-      security:
-        - basicAuth: []
   /games/{id}:
     put:
       summary: join a game
       operationId: joinGame
+            security:
+        - basicAuth: []
+
       x-exegesis-controller: Default
       parameters:
       - name: id
@@ -58,6 +61,8 @@ paths:
     get:
       summary: get turn results
       operationId: turnResults
+      security:
+        - basicAuth: []
       x-exegesis-controller: Default
       parameters:
       - name: gameId
@@ -92,6 +97,8 @@ paths:
     post:
       summary: post turn orders
       operationId: postOrders
+      security:
+        - basicAuth: []
       x-exegesis-controller: Default
       parameters:
       - name: gameId
