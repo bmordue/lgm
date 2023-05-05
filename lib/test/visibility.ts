@@ -3,7 +3,7 @@ import { generateTerrain } from '../service/Rules';
 import { inspect } from 'util';
 import { Terrain } from '../service/Models';
 import { visibilitySvg } from '../utils/Draw';
-import { writeFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 import assert = require('assert');
 
 
@@ -36,7 +36,25 @@ describe("visibility tests", async () => {
 
     logTerrain(terrain);
 
-    const expectedVisible = [[]];
+    // const data = [];
+    // for (let x = 0; x < 3; x++) {
+    //     data.push(new Array(3));
+    //     for (let y = 0; y < 3; y++) {
+    //         const viz = new Array(terrain.length);
+    //         for (let i = 0; i < terrain.length; i++) {
+    //             viz[i] = new Array(terrain[0].length);
+    //             for (let j = 0; j < terrain[0].length; j++) {
+    //                 viz[i][j] = terrain[i][j] === Terrain.EMPTY;
+    //             }
+    //         }
+    //         data[x][y] = viz;
+    //     }
+    // }
+
+    // writeFileSync("expectedVisible.json", JSON.stringify(data));
+    // console.log("wrote some test data!");
+
+    const expectedVisible = JSON.parse(readFileSync("expectedVisible.json", "utf-8"));
 
     // for (let x = 0; x < terrain.length; x++) {
     //     for (let y = 0; y < terrain[x].length; y++) {
@@ -45,7 +63,7 @@ describe("visibility tests", async () => {
             it(`should calculate visibility from (${x}, ${y})`, () => {
                 const visible = visibility({ x: x, y: y }, terrain);
 
-                assert.deepEqual(visible, expectedVisible[x][y])
+                assert.deepEqual(visible, expectedVisible[x][y]);
                 // writeFileSync(`visibility-${x}-${y}.svg`, visibilitySvg(terrain, visible, x, y));
                 //                logVisibility(x, y, visible);
             });
