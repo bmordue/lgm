@@ -131,27 +131,27 @@ describe("rules tests", function () {
             }
 
             it("replace DOWN_LEFT move outside of world terrain boundaries with NONE", async () => {
-                testMoveOutsideTerrain({ x: 3, y: 0 }, Direction.DOWN_LEFT);
+                await testMoveOutsideTerrain({ x: 3, y: 0 }, Direction.DOWN_LEFT);
             });
 
             it("replace DOWN_RIGHT move outside of world terrain boundaries with NONE", async () => {
-                testMoveOutsideTerrain({ x: 3, y: 0 }, Direction.DOWN_RIGHT);
+                await testMoveOutsideTerrain({ x: 3, y: 0 }, Direction.DOWN_RIGHT);
             });
 
             it("replace LEFT move outside of world terrain boundaries with NONE", async () => {
-                testMoveOutsideTerrain({ x: 0, y: 3 }, Direction.LEFT);
+                await testMoveOutsideTerrain({ x: 0, y: 3 }, Direction.LEFT);
             });
 
             it("replace RIGHT move outside of world terrain boundaries with NONE", async () => {
-                testMoveOutsideTerrain({ x: 9, y: 3 }, Direction.RIGHT);
+                await testMoveOutsideTerrain({ x: 9, y: 3 }, Direction.RIGHT);
             });
 
             it("replace UP_LEFT move outside of world terrain boundaries with NONE", async () => {
-                testMoveOutsideTerrain({ x: 3, y: 9 }, Direction.UP_LEFT);
+                await testMoveOutsideTerrain({ x: 3, y: 9 }, Direction.UP_LEFT);
             });
 
             it("replace UP_RIGHT move outside of world terrain boundaries with NONE", async () => {
-                testMoveOutsideTerrain({ x: 3, y: 9 }, Direction.UP_RIGHT);
+                await testMoveOutsideTerrain({ x: 3, y: 9 }, Direction.UP_RIGHT);
             });
         });
     });

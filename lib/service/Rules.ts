@@ -219,7 +219,7 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
     logger.debug(util.format("playerTurnResults length: %s", playerTurnResults.length));
     try {
         await Promise.all(playerTurnResults.map((turnResult: TurnResult) => {
-            store.create<TurnResult>(store.keys.turnResults, turnResult);
+            return store.create<TurnResult>(store.keys.turnResults, turnResult);
         }));
     } catch (e) {
         logger.error("processGameTurn: failed to store turnResults");
