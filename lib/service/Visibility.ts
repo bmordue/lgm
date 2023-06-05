@@ -31,18 +31,35 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
             } else visible[x][y] = true;
         }
     }
-    // const visible: boolean[][] = new Array(terrain.length).fill(new Array(terrain[0].length).fill(true));
 
-    // // for each cell in terrain
-    // for (let x = 0; x < terrain.length; x++) {
-    //     for (let y = 0; y < terrain[x].length; y++) {
-    //         if (terrain[x][y] === Terrain.BLOCKED) {
-    //             visible[x][y] = false;
-    //         }
-    //     }
-    // }
-    // draw lines from pos to that cell
-    // check whether they are blocked by any terrain.blocked
+    // for each element in the visible grid
+    // check whether it is visible from the starting point
+    // if it is, set it to true
+    // if not, set it to false
+    for (let x = 0; x < visible.length; x++) {
+        for (let y = 0; y < visible[x].length; y++) {
+            if (terrain[x][y] === Terrain.BLOCKED) {    // don't check visibility from blocked terrain
+                continue;
+            }
+            // check line of sight from the from GridPosition to the current GridPosition
+            // if there is line of sight, set visible[x][y] to true
+            // if not, set it to false
+            const vector = { x: x - from.x, y: y - from.y };
+            const distance = Math.sqrt(vector.x * vector.x + vector.y * vector.y);
+            const step = { x: vector.x / distance, y: vector.y / distance };
+            let current = { x: from.x, y: from.y };
+            let visibleFromHere = true;
+            while (current.x !== x && current.y !== y) {
+                current = { x: current.x + step.x, y: current.y + step.y };
+                if (terrain[Math.floor(current.x)][Math.floor(current.y)] === Terrain.BLOCKED) {
+                    visibleFromHere = false;
+                    break;
+                }
+            }
+            visible[x][y] = visibleFromHere;    
+        }
+    }
+    
 
     return visible;
 }
