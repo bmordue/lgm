@@ -1,7 +1,6 @@
-import { visibility } from '../service/Visibility';
+import { visibility, findNextStep } from '../service/Visibility';
 import { generateTerrain } from '../service/Rules';
-import { inspect } from 'util';
-import { Terrain } from '../service/Models';
+import { Terrain, GridPosition } from '../service/Models';
 import { visibilitySvg } from '../utils/Draw';
 import { readFileSync, writeFileSync } from 'fs';
 import assert = require('assert');
@@ -44,7 +43,7 @@ describe("visibility tests", async () => {
 
     for (let x = 0; x < 3; x++) {
         for (let y = 0; y < 3; y++) {
-            xit(`should calculate visibility from (${x}, ${y})`, () => {
+	    it(`should calculate visibility from (${x}, ${y})`, () => {
                 const visible = visibility({ x: x, y: y }, terrain);
 
                 assert.deepEqual(visible, expectedVisible[x][y]);
@@ -55,3 +54,22 @@ describe("visibility tests", async () => {
         }
     }
 });
+
+describe("path finding", async () => {
+	const terrain: Terrain[][] = await generateTerrain();
+
+	it("should find a path", () => {
+	const start = { x: 0, y: 0 };
+	const goal = { x: 2, y: 2 };
+
+	const path :GridPosition[] = [start];
+	let current = start;
+	while (current.x != goal.x && current.y != goal.y) {
+		current = findNextStep(current, goal);
+		path.push(current);
+	}
+	path.push(goal);
+	assert.deepEqual(path, [{x:0, y:0},{x:0, y:1},{x:1, y:1},{x:1, y:2},{x:2, y:2}]);
+	});
+});
+

@@ -1,6 +1,5 @@
 
 import * as bodyParser from 'body-parser';
-import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import * as exegesisExpress from 'exegesis-express';
 import * as path from 'path';
@@ -15,7 +14,7 @@ const __dirname = path.dirname(__filename);
 /* */
 
 async function createServer() {
-    async function sessionAuthenticator(pluginContext, info) {
+    async function sessionAuthenticator(pluginContext) {
         const session = pluginContext.req.headers.session;
         if (!session) {
             return { type: 'missing', statusCode: 401, message: 'Session key required' };
