@@ -64,7 +64,7 @@ describe("visibility tests", async () => {
 	assert.deepEqual(visible, expectedVisible[0][0]);
 	//writeFileSync(`visibility-0-0.svg`, visibilitySvg(terrain, visible, 0, 0));
 	//writeFileSync(`exp-vis-0-0.svg`, visibilitySvg(terrain, expectedVisible[0][0], 0, 0));
-    }
+    });
 });
 
 describe("path finding", async () => {
