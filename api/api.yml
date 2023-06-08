@@ -4,13 +4,18 @@ info:
   version: 0.0.1
 servers:
 - url: /
-# security:
-# - bearerAuth: []
+  securitySchemes:
+    basicAuth: 
+      description: A request with a username and password
+      type: http
+      scheme: basic
 paths:
   /games:
     post:
       summary: create a new game
       operationId: createGame
+      security:
+        - basicAuth: []
       x-exegesis-controller: Default
       responses:
         "200":
@@ -24,6 +29,9 @@ paths:
     put:
       summary: join a game
       operationId: joinGame
+            security:
+        - basicAuth: []
+
       x-exegesis-controller: Default
       parameters:
       - name: id
@@ -53,6 +61,8 @@ paths:
     get:
       summary: get turn results
       operationId: turnResults
+      security:
+        - basicAuth: []
       x-exegesis-controller: Default
       parameters:
       - name: gameId
@@ -87,6 +97,8 @@ paths:
     post:
       summary: post turn orders
       operationId: postOrders
+      security:
+        - basicAuth: []
       x-exegesis-controller: Default
       parameters:
       - name: gameId
