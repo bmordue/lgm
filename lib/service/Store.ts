@@ -68,9 +68,7 @@ export async function read<T>(key: keys, id: number): Promise<T> {
     }
 }
 
-// TODO: re-enable eslint/ban-types and replace :Function with something more defined
-// eslint-disable-next-line @typescript-eslint/ban-types
-export function readAll<T>(key: keys, filterFunc: Function): Promise<Array<T>> {
+export function readAll<T>(key: keys, filterFunc: (item: T) => boolean): Promise<Array<T>> {
     return new Promise((resolve, reject) => {
         store_debug("store.readAll promise");
         try {
