@@ -63,34 +63,34 @@ export function findNextStep(start: GridPosition, goal: GridPosition): GridPosit
 	let nextStep = { x: start.x, y: start.y };
 	if (Math.abs(vector.x) > Math.abs(vector.y)) {
 	nextStep.x = start.x + 1;
-	} else {
-	nextStep.y = start.y + 1;}
-	return nextStep;
-
-}
-
-export function findPath(start: GridPosition, goal: GridPosition, terrain: Terrain[][]): Terrain[][] {
-    let current = { x: start.x, y: start.y };
-    const path: Terrain[][] = [];
-    let done = false;
-    let maxSteps = terrain.length + terrain[0].length; // obviously not the best way to do this, but is above the max possible steps
-    let steps = 0;
-    while (!done) {
-        if (current.x === goal.x && current.y === goal.y) {
-            done = true;
-        }
-        steps++;
-        if (steps > maxSteps) {
-            done = true;
-        }
-        path.push(terrain[current.x][current.y]);
-        current = findNextStep(current, goal);
-        if (terrain[current.x][current.y] === Terrain.BLOCKED) {
-            done = true;
-        }
-    }
-    return path;
-}
+ export function blockingLineOfSight(start: GridPosition, end: GridPosition, blocking: Array<GridPosition>): Array<GridPosition> {
+     const path = findPath(start, end, terrain);
+     const blockingLine = path.filter((position) => blocking.some((block) => block.x === position.x && block.y === position.y));
+     return blockingLine;
+ }
+ 
+ export function findPath(start: GridPosition, goal: GridPosition, terrain: Terrain[][]): GridPosition[] {
+     let current = { x: start.x, y: start.y };
+     const path: GridPosition[] = [];
+     let done = false;
+     let maxSteps = terrain.length + terrain[0].length; // obviously not the best way to do this, but is above the max possible steps
+     let steps = 0;
+     while (!done) {
+         if (current.x === goal.x && current.y === goal.y) {
+             done = true;
+         }
+         steps++;
+         if (steps > maxSteps) {
+             done = true;
+         }
+         path.push(current);
+         current = findNextStep(current, goal);
+         if (terrain[current.x][current.y] === Terrain.BLOCKED) {
+             done = true;
+         }
+     }
+     return path;
+ }
 
 // Add a statement or declaration here to fix the syntax error
 export {};
