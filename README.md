@@ -16,4 +16,20 @@ To view the Swagger UI interface:
 open http://localhost:8080/docs
 ```
 
+### Running Stryker.js Mutation Testing Locally
+To run Stryker.js mutation testing locally, follow these steps:
+
+1. Make sure you have Stryker.js installed globally by running `npm install -g stryker`.
+2. Run `stryker run --config-file stryker.conf.js` in the root directory of the project.
+3. Stryker.js will perform mutation testing and provide a report on the code coverage.
+
 This project leverages the mega-awesome [swagger-tools](https://github.com/apigee-127/swagger-tools) middleware which does most all the work.
+
+</old_file>
+
+### Running Stryker.js Mutation Testing Locally
+To run Stryker.js mutation testing locally, follow these steps:
+
+1. Make sure you have Stryker.js installed globally by running `npm install -g stryker`.
+2. Run `stryker run --config-file stryker.conf.js` in the root directory of the project.
+3. Stryker.js will perform mutation testing and provide a report on the code coverage.
