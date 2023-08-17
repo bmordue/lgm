@@ -60,5 +60,6 @@
     "source-map-support": "^0.5.21",
     "superagent": "^8.0.0",
     "typescript": "^4.7.4"
+    "@stryker-mutator/mocha-runner": "^7.1.1"
   }
 }
