@@ -69,26 +69,26 @@ export function findNextStep(start: GridPosition, goal: GridPosition): GridPosit
 
 }
 
-export function findPath(start: GridPosition, goal: GridPosition, terrain: Terrain[][]): GridPosition[] {
+export function findPath(start: GridPosition, goal: GridPosition, terrain: Terrain[][]): Terrain[][] {
     let current = { x: start.x, y: start.y };
-    const path :GridPosition[] = [];
+    const path: Terrain[][] = [];
     let done = false;
     let maxSteps = terrain.length + terrain[0].length; // obviously not the best way to do this, but is above the max possible steps
     let steps = 0;
     while (!done) {
-	if (    current.x === goal.x && current.y === goal.y) {
-		done = true;
-	}
-	steps++;
-	if (steps > maxSteps) {
-		done = true;
-
-	}
-	path.push(current);
-	current = findNextStep(current, goal);
-	if (terrain[current.x][current.y] === Terrain.BLOCKED) {
-		done = true;
-	}
+        if (current.x === goal.x && current.y === goal.y) {
+            done = true;
+        }
+        steps++;
+        if (steps > maxSteps) {
+            done = true;
+        }
+        path.push(terrain[current.x][current.y]);
+        current = findNextStep(current, goal);
+        if (terrain[current.x][current.y] === Terrain.BLOCKED) {
+            done = true;
+        }
     }
     return path;
+}
 }
