@@ -46,3 +46,5 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
         
         export {};
         }
+        }
+        }
