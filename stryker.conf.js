@@ -7,9 +7,7 @@ const config = {
   reporters: ["progress", "clear-text", "html"],
   coverageAnalysis: "off",
   
-  mochaOptions: {
-    files: ["lib/test/**/*.ts"],
-  },
+  
 };
 
 module.exports = config;
