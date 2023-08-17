@@ -85,11 +85,13 @@ export function findNextStep(start: GridPosition, goal: GridPosition): GridPosit
          }
          path.push(current);
          current = findNextStep(current, goal);
-         if (terrain[current.x][current.y] === Terrain.BLOCKED) {
-             done = true;
-         }
-     }
-     return path;
+    if (terrain[current.x][current.y] === Terrain.BLOCKED) {
+        done = true;
+    }
+}
+}
+
+export {};
  }
 
 // Add a statement or declaration here to fix the syntax error
