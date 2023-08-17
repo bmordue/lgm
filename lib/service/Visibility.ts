@@ -25,17 +25,17 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
     for (let x = 0; x < terrain.length; x++) {
     }
     
-    export function findPath(start: GridPosition, goal: GridPosition, terrain: Terrain[][]): GridPosition[] {
+    function findPath(start: GridPosition, goal: GridPosition, terrain: Terrain[][]): GridPosition[] {
         // Existing code for the function
     }
     
-    export function blockingLineOfSight(start: GridPosition, end: GridPosition, blocking: Array<GridPosition>): Array<GridPosition> {
+    function blockingLineOfSight(start: GridPosition, end: GridPosition, blocking: Array<GridPosition>): Array<GridPosition> {
         const path = findPath(start, end, terrain);
         const blockingLine = path.filter((position) => blocking.some((block) => block.x === position.x && block.y === position.y));
         return blockingLine;
     }
     
-    export function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
+    function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
         const vector = { x: goal.x - start.x, y: goal.y - start.y };
         let nextStep = { x: start.x, y: start.y };
         if (Math.abs(vector.x) > Math.abs(vector.y)) {
@@ -45,4 +45,5 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
         }
         return nextStep;
     }
+    return visible;
 }
