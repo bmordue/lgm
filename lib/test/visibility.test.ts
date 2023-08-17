@@ -1,6 +1,7 @@
 import { Terrain } from '../service/Models';
 import { visibility } from '../service/Visibility';
 import { GridPosition } from '../service/Models';
+import { Terrain } from '../service/Models'; // Import the Terrain type
 import assert = require('assert');
 
 describe("visibility tests", () => {
@@ -10,7 +11,7 @@ describe("visibility tests", () => {
       [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN],
       [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN]
     ];
-
+    
     const expectedVisible: boolean[][] = [
       [true, true, true],
       [true, true, true],
@@ -28,7 +29,7 @@ describe("visibility tests", () => {
       [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN],
       [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN]
     ];
-
+    
     assert.throws(() => {
       visibility({ x: 3, y: 3 }, terrain);
     }, Error);
