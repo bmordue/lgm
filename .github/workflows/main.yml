@@ -25,6 +25,9 @@ jobs:
       - name: Run tests
         run: npm test
 
+      - name: Install Stryker.js Mocha plugin
+        run: npm install @stryker-mutator/mocha-runner --save-dev
+      
       - name: Run Stryker.js mutation testing
-        run: npx stryker run
+        run: npx stryker run --plugins mocha-runner
 
