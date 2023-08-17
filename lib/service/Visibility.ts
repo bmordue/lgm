@@ -91,4 +91,7 @@ export function findPath(start: GridPosition, goal: GridPosition, terrain: Terra
     }
     return path;
 }
+
+// Add a statement or declaration here to fix the syntax error
+
 }
