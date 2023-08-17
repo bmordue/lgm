@@ -6,7 +6,7 @@ const config = {
   testRunner: "mocha",
   reporters: ["progress", "clear-text", "html"],
   coverageAnalysis: "off",
-  tsconfigFile: "tsconfig.json",
+  
   mochaOptions: {
     files: ["lib/test/**/*.ts"],
   },
