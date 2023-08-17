@@ -27,6 +27,7 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
     
     function findPath(start: GridPosition, goal: GridPosition, terrain: Terrain[][]): GridPosition[] {
         // Existing code for the function
+        return []; // Add a return statement at the end of the function
     }
     
     function blockingLineOfSight(start: GridPosition, end: GridPosition, blocking: Array<GridPosition>): Array<GridPosition> {
@@ -35,7 +36,7 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
         return blockingLine;
     }
     
-    function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
+    export function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
         const vector = { x: goal.x - start.x, y: goal.y - start.y };
         let nextStep = { x: start.x, y: start.y };
         if (Math.abs(vector.x) > Math.abs(vector.y)) {
