@@ -26,5 +26,5 @@ jobs:
         run: npm test
 
       - name: Run Stryker.js mutation testing
-        run: npx stryker run --config stryker.conf.js
+        run: npx stryker run
 
