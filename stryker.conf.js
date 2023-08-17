@@ -2,12 +2,12 @@
 
 const config = {
   mutate: ["lib/**/*.ts"],
-  mutator: "typescript",
-  testRunner: "mocha-runner",
+  testRunner: "mocha",
   reporters: ["progress", "clear-text", "html"],
-  coverageAnalysis: "off",
-  
-  
+  coverageAnalysis: "perTest",
+  mochaOptions: {
+    spec: [ "built/test" ]
+  }
 };
 
 module.exports = config;
