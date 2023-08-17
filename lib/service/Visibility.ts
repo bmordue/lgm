@@ -44,6 +44,7 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
             return nextStep;
         }
         
+        // Add a declaration or statement here to resolve the syntax error
         export {};
         }
         }
