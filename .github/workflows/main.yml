@@ -27,4 +27,3 @@ jobs:
 
       - name: Run Stryker.js mutation testing
         run: npx stryker run
-
