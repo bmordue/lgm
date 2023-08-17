@@ -6,3 +6,5 @@ built/
 log/
 coverage/
 .nyc_output/
+.env
+reports/

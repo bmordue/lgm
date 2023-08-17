@@ -3,7 +3,7 @@
 const config = {
   mutate: ["lib/**/*.ts"],
   testRunner: "mocha",
-  reporters: ["progress", "clear-text", "html", "json"],
+  reporters: ["progress", "clear-text", "html", "dashboard"],
   coverageAnalysis: "perTest",
   mochaOptions: {
     spec: [ "built/test" ]
