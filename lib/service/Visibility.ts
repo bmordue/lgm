@@ -53,8 +53,9 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
 }
 
 export function blockingLineOfSight(start: GridPosition, end: GridPosition, blocking: Array<GridPosition>): Array<GridPosition> {
-    const vector = { x: end.x - start.x, y: end.y - start.y };
-    return [];
+    const path = findPath(start, end, blocking);
+    const blockingLine = path.filter((position) => blocking.some((block) => block.x === position.x && block.y === position.y));
+    return blockingLine;
 }
 
 export function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
