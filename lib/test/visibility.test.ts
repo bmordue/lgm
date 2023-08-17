@@ -1,5 +1,6 @@
+import { Terrain } from '../service/Models';
 import { visibility } from '../service/Visibility';
-import { Terrain, GridPosition } from '../service/Models';
+import { GridPosition } from '../service/Models';
 import assert = require('assert');
 
 describe("visibility tests", () => {
