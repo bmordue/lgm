@@ -3,7 +3,7 @@
 const config = {
   mutate: ["lib/**/*.ts"],
   mutator: "typescript",
-  testRunner: "mocha",
+  testRunner: "mocha-runner",
   reporters: ["progress", "clear-text", "html"],
   coverageAnalysis: "off",
   
