@@ -1,4 +1,5 @@
-import { visibility, findNextStep } from '../service/Visibility';
+import { visibility } from '../service/Visibility';
+import { findNextStep } from '../service/Visibility';
 import { generateTerrain } from '../service/Rules';
 import { Terrain, GridPosition } from '../service/Models';
 import { visibilitySvg } from '../utils/Draw';
