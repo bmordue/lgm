@@ -92,7 +92,7 @@ export function findNextStep(start: GridPosition, goal: GridPosition): GridPosit
 }
 
 export {};
- }
+}
 
 // Add a statement or declaration here to fix the syntax error
 export {};
