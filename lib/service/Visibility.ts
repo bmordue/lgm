@@ -23,28 +23,73 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
 
     const visible: boolean[][] = [];
     for (let x = 0; x < terrain.length; x++) {
-    }
-    
-    function findPath(start: GridPosition, goal: GridPosition, terrain: Terrain[][]): GridPosition[] {
-        // Existing code for the function
-        return []; // Add a return statement at the end of the function
-    }
-    
-    function blockingLineOfSight(start: GridPosition, end: GridPosition, blocking: Array<GridPosition>): Array<GridPosition> {
-        const path = findPath(start, end, terrain);
-        const blockingLine = path.filter((position) => blocking.some((block) => block.x === position.x && block.y === position.y));
-        return blockingLine;
-    }
-    
-    export function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
-        const vector = { x: goal.x - start.x, y: goal.y - start.y };
-        let nextStep = { x: start.x, y: start.y };
-        if (Math.abs(vector.x) > Math.abs(vector.y)) {
-            nextStep.x = start.x + 1;
-        } else {
-            nextStep.y = start.y + 1;
+        visible.push(new Array<boolean>(terrain[x].length));
+        for (let y = 0; y < terrain[x].length; y++) {
+            if (terrain[x][y] === Terrain.BLOCKED) {
+                visible[x][y] = false;
+            } else visible[x][y] = true;
         }
-        return nextStep;
     }
+
+    // for each element in the visible grid
+    // check whether it is visible from the starting point
+    // if it is, set it to true
+    // if not, set it to false
+    for (let x = 0; x < visible.length; x++) {
+        for (let y = 0; y < visible[x].length; y++) {
+            if (terrain[x][y] === Terrain.BLOCKED) {    // don't check visibility from blocked terrain
+                continue;
+            }
+            const path = findPath(from, { x: x, y: y }, terrain);
+            if (path.filter((p) => terrain[p.x][p.y] === Terrain.BLOCKED).length !== 0) {
+                visible[x][y] = false;
+            } else {
+                visible[x][y] = true;
+            }
+        }
+    }
+
     return visible;
+}
+
+function blockingLineOfSight(start: GridPosition, end: GridPosition, terrainGrid: Terrain[][]): Array<GridPosition> {
+    const path = findPath(start, end, terrainGrid);
+    const blockingLine = path.filter((position) => terrainGrid[position.x][position.y] === Terrain.BLOCKED);
+    return blockingLine;
+}
+
+export function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
+    const vector = { x: goal.x - start.x, y: goal.y - start.y };
+    let nextStep = { x: start.x, y: start.y };
+    if (Math.abs(vector.x) > Math.abs(vector.y)) {
+        nextStep.x = start.x + 1;
+    } else {
+        nextStep.y = start.y + 1;
+    }
+    return nextStep;
+
+}
+
+export function findPath(start: GridPosition, goal: GridPosition, terrain: Terrain[][]): GridPosition[] {
+    let current = { x: start.x, y: start.y };
+    const path: GridPosition[] = [];
+    let done = false;
+    let maxSteps = terrain.length + terrain[0].length; // obviously not the best way to do this, but is above the max possible steps
+    let steps = 0;
+    while (!done) {
+        if (current.x === goal.x && current.y === goal.y) {
+            done = true;
+        }
+        steps++;
+        if (steps > maxSteps) {
+            done = true;
+
+        }
+        path.push(current);
+        current = findNextStep(current, goal);
+        if (terrain[current.x][current.y] === Terrain.BLOCKED) {
+            done = true;
+        }
+    }
+    return path;
 }
