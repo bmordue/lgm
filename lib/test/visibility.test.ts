@@ -1,16 +1,15 @@
 import { visibility } from '../service/Visibility';
-import { GridPosition } from '../service/Models';
-import { Terrain } from '../service/Models'; // Add this import
+import { Terrain } from '../service/Models';
 import assert = require('assert');
 
 describe("visibility tests", () => {
   it("should calculate visibility for a valid starting point", () => {
     const terrain: Terrain[][] = [
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN],
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN],
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN]
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY],
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY],
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY]
     ];
-    
+
     const expectedVisible: boolean[][] = [
       [true, true, true],
       [true, true, true],
@@ -24,11 +23,11 @@ describe("visibility tests", () => {
 
   it("should throw an error for an invalid starting point", () => {
     const terrain: Terrain[][] = [
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN],
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN],
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN]
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY],
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY],
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY]
     ];
-    
+
     assert.throws(() => {
       visibility({ x: 3, y: 3 }, terrain);
     }, Error);
@@ -40,11 +39,11 @@ describe("visibility tests", () => {
 describe("visibility tests", () => {
   it("should calculate visibility for a valid starting point", () => {
     const terrain: Terrain[][] = [
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN],
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN],
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN]
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY],
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY],
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY]
     ];
-    
+
     const expectedVisible: boolean[][] = [
       [true, true, true],
       [true, true, true],
@@ -58,15 +57,14 @@ describe("visibility tests", () => {
 
   it("should throw an error for an invalid starting point", () => {
     const terrain: Terrain[][] = [
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN],
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN],
-      [Terrain.OPEN, Terrain.OPEN, Terrain.OPEN]
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY],
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY],
+      [Terrain.EMPTY, Terrain.EMPTY, Terrain.EMPTY]
     ];
-    
+
     assert.throws(() => {
       visibility({ x: 3, y: 3 }, terrain);
     }, Error);
   });
 
-  // Add more test cases here to cover different scenarios and edge cases
 });
