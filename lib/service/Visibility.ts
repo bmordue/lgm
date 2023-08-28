@@ -60,7 +60,7 @@ function blockingLineOfSight(start: GridPosition, end: GridPosition, terrainGrid
 
 export function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
     const vector = { x: goal.x - start.x, y: goal.y - start.y };
-    let nextStep = { x: start.x, y: start.y };
+    const nextStep = { x: start.x, y: start.y };
     if (Math.abs(vector.x) > Math.abs(vector.y)) {
         nextStep.x = start.x + 1;
     } else {
@@ -74,7 +74,7 @@ export function findPath(start: GridPosition, goal: GridPosition, terrain: Terra
     let current = { x: start.x, y: start.y };
     const path: GridPosition[] = [];
     let done = false;
-    let maxSteps = terrain.length + terrain[0].length; // obviously not the best way to do this, but is above the max possible steps
+    const maxSteps = terrain.length + terrain[0].length; // obviously not the best way to do this, but is above the max possible steps
     let steps = 0;
     while (!done) {
         if (current.x === goal.x && current.y === goal.y) {
