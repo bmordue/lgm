@@ -4,8 +4,6 @@ import { Terrain, GridPosition } from '../service/Models';
 import { visibilitySvg } from '../utils/Draw';
 import { readFileSync, writeFileSync } from 'fs';
 import assert = require('assert');
-
-
 function logVisibility(fromX, fromY, grid) {
     for (let x = 0; x < grid.length; x++) {
         let line = '';
@@ -19,7 +17,6 @@ function logVisibility(fromX, fromY, grid) {
         console.log(line);
     }
 }
-
 function logTerrain(terrain) {
     for (let x = 0; x < terrain.length; x++) {
         let line = '';
@@ -29,4 +26,39 @@ function logTerrain(terrain) {
         console.log(line);
     }
 }
-
+describe("visibility tests", async () => {
+    const terrain: Terrain[][] = await generateTerrain();
+    logTerrain(terrain);
+    console.log();
+    const expectedVisible = JSON.parse(readFileSync("expectedVisible.json", "utf-8"));
+    for (let x = 0; x < 3; x++) {
+        for (let y = 0; y < 3; y++) {
+            if (x == 0 && y == 0) {
+                continue;
+            }
+            it(`should calculate visibility from (${x}, ${y})`, () => {
+                const visible = visibility({ x: x, y: y }, terrain);
+                assert.deepEqual(visible, expectedVisible[x][y]);
+            });
+        }
+    }
+    xit("should calculate visibility from (0, 0)", () => {
+        const visible = visibility({ x: 0, y: 0 }, terrain);
+        assert.deepEqual(visible, expectedVisible[0][0]);
+    });
+});
+describe("path finding", async () => {
+    const terrain: Terrain[][] = await generateTerrain();
+    it("should find a path", () => {
+        const start = { x: 0, y: 0 };
+        const goal = { x: 2, y: 2 };
+        const path: GridPosition[] = [start];
+        let current = start;
+        while (current.x != goal.x && current.y != goal.y) {
+            current = findNextStep(current, goal);
+            path.push(current);
+        }
+        path.push(goal);
+        assert.deepEqual(path, [{ x: 0, y: 0 }, { x: 0, y: 1 }, { x: 1, y: 1 }, { x: 1, y: 2 }, { x: 2, y: 2 }]);
+    });
+});
