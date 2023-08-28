@@ -9,7 +9,7 @@ function within(x: number, y: number, grid: Array<Array<unknown>>): boolean {
     return x >= 0
         && y >= 0
         && x < grid.length
-        && y < grid[0].length; // assumes a square grid
+        && y < grid[x].length;
 }
 
 export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][] {
@@ -52,19 +52,15 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
     return visible;
 }
 
-function blockingLineOfSight(start: GridPosition, end: GridPosition, terrainGrid: Terrain[][]): Array<GridPosition> {
-    const path = findPath(start, end, terrainGrid);
-    const blockingLine = path.filter((position) => terrainGrid[position.x][position.y] === Terrain.BLOCKED);
-    return blockingLine;
-}
+
 
 export function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
     const vector = { x: goal.x - start.x, y: goal.y - start.y };
     let nextStep = { x: start.x, y: start.y };
     if (Math.abs(vector.x) > Math.abs(vector.y)) {
-        nextStep.x = start.x + 1;
+        nextStep.x = start.x + Math.sign(vector.x);
     } else {
-        nextStep.y = start.y + 1;
+        nextStep.y = start.y + Math.sign(vector.y);
     }
     return nextStep;
 
@@ -74,7 +70,7 @@ export function findPath(start: GridPosition, goal: GridPosition, terrain: Terra
     let current = { x: start.x, y: start.y };
     const path: GridPosition[] = [];
     let done = false;
-    let maxSteps = terrain.length + terrain[0].length; // obviously not the best way to do this, but is above the max possible steps
+    const maxSteps = terrain.length * terrain[0].length;
     let steps = 0;
     while (!done) {
         if (current.x === goal.x && current.y === goal.y) {
@@ -83,7 +79,6 @@ export function findPath(start: GridPosition, goal: GridPosition, terrain: Terra
         steps++;
         if (steps > maxSteps) {
             done = true;
-
         }
         path.push(current);
         current = findNextStep(current, goal);
