@@ -62,9 +62,9 @@ export function findNextStep(start: GridPosition, goal: GridPosition): GridPosit
     const vector = { x: goal.x - start.x, y: goal.y - start.y };
     const nextStep = { x: start.x, y: start.y };
     if (Math.abs(vector.x) > Math.abs(vector.y)) {
-        nextStep.x = start.x + 1;
+        nextStep.x = start.x + Math.sign(vector.x);
     } else {
-        nextStep.y = start.y + 1;
+        nextStep.y = start.y + Math.sign(vector.y);
     }
     return nextStep;
 
