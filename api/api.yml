@@ -29,7 +29,7 @@ paths:
     put:
       summary: join a game
       operationId: joinGame
-            security:
+      security:
         - basicAuth: []
 
       x-exegesis-controller: Default
