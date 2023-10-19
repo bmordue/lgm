@@ -1,4 +1,4 @@
-import { visibility, findNextStep, findPath } from '../service/Visibility';
+import { visibility, findNextStep, findPath, within } from '../service/Visibility';
 import { generateTerrain } from '../service/Rules';
 import { Terrain, GridPosition } from '../service/Models';
 import { readFileSync } from 'fs';
@@ -144,6 +144,32 @@ describe("findPath through empty terrain", () => {
         assert.deepEqual(findPath(start, goal, terrain), expectedPath);
     });
 
+});
+
+describe("within function tests", () => {
+    it("should return false when the grid is undefined", () => {
+        assert.equal(within({ x: 0, y: 0 }, undefined), false);
+    });
+
+    it("should return false when the grid is an empty array", () => {
+        assert.equal(within({ x: 0, y: 0 }, []), false);
+    });
+
+    it("should return false when the x and y coordinates are negative", () => {
+        assert.equal(within({ x: -1, y: -1 }, [[1, 2], [3, 4]]), false);
+    });
+
+    it("should return false when the x coordinate is greater than the length of the grid", () => {
+        assert.equal(within({ x: 2, y: 0 }, [[1, 2], [3, 4]]), false);
+    });
+
+    it("should return false when the y coordinate is greater than the length of the first element of the grid", () => {
+        assert.equal(within({ x: 0, y: 2 }, [[1, 2], [3, 4]]), false);
+    });
+
+    it("should return true when the x and y coordinates are within the bounds of the grid", () => {
+        assert.equal(within({ x: 0, y: 0 }, [[1, 2], [3, 4]]), true);
+    });
 });
 
 describe.skip("findPath with some blocked terrain", () => {
