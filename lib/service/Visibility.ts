@@ -75,7 +75,7 @@ export function findNextStep(start: GridPosition, goal: GridPosition): GridPosit
   return nextStep;
 }
 
-export { visibility, findNextStep, findPath, within, within };
+export { visibility, findNextStep, findPath, within };
 let current = { x: start.x, y: start.y };
 const path: GridPosition[] = [];
 let done = false;
