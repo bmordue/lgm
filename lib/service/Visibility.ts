@@ -70,11 +70,11 @@ export function findNextStep(start: GridPosition, goal: GridPosition): GridPosit
 
 }
 
-export function findPath(start: GridPosition, goal: GridPosition, terrain: Terrain[][]): GridPosition[] {
+export { visibility, findNextStep, findPath, within };
     let current = { x: start.x, y: start.y };
     const path: GridPosition[] = [];
     let done = false;
-    const maxSteps = terrain.length + terrain[0].length; // obviously not the best way to do this, but is above the max possible steps
+    const maxSteps = terrain.length * terrain[0].length; // calculates the total number of cells in the terrain grid
     let steps = 0;
     while (!done) {
         if (current.x === goal.x && current.y === goal.y) {
