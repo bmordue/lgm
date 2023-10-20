@@ -1,12 +1,12 @@
-import { GridPosition, Terrain } from "./Models";
-import { warn } from "../utils/Logger";
-
-function within(x: number, y: number, grid: Array<Array<unknown>>): boolean {
-  if (!grid || !grid.length) {
-    return false;
+export function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
+  const vector = { x: goal.x - start.x, y: goal.y - start.y };
+  const nextStep = { x: start.x, y: start.y };
+  if (Math.abs(vector.x) > Math.abs(vector.y)) {
+    nextStep.x = start.x + Math.sign(vector.x);
+  } else {
+    nextStep.y = start.y + Math.sign(vector.y);
   }
-
-  return x >= 0 && y >= 0 && x < grid.length && y < grid[0].length; // assumes a square grid
+  return nextStep;
 }
 
 export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][] {
@@ -24,27 +24,29 @@ export function visibility(from: GridPosition, terrain: Terrain[][]): boolean[][
     for (let y = 0; y < terrain[x].length; y++) {
       if (terrain[x][y] === Terrain.BLOCKED) {
         visible[x][y] = false;
-      } else visible[x][y] = true;
+      } else {
+        visible[x][y] = true;
+      }
     }
   }
 
-  // for each element in the visible grid
-  // check whether it is visible from the starting point
-  // if it is, set it to true
-  // if not, set it to false
+  // for each cell in the visibility grid
+  // check whether the cell is visible from the starting point
+  // if the cell is visible, set its value in the visibility grid to true
+  // if the cell is not visible, set its value in the visibility grid to false
   for (let x = 0; x < visible.length; x++) {
-      for (let y = 0; y < visible[x].length; y++) {
-          if (terrain[x][y] === Terrain.BLOCKED) {
-              // don't check visibility from blocked terrain
-              continue;
-          }
-          const path = findPath(from, { x: x, y: y }, terrain);
-          if (path.filter((p) => (terrain[p.x][p.y] === Terrain.BLOCKED)).length !== 0) {
-              visible[x][y] = false;
-          } else {
-              visible[x][y] = true;
-          }
+    for (let y = 0; y < visible[x].length; y++) {
+      if (terrain[x][y] === Terrain.BLOCKED) {
+        // skip cells that are blocked terrain, as they are not visible
+        continue;
       }
+      const path = findPath(from, { x: x, y: y }, terrain);
+      if (path.filter((p) => terrain[p.x][p.y] === Terrain.BLOCKED).length !== 0) {
+        visible[x][y] = false;
+      } else {
+        visible[x][y] = true;
+      }
+    }
   }
 
   return visible;
@@ -63,7 +65,7 @@ function blockingLineOfSight(
 }
 
 export function findNextStep(start: GridPosition, goal: GridPosition): GridPosition {
-  const vector = { x: (goal.x - start.x), y: (goal.y - start.y) };
+  const vector = { x: goal.x - start.x, y: goal.y - start.y };
   const nextStep = { x: start.x, y: start.y };
   if (Math.abs(vector.x) > Math.abs(vector.y)) {
     nextStep.x = start.x + Math.sign(vector.x);
