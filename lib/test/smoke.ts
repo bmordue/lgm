@@ -84,14 +84,13 @@ describe("smoke - integration", () => {
             }).catch((resp) => done(new Error(resp.message)));
     });
 
-    it("post orders for the wrong game/player (Player 1 is not in Game 1)", (done) => {
-        lgm.postOrders({ orders: [] }, 1, 1, 1)
-            .then(() => {
-                done(new Error("Expected postOrders to reject"));
-            }).catch((resp) => {
-                assert.deepEqual(resp, "postOrders: order validation failed");
-                done();
-            });
+    it("post orders for the wrong game/player (Player 1 is not in Game 1)", async () => {
+        try {
+            await lgm.postOrders({ orders: [] }, 1, 1, 1);
+            throw new Error("Expected postOrders to reject");
+        } catch (e) {
+            assert.deepEqual(e.message, "playerId is not in game.players array");
+        }
     });
 
     it("post orders for Player 1 in Game 0 (turn is not complete)", (done) => {
