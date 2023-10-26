@@ -84,7 +84,7 @@ export async function joinGame(gameId: number): Promise<JoinGameResponse> {
         return Promise.resolve(joinGameResponseOf(await rules.filterGameForPlayer(gameId, playerId)));
     } catch (e) {
         logger.error(util.format("failed to join game: %j", e));
-        return Promise.reject("failed to join game");
+        return Promise.reject(e);
     }
 }
 
@@ -150,7 +150,7 @@ async function validateOrders(requestOrders: Array<RequestActorOrders>, gameId: 
         game = await store.read<Game>(store.keys.games, gameId);
     } catch (e) {
         logger.debug(util.format("validateOrders: failed to load game object: %j", e));
-        return Promise.reject("failed to load game object");
+        return Promise.reject(e);
     }
     const turnOrders: TurnOrders = {
         gameId: gameId,
@@ -160,19 +160,19 @@ async function validateOrders(requestOrders: Array<RequestActorOrders>, gameId: 
     };
     if (!game.players.includes(playerId)) {
         logger.debug("reject: playerId is not in game.players array");
-        return Promise.reject("playerId is not in game.players array");
+        return Promise.reject(new Error("playerId is not in game.players array"));
     }
 
     if (game.turn != turn) {
         logger.debug(util.format("reject: orders turn (%s) does not match game turn (%s)", turn, game.turn));
-        return Promise.reject("orders turn does not match game turn");
+        return Promise.reject(new Error("orders turn does not match game turn"));
     }
 
     try {
         turnOrders.orders = await validateRequestOrders(requestOrders);
     } catch (e) {
         logger.debug(util.format("validateOrders: failed validate request orders: %j", e));
-        return Promise.reject("failed to validate request orders");
+        return Promise.reject(e);
     }
 
     return Promise.resolve(turnOrders);
@@ -185,7 +185,7 @@ async function storeOrders(turnOrders: TurnOrders): Promise<PostOrdersResponse> 
     const existing = await store.readAll<TurnOrders>(store.keys.turnOrders, anyExistingOrders(turnOrders));
     if (existing.length > 0) {
         const msg = "storeOrders: turnOrders already exists for this game-turn-player";
-        return Promise.reject(msg);
+        return Promise.reject(new Error(msg));
         // logger.debug("storeOrders: replace existing orders");
         // await store.update(store.keys.turnOrders, existing[0].id, {orders: body.orders});
         // summary.ordersId = existing[0].id;
@@ -207,7 +207,8 @@ export async function postOrders(body: PostOrdersBody, gameId: number, turn: num
     try {
         validatedOrders = await validateOrders(body.orders, gameId, turn, playerId);
     } catch (e) {
-        return Promise.reject("postOrders: order validation failed");
+        logger.debug("postOrders: order validation failed")
+        return Promise.reject(e);
     }
     return Promise.resolve(postOrdersResponseOf(storeOrders(validatedOrders)));
 }
@@ -231,7 +232,7 @@ export async function turnResults(gameId: number, turn: number, playerId: number
     } else if (results.length == 1) {
         return Promise.resolve({ success: true, results: results[0] });
     } else {
-        return Promise.reject("expected a single result for turn results");
+        return Promise.reject(new Error("expected a single result for turn results"));
     }
 }
 
