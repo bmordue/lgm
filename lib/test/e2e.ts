@@ -2,8 +2,7 @@ import superagent = require('superagent');
 import assert = require('assert');
 import util = require('util');
 import { TurnOrders } from '../service/Models';
-import { CreateGameResponse, JoinGameResponse } from '../service/GameService';
-import { format, inspect } from 'util';
+import { inspect } from 'util';
 
 // const TEST_AUTH_TOKEN = 'dummy auth';
 

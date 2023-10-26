@@ -1,6 +1,5 @@
 import lgm = require('../service/GameService');
 import assert = require('assert');
-import { inspect } from 'util';
 
 describe("DefaultService", function () {
     describe("fillOrTruncateOrdersList()", function () {

@@ -48,7 +48,6 @@ export interface TurnResultsResponse {
  **/
 export async function createGame(): Promise<CreateGameResponse> {
     const worldId = await rules.createWorld();
-    //        const gameId = await store.create<Game>(store.keys.games, { turn: 1, turnComplete: false, worldId: worldId });
     const gameId = await store.create<Game>(store.keys.games, { turn: 1, worldId: worldId });
     return Promise.resolve({ id: gameId });
 }
@@ -70,7 +69,7 @@ export async function joinGame(gameId: number): Promise<JoinGameResponse> {
         logger.debug(`gameId: ${inspect(gameId)}`);
         const game = await store.read<Game>(store.keys.games, gameId);
         const playerId = await store.create(store.keys.players, { gameId: gameId });
-        const updatedGame = await addPlayerToGame(game, playerId);
+        const updatedGame = addPlayerToGame(game, playerId);
         logger.debug("joinGame update game");
         await store.replace(store.keys.games, gameId, updatedGame);
         logger.debug("joinGame: read world object");
@@ -102,8 +101,6 @@ function addPlayerToGame(game: Game, playerId: number) {
         game.players = [playerId];
     }
     return game;
-    // resolve(game);
-    // });
 }
 
 /**
@@ -125,7 +122,7 @@ function numbersToDirections(orderNos: Array<number>): Array<Direction> {
 export function fillOrTruncateOrdersList(ordersList: Array<Direction>) {
     const corrected = new Array(rules.TIMESTEP_MAX);
     for (let i = 0; i < corrected.length; i++) {
-        corrected[i] = i < ordersList.length ? ordersList[i] : 6; //Direction.NONE;
+        corrected[i] = i < ordersList.length ? ordersList[i] : Direction.NONE;
     }
     return corrected;
 }
@@ -186,12 +183,7 @@ async function storeOrders(turnOrders: TurnOrders): Promise<PostOrdersResponse> 
     if (existing.length > 0) {
         const msg = "storeOrders: turnOrders already exists for this game-turn-player";
         return Promise.reject(new Error(msg));
-        // logger.debug("storeOrders: replace existing orders");
-        // await store.update(store.keys.turnOrders, existing[0].id, {orders: body.orders});
-        // summary.ordersId = existing[0].id;
     }
-    //            logger.debug("storeOrders: create new orders");
-    //            const turnOrders :TurnOrders = { gameId: gameId, turn: turn, playerId: playerId, orders: body.orders, id: null };
     const ordersId = await store.create<TurnOrders>(store.keys.turnOrders, turnOrders);
     const turnStatus = await rules.process(ordersId);
     return Promise.resolve({ turnStatus: turnStatus });

@@ -15,8 +15,8 @@ const __dirname = path.dirname(__filename);
 
 async function createServer() {
     async function sessionAuthenticator(pluginContext) {
-        let session = pluginContext.req.headers.session;
-        session = 'secret'; // TODO remove this line!!
+        const session = pluginContext.req.headers.session;
+
         if (!session) {
             return { type: 'missing', statusCode: 401, message: 'Session key required' };
         } else if (session === 'secret') {
