@@ -10,26 +10,32 @@ To run the server, run:
 npm start
 ```
 
-To view the Swagger UI interface:
+### Tests
 
-```
-open http://localhost:8080/docs
-```
+Run `npm test`.
 
-### Running Stryker.js Mutation Testing Locally
-To run Stryker.js mutation testing locally, follow these steps:
+Some tests only run if an env var is set:
 
-1. Make sure you have Stryker.js installed globally by running `npm install -g stryker`.
-2. Run `stryker run --config-file stryker.conf.js` in the root directory of the project.
-3. Stryker.js will perform mutation testing and provide a report on the code coverage.
+`RUN_E2E_TESTS=true npm test`
 
-This project leverages the mega-awesome [swagger-tools](https://github.com/apigee-127/swagger-tools) middleware which does most all the work.
+or 
 
-</old_file>
+`RUN_E2E_TESTS=true npx mocha built/test/e2e.js` for just the e2e tests.
+
 
 ### Running Stryker.js Mutation Testing Locally
-To run Stryker.js mutation testing locally, follow these steps:
 
-1. Make sure you have Stryker.js installed globally by running `npm install -g stryker`.
-2. Run `stryker run --config-file stryker.conf.js` in the root directory of the project.
-3. Stryker.js will perform mutation testing and provide a report on the code coverage.
+Run `npz stryker run --config-file stryker.conf.js` in the root directory of the project.
+
+Stryker.js will perform mutation testing and provide a report on the code coverage.
+
+# TODO
+
+Joining games
+- should limit number of players in a game
+- owner sets player limit is set when game is created
+- cannot join twice with the same user session
+- user session may be joined to many games
+
+Game world
+- API to get state of the world for a given turn

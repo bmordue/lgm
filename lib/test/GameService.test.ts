@@ -1,4 +1,4 @@
-import lgm = require('../service/DefaultService');
+import lgm = require('../service/GameService');
 import assert = require('assert');
 import { inspect } from 'util';
 
@@ -49,7 +49,13 @@ describe("DefaultService", function () {
             const myActors = allActors.filter((a) => { return a.owner === playerTwoId });
             assert.equal(allActors.length, 18);
             assert.equal(myActors.length, 9);
-            console.log(inspect(joinGameResponse.world, null, 4));
+        });
+
+        it("joining a second time creates a new player", async () => {
+            const firstResp = await lgm.joinGame(gameId);
+            const secondResp = await lgm.joinGame(gameId);
+            assert.equal(firstResp.gameId, secondResp.gameId);
+            assert.notEqual(firstResp.playerId, secondResp.playerId);
         });
     });
 });

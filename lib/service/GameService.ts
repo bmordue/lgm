@@ -33,7 +33,6 @@ export interface JoinGameResponse {
     playerId: number;
     turn: number;
     world: World;
-    //    id: number;
 }
 
 export interface TurnResultsResponse {

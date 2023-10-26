@@ -1,4 +1,4 @@
-import lgm = require('../service/DefaultService');
+import lgm = require('../service/GameService');
 import assert = require('assert');
 import { Actor, Direction, World } from '../service/Models';
 import { TIMESTEP_MAX } from '../service/Rules';
@@ -287,7 +287,7 @@ describe("complete first turn with one player - moving forward orders", () => {
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
         world = invitation.world;
-        myActors = world.actors.filter((a) =>  a.owner === playerId );
+        myActors = world.actors.filter((a) => a.owner === playerId);
     });
 
     it("post orders for first turn", async function () {

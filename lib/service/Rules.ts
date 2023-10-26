@@ -7,7 +7,7 @@ import {
     Game, GridPosition, Direction, ActorOrders, Actor, ActorState, World,
     Terrain, TurnStatus, TurnOrders, TurnResult
 } from './Models';
-import { JoinGameResponse } from './DefaultService';
+import { JoinGameResponse } from './GameService';
 
 export const TIMESTEP_MAX = 10;
 
