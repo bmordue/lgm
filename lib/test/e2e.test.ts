@@ -1,6 +1,4 @@
 import assert = require('assert');
-import superagent = require('superagent');
-import util = require('util');
 import { createAGame, joinAGame, sendOrders, getTurnResults } from './e2e';
 
 describe('e2e tests', () => {
