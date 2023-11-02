@@ -32,10 +32,10 @@ Stryker.js will perform mutation testing and provide a report on the code covera
 # TODO
 
 Joining games
-- should limit number of players in a game
-- owner sets player limit is set when game is created
-- cannot join twice with the same user session
-- user session may be joined to many games
+  - should limit number of players in a game
+  - owner sets player limit is set when game is created
+  - cannot join twice with the same user session
+  - user session may be joined to many games
 
 Game world
-- API to get state of the world for a given turn
+  - API to get state of the world for a given turn
