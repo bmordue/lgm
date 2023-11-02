@@ -1,13 +1,12 @@
 import { ExegesisContext } from 'exegesis';
-import { inspect } from 'util';
-import Default = require('../service/DefaultService');
+import GameService = require('../service/GameService');
 
 module.exports.createGame = function createGame() {
-    return Default.createGame();
+    return GameService.createGame();
 };
 
 module.exports.joinGame = function joinGame(context: ExegesisContext) {
-    return Default.joinGame(context.params.path.id);
+    return GameService.joinGame(context.params.path.id);
 };
 
 module.exports.postOrders = function postOrders(context: ExegesisContext) {
@@ -16,7 +15,7 @@ module.exports.postOrders = function postOrders(context: ExegesisContext) {
     const turn = context.params.path.turn;
     const playerId = context.params.path.playerId;
 
-    return Default.postOrders(body, gameId, turn, playerId);
+    return GameService.postOrders(body, gameId, turn, playerId);
 };
 
 module.exports.turnResults = function turnResults(context: ExegesisContext) {
@@ -24,5 +23,5 @@ module.exports.turnResults = function turnResults(context: ExegesisContext) {
     const gameId = context.params.path.gameId;
     const turn = context.params.path.turn;
     const playerId = context.params.path.playerId;
-    return Default.turnResults(gameId, turn, playerId);
+    return GameService.turnResults(gameId, turn, playerId);
 };
