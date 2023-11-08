@@ -40,7 +40,7 @@ describe("visibility tests", async () => {
   console.log();
 
   const expectedVisible = JSON.parse(
-    readFileSync("expectedVisible.json", "utf-8"),
+    readFileSync("expectedVisible.json", "utf-8")
   );
 
   //    logVisibility(0, 0, expectedVisible[0][0]);
@@ -163,50 +163,61 @@ describe("findPath through empty terrain", () => {
 
 describe("within function tests", () => {
   it("should return false when the grid is undefined", () => {
-    assert.equal(within({ x: 0, y: 0 }, undefined), false);
+    assert.equal(within(0, 0, undefined), false);
   });
 
   it("should return false when the grid is an empty array", () => {
-    assert.equal(within({ x: 0, y: 0 }, []), false);
+    assert.equal(within(0, 0, []), false);
   });
 
   it("should return false when the x and y coordinates are negative", () => {
     assert.equal(
-      within({ x: -1, y: -1 }, [
+      within(-1, -1, [
         [1, 2],
         [3, 4],
       ]),
-      false,
+      false
     );
   });
 
   it("should return false when the x coordinate is greater than the length of the grid", () => {
     assert.equal(
-      within({ x: 2, y: 0 }, [
+      within(2, 0, [
         [1, 2],
         [3, 4],
       ]),
-      false,
+      false
     );
   });
 
   it("should return false when the y coordinate is greater than the length of the first element of the grid", () => {
     assert.equal(
-      within({ x: 0, y: 2 }, [
+      within(0, 2, [
         [1, 2],
         [3, 4],
       ]),
-      false,
+      false
     );
   });
 
-  it("should return true when the x and y coordinates are within the bounds of the grid", () => {
+  it("should return true when the x and y coordinates are within the bounds of the grid (2x2)", () => {
     assert.equal(
-      within({ x: 0, y: 0 }, [
-        [1, 2],
-        [3, 4],
+      within(0, 0, [
+        [0, 0],
+        [0, 0],
       ]),
-      true,
+      true
+    );
+  });
+
+  it("should return true when the x and y coordinates are within the bounds of the grid (3x3)", () => {
+    assert.equal(
+      within(0, 0, [
+        [0, 0, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+      ]),
+      true
     );
   });
 });
