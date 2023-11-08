@@ -2,7 +2,7 @@ import lgm = require('../service/GameService');
 import assert = require('assert');
 import { Actor, Direction, TurnResult, World } from '../service/Models';
 import { TIMESTEP_MAX } from '../service/Rules';
-import { readFileSync } from 'fs';
+import { readFileSync, writeFileSync } from 'fs';
 
 describe("smoke - integration", () => {
     before(() => {
@@ -309,17 +309,12 @@ describe("complete first turn with one player - moving forward orders", () => {
     it("get turn result for first turn", async function () {
         const firstTurnResult = await lgm.turnResults(gameId, 1, playerId);
 
-        // const expected = {
-        //     results: {
-        //         gameId: gameId,
-        //         id: 1,
-        //         updatedActors: [],
-        //         playerId: playerId,
-        //         turn: 1
-        //     },
-        //     success: true
-        // };
-        assert.equal(firstTurnResult.success, true);
+        const expected: lgm.TurnResultsResponse = JSON.parse(readFileSync('lib/test/fixtures/turnResult_2.json', { encoding: "utf-8" }));
+        expected.results.id = firstTurnResult.results.id; // cheating a bit
+        expected.results.gameId = gameId;
+        expected.results.playerId = playerId;
+
+        assert.deepEqual(firstTurnResult, expected);
     });
 });
 
