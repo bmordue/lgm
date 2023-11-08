@@ -6,7 +6,7 @@
   "scripts": {
     "prestart": "tsc",
     "start": "node built/index.js",
-    "test": "nyc mocha built/test",
+    "test": "tsc && nyc mocha built/test",
     "build": "tsc",
     "watch": "tsc -w",
     "serve": "node built/index.js",
