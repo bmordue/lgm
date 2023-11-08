@@ -1,8 +1,8 @@
 import lgm = require('../service/GameService');
 import assert = require('assert');
-import { Actor, Direction, TurnResult, World } from '../service/Models';
+import { Actor, Direction, World } from '../service/Models';
 import { TIMESTEP_MAX } from '../service/Rules';
-import { readFileSync, writeFileSync } from 'fs';
+import { readFileSync } from 'fs';
 
 describe("smoke - integration", () => {
     before(() => {
