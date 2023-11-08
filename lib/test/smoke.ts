@@ -1,7 +1,8 @@
 import lgm = require('../service/GameService');
 import assert = require('assert');
-import { Actor, Direction, World } from '../service/Models';
+import { Actor, Direction, TurnResult, World } from '../service/Models';
 import { TIMESTEP_MAX } from '../service/Rules';
+import { readFileSync } from 'fs';
 
 describe("smoke - integration", () => {
     before(() => {
@@ -206,17 +207,17 @@ describe("complete first two turns with one player - empty orders", () => {
 
     it("get turn result for second turn", async function () {
         const secondTurnResult = await lgm.turnResults(gameId, 2, playerId);
-        // const expected = {
-        //     results: {
-        //         gameId: gameId,
-        //         id: 2,
-        //         updatedActors: [],
-        //         playerId: playerId,
-        //         turn: 2
-        //     },
-        //     success: true
-        // };
-        // assert.deepEqual(secondTurnResult, expected);
+        const expected = {
+            results: {
+                gameId: gameId,
+                id: 2,
+                updatedActors: [],
+                playerId: playerId,
+                turn: 2
+            },
+            success: true
+        };
+        assert.deepEqual(secondTurnResult, expected);
         assert.equal(secondTurnResult.success, true);
     });
 });
@@ -260,17 +261,12 @@ describe("complete first turn with one player - standing still orders", () => {
     it("get turn result for first turn", async function () {
         const firstTurnResult = await lgm.turnResults(gameId, 1, playerId);
 
-        // const expected = {
-        //     results: {
-        //         gameId: gameId,
-        //         id: 1,
-        //         updatedActors: [],
-        //         playerId: playerId,
-        //         turn: 1
-        //     },
-        //     success: true
-        // };
-        assert.equal(firstTurnResult.success, true);
+        const expected: lgm.TurnResultsResponse = JSON.parse(readFileSync('lib/test/fixtures/turnResult_1.json', { encoding: "utf-8" }));
+        expected.results.id = firstTurnResult.results.id; // cheating a bit
+        expected.results.gameId = gameId;
+        expected.results.playerId = playerId;
+
+        assert.deepEqual(firstTurnResult, expected);
     });
 });
 
