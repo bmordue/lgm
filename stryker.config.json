@@ -8,7 +8,7 @@
     "dashboard"
   ],
   "dashboard": {
-    "project": "lgm"
+    "project": "github.com/bmordue/lgm"
   },
   "testRunner": "mocha",
   "testRunner_comment": "Take a look at (missing 'homepage' URL in package.json) for information about the mocha plugin.",
