@@ -23,22 +23,8 @@ module.exports.postOrders = function postOrders(context: ExegesisContext) {
 };
 
 module.exports.turnResults = function turnResults(context: ExegesisContext) {
-    //gameId: number, turn: number, playerId: number) {
     const gameId = context.params.path.gameId;
     const turn = context.params.path.turn;
     const playerId = context.params.path.playerId;
-    return GameService.turnResults(gameId, turn, playerId);
-};
-    const turn = context.params.path.turn;
-    const playerId = context.params.path.playerId;
-    return GameService.turnResults(gameId, turn, playerId);
-};
-    const turn = context.params.path.turn;
-    const playerId = context.params.path.playerId;
-    return GameService.turnResults(gameId, turn, playerId);
-};
-    if (existingResults) {
-        return existingResults;
-    }
     return GameService.turnResults(gameId, turn, playerId);
 };
