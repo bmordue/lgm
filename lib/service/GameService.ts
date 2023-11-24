@@ -54,17 +54,12 @@ export interface TurnResultsResponse {
  * returns GameCreatedResponse
  **/
 export async function createGame(): Promise<CreateGameResponse> {
-  const existingGame = await store.readAll<Game>(store.keys.games, () => true);
-  if (existingGame.length > 0) {
-    return Promise.resolve({ id: existingGame[0].id });
-  } else {
     const worldId = await rules.createWorld();
     const gameId = await store.create<Game>(store.keys.games, {
       turn: 1,
       worldId: worldId,
     });
     return Promise.resolve({ id: gameId });
-  }
 }
 
 /**
@@ -112,9 +107,6 @@ function addPlayerToGame(game: Game, playerId: number) {
   if (game.players) {
     logger.debug("addPlayerToGame append to existing");
     game.players.push(playerId);
-export async function checkExistingGame(): Promise<Game[]> {
-  return await store.readAll<Game>(store.keys.games, () => true);
-}
   } else {
     logger.debug("addPlayerToGame new list");
     game.players = [playerId];

@@ -2,10 +2,6 @@ import { ExegesisContext } from "exegesis";
 import GameService = require("../service/GameService");
 
 module.exports.createGame = async function createGame() {
-  const existingGame = await GameService.checkExistingGame();
-  if (existingGame) {
-    return existingGame;
-  }
   return GameService.createGame();
 };
 
