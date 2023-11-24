@@ -47,9 +47,14 @@ export interface TurnResultsResponse {
  * returns GameCreatedResponse
  **/
 export async function createGame(): Promise<CreateGameResponse> {
-    const worldId = await rules.createWorld();
-    const gameId = await store.create<Game>(store.keys.games, { turn: 1, worldId: worldId });
-    return Promise.resolve({ id: gameId });
+    const existingGame = await store.readAll<Game>(store.keys.games);
+    if (existingGame.length > 0) {
+        return Promise.resolve({ id: existingGame[0].id });
+    } else {
+        const worldId = await rules.createWorld();
+        const gameId = await store.create<Game>(store.keys.games, { turn: 1, worldId: worldId });
+        return Promise.resolve({ id: gameId });
+    }
 }
 
 
@@ -221,10 +226,8 @@ export async function turnResults(gameId: number, turn: number, playerId: number
 
     if (results.length == 0) {
         return Promise.resolve({ success: false, message: "turn results not available" });
-    } else if (results.length == 1) {
-        return Promise.resolve({ success: true, results: results[0] });
     } else {
-        return Promise.reject(new Error("expected a single result for turn results"));
+        return Promise.resolve({ success: true, results: results[0] });
     }
 }
 
