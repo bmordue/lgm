@@ -1,7 +1,11 @@
 import { ExegesisContext } from 'exegesis';
 import GameService = require('../service/GameService');
 
-module.exports.createGame = function createGame() {
+module.exports.createGame = async function createGame() {
+    const existingGame = await GameService.checkExistingGame();
+    if (existingGame) {
+        return existingGame;
+    }
     return GameService.createGame();
 };
 
@@ -23,5 +27,18 @@ module.exports.turnResults = function turnResults(context: ExegesisContext) {
     const gameId = context.params.path.gameId;
     const turn = context.params.path.turn;
     const playerId = context.params.path.playerId;
+    return GameService.turnResults(gameId, turn, playerId);
+};
+    const turn = context.params.path.turn;
+    const playerId = context.params.path.playerId;
+    return GameService.turnResults(gameId, turn, playerId);
+};
+    const turn = context.params.path.turn;
+    const playerId = context.params.path.playerId;
+    return GameService.turnResults(gameId, turn, playerId);
+};
+    if (existingResults) {
+        return existingResults;
+    }
     return GameService.turnResults(gameId, turn, playerId);
 };
