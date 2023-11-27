@@ -1,8 +1,6 @@
-import { join } from "path";
 import lgm = require("../service/GameService");
 import assert = require("assert");
 import { Actor, Direction } from "../service/Models";
-import { Dir } from "fs";
 
 describe("DefaultService", function () {
   describe("fillOrTruncateOrdersList()", function () {
