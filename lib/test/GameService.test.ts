@@ -105,7 +105,7 @@ describe("idempotency", () => {
   it("postOrders should fail on duplicate post for the same player and turn (empty orders)", async () => {
     const game = await lgm.createGame();
     const joinResponse = await lgm.joinGame(game.id);
-    const dummy = await lgm.joinGame(game.id);
+    await lgm.joinGame(game.id); // create dummy player
 
     await lgm.postOrders(
       { orders: [] },
@@ -135,7 +135,7 @@ describe("idempotency", () => {
   it("postOrders should fail on duplicate post for the same player and turn (with identical requested orders)", async () => {
     const game = await lgm.createGame();
     const joinResponse = await lgm.joinGame(game.id);
-    const dummy = await lgm.joinGame(game.id);
+    await lgm.joinGame(game.id);
 
     const orders = testMarchOrders(joinResponse.world.actors);
 
@@ -166,7 +166,7 @@ describe("idempotency", () => {
   it("postOrders should fail on duplicate post for the same player and turn (with different requested orders)", async () => {
     const game = await lgm.createGame();
     const joinResponse = await lgm.joinGame(game.id);
-    const dummy = await lgm.joinGame(game.id);
+    await lgm.joinGame(game.id);
 
     const ordersOne = testMarchOrders(joinResponse.world.actors);
     const ordersTwo = testMarchOrders(
@@ -219,7 +219,7 @@ describe("idempotency", () => {
   it("turnResults should be idempotent (orders posted, turn not finished)", async () => {
     const game = await lgm.createGame();
     const joinResponse = await lgm.joinGame(game.id);
-    const dummy = await lgm.joinGame(game.id);
+    await lgm.joinGame(game.id);
 
     const orders = testMarchOrders(joinResponse.world.actors);
 
