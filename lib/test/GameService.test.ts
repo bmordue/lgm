@@ -60,6 +60,24 @@ describe("DefaultService", function () {
       assert.notEqual(firstResp.playerId, secondResp.playerId);
     });
   });
+
+  describe("listGames", () => {
+    before(() => {
+      lgm.deleteStore();
+    });
+
+    it("should return empty list if no games have been created", async () => {
+      const resp = await lgm.listGames();
+      assert.deepEqual(resp.gameIds, []);
+    });
+
+    it("should list games", async () => {
+      await lgm.createGame();
+      await lgm.createGame();
+      const resp = await lgm.listGames();
+      assert.equal(resp.gameIds.length, 2);
+    });
+  });
 });
 
 describe("idempotency", () => {
