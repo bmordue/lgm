@@ -25,6 +25,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/GameCreatedResponse'
       x-swagger-router-controller: Default
+    get:
+      summary: list games
+      operationId: listGames
+      responses:
+        "200":
+          description: list of games
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListGamesResponse'      
   /games/{id}:
     put:
       summary: join a game
@@ -175,6 +185,12 @@ components:
       properties:
         placeholder:
           type: string
+    ListGamesResponse:
+      properties:
+        gameIds:
+          type: array
+          items:
+            type: integer
   # securitySchemes:
   #   bearerAuth:
   #     type: http
