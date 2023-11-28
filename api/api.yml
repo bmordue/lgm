@@ -186,9 +186,11 @@ components:
         placeholder:
           type: string
     ListGamesResponse:
-      type: array
-      items:
-        type: integer
+      properties:
+        gameIds:
+          type: array
+          items:
+            type: integer
   # securitySchemes:
   #   bearerAuth:
   #     type: http
