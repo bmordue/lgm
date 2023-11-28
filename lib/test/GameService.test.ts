@@ -1,5 +1,6 @@
 import lgm = require("../service/GameService");
 import assert = require("assert");
+import { Actor, Direction } from "../service/Models";
 
 describe("DefaultService", function () {
   describe("fillOrTruncateOrdersList()", function () {
@@ -78,3 +79,223 @@ describe("DefaultService", function () {
     });
   });
 });
+
+describe("idempotency", () => {
+  it("createGame is NOT idempotent", async () => {
+    const firstResp = await lgm.createGame();
+    const secondResp = await lgm.createGame();
+    assert.notDeepEqual(firstResp, secondResp);
+  });
+
+  // joinGame should be idempotent for a given user, but this is currently not implemented, so
+  // joinGame returns a new Player each time it is called.
+  it("joinGame should currently not be idempotent", async () => {
+    const game = await lgm.createGame();
+    const firstResp = await lgm.joinGame(game.id);
+    const secondResp = await lgm.joinGame(game.id);
+    assert.notDeepEqual(firstResp, secondResp);
+  });
+
+  it("postOrders should complete and increment the turn with a single player", async () => {
+    const game = await lgm.createGame();
+    const joinResponse = await lgm.joinGame(game.id);
+
+    const firstResp = await lgm.postOrders(
+      { orders: [] },
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+
+    const secondResp = await lgm.postOrders(
+      { orders: [] },
+      game.id,
+      joinResponse.turn + 1, // next turn
+      joinResponse.playerId
+    );
+
+    assert(firstResp.turnStatus.complete);
+    assert(secondResp.turnStatus.complete);
+  });
+
+  // For postOrders: a single player means that each postOrders() call will end a turn
+  // Add a second "dummy" player to stop the turn being complete for these tests/
+  it("postOrders should fail on duplicate post for the same player and turn (empty orders)", async () => {
+    const game = await lgm.createGame();
+    const joinResponse = await lgm.joinGame(game.id);
+    await lgm.joinGame(game.id); // create dummy player
+
+    await lgm.postOrders(
+      { orders: [] },
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+
+    await lgm
+      .postOrders(
+        { orders: [] },
+        game.id,
+        joinResponse.turn,
+        joinResponse.playerId
+      )
+      .then(() => {
+        assert.fail("Expected assertion");
+      })
+      .catch((e) => {
+        assert.equal(
+          e.message,
+          "storeOrders: turnOrders already exists for this game-turn-player"
+        );
+      });
+  });
+
+  it("postOrders should fail on duplicate post for the same player and turn (with identical requested orders)", async () => {
+    const game = await lgm.createGame();
+    const joinResponse = await lgm.joinGame(game.id);
+    await lgm.joinGame(game.id);
+
+    const orders = testMarchOrders(joinResponse.world.actors);
+
+    await lgm.postOrders(
+      { orders: orders },
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+    lgm
+      .postOrders(
+        { orders: orders },
+        game.id,
+        joinResponse.turn,
+        joinResponse.playerId
+      )
+      .then(() => {
+        assert.fail("Expected assertion");
+      })
+      .catch((e) => {
+        assert.equal(
+          e.message,
+          "storeOrders: turnOrders already exists for this game-turn-player"
+        );
+      });
+  });
+
+  it("postOrders should fail on duplicate post for the same player and turn (with different requested orders)", async () => {
+    const game = await lgm.createGame();
+    const joinResponse = await lgm.joinGame(game.id);
+    await lgm.joinGame(game.id);
+
+    const ordersOne = testMarchOrders(joinResponse.world.actors);
+    const ordersTwo = testMarchOrders(
+      joinResponse.world.actors,
+      Direction.UP_LEFT
+    );
+
+    await lgm.postOrders(
+      { orders: ordersOne },
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+    await lgm
+      .postOrders(
+        { orders: ordersTwo },
+        game.id,
+        joinResponse.turn,
+        joinResponse.playerId
+      )
+      .then(() => {
+        assert.fail("Expected assertion");
+      })
+      .catch((e) => {
+        assert.equal(
+          e.message,
+          "storeOrders: turnOrders already exists for this game-turn-player"
+        );
+      });
+  });
+
+  it("turnResults should be idempotent (no orders posted)", async () => {
+    const game = await lgm.createGame();
+    const joinResponse = await lgm.joinGame(game.id);
+
+    const resultsOne = await lgm.turnResults(
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+    const resultsTwo = await lgm.turnResults(
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+
+    assert.deepEqual(resultsOne, resultsTwo);
+  });
+
+  it("turnResults should be idempotent (orders posted, turn not finished)", async () => {
+    const game = await lgm.createGame();
+    const joinResponse = await lgm.joinGame(game.id);
+    await lgm.joinGame(game.id);
+
+    const orders = testMarchOrders(joinResponse.world.actors);
+
+    await lgm.postOrders(
+      { orders: orders },
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+
+    const resultsOne = await lgm.turnResults(
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+    const resultsTwo = await lgm.turnResults(
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+
+    assert.deepEqual(resultsOne, resultsTwo);
+  });
+
+  it("turnResults should be idempotent (turn complete)", async () => {
+    const game = await lgm.createGame();
+    const joinResponse = await lgm.joinGame(game.id);
+
+    const ordersOne = testMarchOrders(joinResponse.world.actors);
+
+    await lgm.postOrders(
+      { orders: ordersOne },
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+
+    const resultsOne = await lgm.turnResults(
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+    const resultsTwo = await lgm.turnResults(
+      game.id,
+      joinResponse.turn,
+      joinResponse.playerId
+    );
+
+    assert.deepEqual(resultsOne, resultsTwo);
+  });
+});
+
+// generate some basic move orders for test purposes: move every actor by the given direction, or UP_RIGHT by default
+function testMarchOrders(
+  actors: Actor[],
+  moveDir = Direction.UP_RIGHT
+): lgm.RequestActorOrders[] {
+  return actors.map((actor) => {
+    return { actorId: actor.id, ordersList: [moveDir] };
+  });
+}
