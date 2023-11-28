@@ -1,19 +1,20 @@
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, watchEffect } from 'vue'
 
-const message = ref('Hello world')
+const API_URL = "http://localhost:5000/listGames"
+ const gameList = ref([])
 
-const counter = reactive({ count: 0 })
-
-counter.count++
-
-// console.log(message.value)
-
-message.value = 'Changed'
+watchEffect(async () => {
+  gameList.value = await (await fetch(API_URL)).json().gameIds;
+});
 
 </script>
 
 <template>
-    <h1>{{ message }}</h1>
-    <p>count is {{ counter.count }}</p>
+    <h1>Games</h1>
+    <ul>
+      <li v-for="gameId in gameList">{{ gameId }}</li>
+    </ul>
+
+    <button>Create</button>
 </template>
