@@ -16,7 +16,7 @@ paths:
       operationId: createGame
       security:
         - basicAuth: []
-      x-exegesis-controller: Default
+      x-exegesis-controller: GameController
       responses:
         "200":
           description: metadata about newly created game
@@ -24,10 +24,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameCreatedResponse'
-      x-swagger-router-controller: Default
+      x-swagger-router-controller: GameController
     get:
       summary: list games
       operationId: listGames
+      x-exegesis-controller: GameController
       responses:
         "200":
           description: list of games
@@ -42,7 +43,7 @@ paths:
       security:
         - basicAuth: []
 
-      x-exegesis-controller: Default
+      x-exegesis-controller: GameController
       parameters:
       - name: id
         in: path
@@ -66,14 +67,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessageResponse'
-      x-swagger-router-controller: Default
+      x-swagger-router-controller: GameController
   /games/{gameId}/turns/{turn}/players/{playerId}:
     get:
       summary: get turn results
       operationId: turnResults
       security:
         - basicAuth: []
-      x-exegesis-controller: Default
+      x-exegesis-controller: GameController
       parameters:
       - name: gameId
         in: path
@@ -103,13 +104,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TurnResultsResponse'
-      x-swagger-router-controller: Default
+      x-swagger-router-controller: GameController
     post:
       summary: post turn orders
       operationId: postOrders
       security:
         - basicAuth: []
-      x-exegesis-controller: Default
+      x-exegesis-controller: GameController
       parameters:
       - name: gameId
         in: path
@@ -147,7 +148,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessageResponse'
-      x-swagger-router-controller: Default
+      x-swagger-router-controller: GameController
 components:
   schemas:
     GameCreatedResponse:
