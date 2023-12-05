@@ -12,13 +12,19 @@ async function callCreate() {
   const response = await fetch(`${API_URL}/games`, {method: "post"});
 }
 
+async function join(id) {
+  await fetch(`${API_URL}/games/${id}`, {method: "put"});
+}
+
 
 </script>
 
 <template>
     <h1>Games</h1>
     <ul>
-      <li v-for="gameId in gameList">{{ gameId }}</li>
+      <li v-for="gameId in gameList">
+        <span @click="join(gameId)">{{ gameId }}</span>
+      </li>
     </ul>
 
     <button @click="callCreate()">Create</button>
