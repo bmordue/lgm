@@ -1,18 +1,15 @@
 <script setup>
 import { ref, watchEffect } from 'vue'
 
-const API_URL = "http://localhost:5000/listGames"
+const API_URL = "http://localhost:4029"
  const gameList = ref([])
 
 watchEffect(async () => {
-  gameList.value = await (await fetch(API_URL)).json().gameIds;
+  gameList.value = await (await fetch(`${API_URL}/games)).json().gameIds;
 });
   
 async function callCreate() {
-async function logMovies() {
-  const response = await fetch("http://example.com/movies.json");
-  const movies = await response.json();
-  console.log(movies);
+  const response = await fetch(`${API_URL}/games`, {method: "post"});
 }
 
 
@@ -24,5 +21,5 @@ async function logMovies() {
       <li v-for="gameId in gameList">{{ gameId }}</li>
     </ul>
 
-    <button>Create</button>
+    <button @click="callCreate()">Create</button>
 </template>
