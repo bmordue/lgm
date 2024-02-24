@@ -9,6 +9,14 @@ watchEffect(async () => {
   gameList.value = await (await fetch(`${API_URL}/games`)).json().gameIds;
 });
 
+// watchEffect(async () => {
+//   '$store.getters.isAuthenticated'(newVal) {
+//     if (!newVal) {
+//       this.$router.push('/login')
+//     }
+//   }
+// }); 
+
 async function login() {
   loggedIn = true;
   localStorage.setItem('token', 'DUMMY_TOKEN');
@@ -29,6 +37,20 @@ async function callCreate() {
 async function join(id) {
   await fetch(`${API_URL}/games/${id}`, { method: "put" });
 }
+
+// Client.vue
+
+async function created() {
+  if (!this.$store.getters.isAuthenticated) {
+    this.$router.push('/login')
+  }
+}
+async function created() {
+  this.$store.dispatch('fetchUserProfile') 
+}
+
+
+
 
 
 </script>

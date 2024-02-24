@@ -10,6 +10,11 @@ const router = createRouter({
       component: HomeView
     },
     {
+      path: '/profile',
+      component: Profile,
+      meta: { requiresAuth: true }
+    },
+    {
       path: '/about',
       name: 'about',
       // route level code-splitting
