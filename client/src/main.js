@@ -3,8 +3,11 @@ import './assets/main.css'
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
+import Login from './Login'
 
 const app = createApp(App)
+
+app.component('Login', Login)
 
 const requiresAuth = (to) => {
     
