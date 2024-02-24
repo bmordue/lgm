@@ -9,13 +9,23 @@ watchEffect(async () => {
   gameList.value = await (await fetch(`${API_URL}/games`)).json().gameIds;
 });
 
-// watchEffect(async () => {
-//   '$store.getters.isAuthenticated'(newVal) {
-//     if (!newVal) {
-//       this.$router.push('/login')
-//     }
-//   }
-// }); 
+// Client.vue
+
+watchEffect(async () => {
+
+  // Get auth state from localStorage, API call, etc 
+  const isAuthenticated = await checkAuth()
+
+  if (!isAuthenticated) {
+    this.$router.push('/login')
+  }
+
+})
+
+async function checkAuth() {
+  // return true or false based on auth state
+  return true;
+}
 
 async function login() {
   loggedIn = true;
