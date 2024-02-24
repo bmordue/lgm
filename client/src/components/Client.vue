@@ -66,10 +66,11 @@ async function created() {
 </script>
 
 <template>
-  <div>
+  <div v-if="!$store.getters.isAuthenticated">
+
     <button v-if="!loggedIn" @click="login()">Sign in</button>
   </div>
-
+  <div v-else>
   <!-- <div v-if="loggedIn"> -->
   <h1>Games</h1>
   <ul>
@@ -78,6 +79,6 @@ async function created() {
     </li>
   </ul>
   <button @click="callCreate()">Create</button>
-
+  </div>
   <!-- </div> -->
 </template>
