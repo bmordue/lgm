@@ -27,5 +27,6 @@ router.beforeEach((to, from, next) => {
 
 const app = createApp(App)
 app.use(router)
+app.component('login-form', () => import('./components/LoginForm.vue'))
 
 app.mount('#app')
