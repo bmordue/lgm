@@ -64,6 +64,28 @@ paths:
         "403":
           description: join request denied
           content:
+  /users/login:
+    post:
+      summary: User login
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessageResponse'
@@ -196,3 +218,7 @@ components:
   #   bearerAuth:
   #     type: http
   #     scheme: bearer
+    LoginResponse:
+      properties:
+        token:
+          type: string
