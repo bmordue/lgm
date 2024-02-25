@@ -1,5 +1,6 @@
 import { UsersController } from '../UsersController';
 import { assert } from 'chai';
+import { createHash } from 'crypto';
 
 describe('UsersController', () => {
   describe('login', () => {
