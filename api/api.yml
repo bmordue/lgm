@@ -68,6 +68,8 @@ paths:
     post:
       summary: User login
       operationId: loginUser
+      x-exegesis-controller: UsersController
+      x-swagger-router-controller: UsersController
       requestBody:
         required: true
         content:
@@ -89,7 +91,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessageResponse'
-      x-swagger-router-controller: GameController
+      x-swagger-router-controller: UsersController
   /games/{gameId}/turns/{turn}/players/{playerId}:
     get:
       summary: get turn results
