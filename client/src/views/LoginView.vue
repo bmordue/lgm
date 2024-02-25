@@ -1,9 +1,11 @@
-// Login.vue
-
-
 <template>
+    <h1>Login view</h1>
+</template>
+
+
+<!-- <template>
+    <h1>Login</h1>
     <form @submit="onSubmit">
-        <!-- username/password inputs -->
         <input type="text" v-model="email" placeholder="Email" />
         <input type="password" v-model="password" placeholder="Password" />
         <input type="submit" value="Login" />
@@ -30,4 +32,4 @@ export default {
         }
     }
 }
-</script>
+</script> -->

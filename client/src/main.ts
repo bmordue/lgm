@@ -3,15 +3,12 @@ import './assets/main.css'
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import Login from './Login'
+import type { RouteLocationNormalized } from 'vue-router'
 
-const app = createApp(App)
 
-app.component('Login', Login)
-
-const requiresAuth = (to) => {
+const requiresAuth = (to: RouteLocationNormalized) => {
     
-    return to.path != '/login';
+    return !['/login', '/reset'].includes(to.path);
   // check if route requires authentication
 }
 
@@ -28,6 +25,7 @@ router.beforeEach((to, from, next) => {
     }
 })
 
+const app = createApp(App)
 app.use(router)
 
 app.mount('#app')
