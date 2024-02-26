@@ -14,31 +14,26 @@ const __dirname = path.dirname(__filename);
 /* */
 
 async function createServer() {
-    async function sessionAuthenticator(pluginContext) {
-        const session = pluginContext.req.headers.session;
 
-        if (!session) {
-            return { type: 'missing', statusCode: 401, message: 'Session key required' };
-        } else if (session === 'secret') {
+    async function bearerTokenAuthenticator(pluginContext) {
+        const token = pluginContext.req.headers.authorization?.split(' ')[1];
+
+        if (!token) {
+            return { type: 'missing', statusCode: 401, message: 'Bearer token required' };
+        } else if (token === 'DUMMY_TOKEN') {
             return { type: 'success', user: { name: 'jwalton', roles: ['read', 'write'] } };
         } else {
-            // Session was supplied, but it's invalid.
-            return { type: 'invalid', statusCode: 401, message: 'Invalid session key' };
+            return { type: 'invalid', statusCode: 401, message: 'Invalid bearer token' };
         }
     }
 
-    // See https://github.com/exegesis-js/exegesis/blob/master/docs/Options.md
     const options = {
         controllers: path.resolve(__dirname, 'controllers'),
-        allowMissingControllers: false,
         authenticators: {
-            basicAuth: sessionAuthenticator,
-            // sessionKey: sessionAuthenticator
+            bearerAuth: bearerTokenAuthenticator
         }
     };
 
-    // This creates an exegesis middleware, which can be used with express,
-    // connect, or even just by itself.
     const exegesisMiddleware = await exegesisExpress.middleware(
         path.resolve(__dirname, '../api/api.yml'),
         options
@@ -46,29 +41,31 @@ async function createServer() {
 
     const app: express.Express = express();
 
-    // If you have any body parsers, this should go before them.
     app.use(exegesisMiddleware);
 
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({
         extended: true
     }));
-    //    app.use(cookieParser('keyboard mouse'));
 
-    // Return a 404
     app.use((req, res) => {
         res.status(404).json({ message: `Not found` });
     });
 
-    // Handle any unexpected errors
     app.use((err, req, res, next) => {
         res.status(500).json({ message: `Internal error: ${err.message}` });
+    });
+
+    app.use((req, res, next) => {
+        console.log(`${res.statusCode}: ${req.method} ${req.originalUrl}`);
+        next();
     });
 
     const server = http.createServer(app);
 
     return server;
 }
+
 
 const port = parseInt(process.env.LGM_PORT) | 3000;
 

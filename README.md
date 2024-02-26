@@ -25,7 +25,7 @@ or
 
 ### Running Stryker.js Mutation Testing Locally
 
-Run `npz stryker run --config-file stryker.conf.js` in the root directory of the project.
+Run `npx stryker run --config-file stryker.conf.js` in the root directory of the project.
 
 Stryker.js will perform mutation testing and provide a report on the code coverage.
 
