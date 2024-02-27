@@ -64,10 +64,34 @@ paths:
         "403":
           description: join request denied
           content:
+  /users/login:
+    post:
+      summary: User login
+      operationId: loginUser
+      x-exegesis-controller: UsersController
+      x-swagger-router-controller: UsersController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorMessageResponse'
-      x-swagger-router-controller: GameController
+      x-swagger-router-controller: UsersController
   /games/{gameId}/turns/{turn}/players/{playerId}:
     get:
       summary: get turn results
@@ -196,3 +220,7 @@ components:
   #   bearerAuth:
   #     type: http
   #     scheme: bearer
+    LoginResponse:
+      properties:
+        token:
+          type: string
