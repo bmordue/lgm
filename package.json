@@ -6,7 +6,7 @@
   "scripts": {
     "prestart": "tsc",
     "start": "node built/index.js",
-    "test": "nyc mocha built/test",
+    "test": "tsc && nyc mocha built/test",
     "build": "tsc",
     "watch": "tsc -w",
     "serve": "node built/index.js",
@@ -41,7 +41,7 @@
   },
   "devDependencies": {
     "@stryker-mutator/core": "^7.1.1",
-    "@stryker-mutator/mocha-runner": "^7.1.1",
+    "@stryker-mutator/mocha-runner": "^7.3.0",
     "@types/cookie-parser": "^1.4.3",
     "@types/errorhandler": "^1.5.0",
     "@types/express": "^4.17.13",
@@ -54,7 +54,7 @@
     "@typescript-eslint/parser": "^5.33.1",
     "eslint": "^8.22.0",
     "mocha": "^10.0.0",
-    "nodemon": "^2.0.19",
+    "nodemon": "^3.0.3",
     "nyc": "^15.1.0",
     "snyk": "^1.1064.0",
     "source-map-support": "^0.5.21",
