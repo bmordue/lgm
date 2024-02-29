@@ -33,17 +33,17 @@ export const useUserStore = defineStore('user', {
         console.error(error);
       }
     },
-    getToken(username :string) {
+    getToken() :string | null {
       // get user from local storage 
       const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-      if(user && user.name === username) {
+      if(user) {
         return user.token;
       }
 
       return null;
     },
-    isAuthenticated() {
+    isAuthenticated() :boolean {
       return localStorage.getItem('user') != null;
     }
   }

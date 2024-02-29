@@ -4,6 +4,7 @@ import * as express from 'express';
 import * as exegesisExpress from 'exegesis-express';
 import * as path from 'path';
 import * as http from "http";
+import { userForToken } from './controllers/UsersController';
 
 /* 
 // import * as path from 'path';
@@ -15,16 +16,19 @@ const __dirname = path.dirname(__filename);
 
 async function createServer() {
     async function sessionAuthenticator(pluginContext) {
-        const session = pluginContext.req.headers.session;
+        const bearerToken = pluginContext.req.headers.authorization.split('Bearer ')[1];
 
-        if (!session) {
+        if (!bearerToken) {
             return { type: 'missing', statusCode: 401, message: 'Session key required' };
-        } else if (session === 'secret') {
-            return { type: 'success', user: { name: 'jwalton', roles: ['read', 'write'] } };
-        } else {
-            // Session was supplied, but it's invalid.
-            return { type: 'invalid', statusCode: 401, message: 'Invalid session key' };
+        } 
+        
+        const authenticatedUser = userForToken(bearerToken);
+
+        if (authenticatedUser == null) {
+            return { type: 'invalid', statusCode: 401, message: 'Invalid bearer token' };
         }
+
+        return { type: 'success', user: authenticatedUser, roles: [], scopes: [] };
     }
 
     // See https://github.com/exegesis-js/exegesis/blob/master/docs/Options.md
@@ -32,7 +36,7 @@ async function createServer() {
         controllers: path.resolve(__dirname, 'controllers'),
         allowMissingControllers: false,
         authenticators: {
-            basicAuth: sessionAuthenticator,
+            bearerAuth: sessionAuthenticator,
             // sessionKey: sessionAuthenticator
         }
     };

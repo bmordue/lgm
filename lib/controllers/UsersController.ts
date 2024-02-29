@@ -1,7 +1,10 @@
 import { ExegesisContext } from "exegesis";
 import * as crypto from 'crypto';
 
-module.exports.loginUser = function (context: ExegesisContext): string {
+const userTokens: UserToken[] = []
+
+export function
+  loginUser(context: ExegesisContext) {
   const { username, password } = context.requestBody;
 
   if (!username || !password) {
@@ -9,8 +12,39 @@ module.exports.loginUser = function (context: ExegesisContext): string {
     return;
   }
 
-  const token = crypto.createHash('sha256').update(username).digest('hex');
-  context.res.status(200).json({ token });
-  return token;
+  const input = `${username}${password}secretsalt`;
+  const generatedToken = crypto.createHash('sha256').update(input).digest('hex');
+
+  const existingUser = userTokens.find(u => u.username == username);
+  if (existingUser && existingUser.token != generatedToken) {
+    context.res.status(401).json({ message: 'Invalid username or password' });
+    return;
+  }
+
+  userTokens.push({ username, token: generatedToken });
+
+  context.res.status(200).json({ token: generatedToken });
+  return;
 }
 
+export function tokenExists(token: string) {
+  return userTokens.find(u => u.token == token) != null;
+}
+
+export function userForToken(token :string) {
+  const foundUser = userTokens.find(u => u.token == token);
+  if (!foundUser) {
+    console.log(JSON.stringify(userTokens, null, 4));
+  }
+  return foundUser;
+}
+
+// module.exports.verifyToken = function (username :string, token :string) {
+//   const user = userTokens.find(u => u.username == username);
+//   return user && user.token == token;
+// }
+
+interface UserToken {
+  username: string,
+  token: string
+}

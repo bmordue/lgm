@@ -1,15 +1,18 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watchEffect } from 'vue'
+import { useUserStore } from '../stores/User.store'
 
 const API_URL = "http://localhost:3000"
 const gameList = ref([])
 
 watchEffect(async () => {
-  gameList.value = await (await fetch(`${API_URL}/games`)).json().gameIds;
+  gameList.value = (await (await fetch(`${API_URL}/games`)).json()).gameIds;
 });
 
 async function callCreate() {
-  const token = localStorage.getItem('token');
+  const userStore = useUserStore();
+
+  const token = await userStore.getToken();
 
   const response = await fetch(`${API_URL}/games`, {
     method: "post",
@@ -19,7 +22,7 @@ async function callCreate() {
   });
 }
 
-async function join(id) {
+async function join(id :number) {
   await fetch(`${API_URL}/games/${id}`, { method: "put" });
 }
 
