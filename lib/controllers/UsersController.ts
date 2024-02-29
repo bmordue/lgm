@@ -1,5 +1,4 @@
 import { ExegesisContext } from "exegesis";
-import { Request, Response } from 'express';
 import * as crypto from 'crypto';
 
 module.exports.loginUser = function (context: ExegesisContext): string {
