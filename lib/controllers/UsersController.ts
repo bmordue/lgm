@@ -24,7 +24,6 @@ export function
   userTokens.push({ username, token: generatedToken });
 
   context.res.status(200).json({ token: generatedToken });
-  return;
 }
 
 export function tokenExists(token: string) {
@@ -38,11 +37,6 @@ export function userForToken(token :string) {
   }
   return foundUser;
 }
-
-// module.exports.verifyToken = function (username :string, token :string) {
-//   const user = userTokens.find(u => u.username == username);
-//   return user && user.token == token;
-// }
 
 interface UserToken {
   username: string,
