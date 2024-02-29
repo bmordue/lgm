@@ -32,6 +32,19 @@ export const useUserStore = defineStore('user', {
       } catch (error) {
         console.error(error);
       }
+    },
+    getToken(username :string) {
+      // get user from local storage 
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+      if(user && user.name === username) {
+        return user.token;
+      }
+
+      return null;
+    },
+    isAuthenticated() {
+      return localStorage.getItem('user') != null;
     }
   }
 })

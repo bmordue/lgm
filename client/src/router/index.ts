@@ -1,5 +1,6 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
+import { useUserStore } from '@/stores/User.store';
 
 const router = createRouter({
   history: createWebHistory(import.meta.BASE_URL),
@@ -22,5 +23,22 @@ const router = createRouter({
     {path: '/dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue')},
   ]
 })
+
+
+function requiresAuth (to: RouteLocationNormalized) {
+    
+  return !['/login', '/reset'].includes(to.path);
+// check if route requires authentication
+}
+
+router.beforeEach((to, from, next) => {
+  const usersStore = useUserStore();
+  if (requiresAuth(to) && !usersStore.isAuthenticated()) {
+      next('/login')
+  } else {
+      next()
+  }
+})
+
 
 export default router
