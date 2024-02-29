@@ -8,7 +8,8 @@
     </div>
 </template>
   
-<script>
+<script lang="ts">
+import { useUserStore } from '../stores/User.store';
 export default {
     name: "App",
     data() {
@@ -19,19 +20,8 @@ export default {
     },
     methods: {
         async login() {
-            const { username, password } = this;
-            const res = await fetch(
-                "http://localhost:3000/users/login",
-                {
-                    method: "POST",
-                    headers: {
-                        "Content-Type": "application/json"
-                    },
-                    body: JSON.stringify({ username, password })
-                }
-            );
-            const data = await res.json();
-            const token = data.token;
+            const userStore = useUserStore();
+            await userStore.login(this.username, this.password);
         }
     }
 };
