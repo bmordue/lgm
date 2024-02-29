@@ -5,17 +5,17 @@ info:
 servers:
 - url: /
   securitySchemes:
-    basicAuth: 
-      description: A request with a username and password
+    bearerAuth: 
+      description: A request with a bearer token
       type: http
-      scheme: basic
+      scheme: bearer
 paths:
   /games:
     post:
       summary: create a new game
       operationId: createGame
       security:
-        - basicAuth: []
+        - bearerAuth: []
       x-exegesis-controller: GameController
       responses:
         "200":
@@ -41,7 +41,7 @@ paths:
       summary: join a game
       operationId: joinGame
       security:
-        - basicAuth: []
+        - bearerAuth: []
 
       x-exegesis-controller: GameController
       parameters:
@@ -93,7 +93,7 @@ paths:
       summary: get turn results
       operationId: turnResults
       security:
-        - basicAuth: []
+        - bearerAuth: []
       x-exegesis-controller: GameController
       parameters:
       - name: gameId
@@ -129,7 +129,7 @@ paths:
       summary: post turn orders
       operationId: postOrders
       security:
-        - basicAuth: []
+        - bearerAuth: []
       x-exegesis-controller: GameController
       parameters:
       - name: gameId
