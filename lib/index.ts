@@ -15,6 +15,7 @@ const __dirname = path.dirname(__filename);
 /* */
 
 async function createServer() {
+const { verifyToken } = require('./tokenUtils');
     async function sessionAuthenticator(pluginContext) {
         const bearerToken = pluginContext.req.headers.authorization.split('Bearer ')[1];
 
@@ -22,13 +23,20 @@ async function createServer() {
             return { type: 'missing', statusCode: 401, message: 'Session key required' };
         } 
         
-        const authenticatedUser = userForToken(bearerToken);
+        // Assuming secretOrHash is fetched from a secure source or configuration
+        const secretOrHash = "your_secret_or_hash_here"; // Replace with actual method to retrieve hash
 
-        if (authenticatedUser == null) {
+        const isValidToken = await verifyToken(bearerToken, secretOrHash);
+
+        if (!isValidToken) {
             return { type: 'invalid', statusCode: 401, message: 'Invalid bearer token' };
         }
 
-        return { type: 'success', user: authenticatedUser, roles: [], scopes: [] };
+        // Assuming the token itself contains necessary user information or an ID to fetch the user
+        // This part of the code might need adjustment based on how users are managed
+        const authenticatedUser = { id: "user_id_from_token", roles: [], scopes: [] }; // Example user object
+
+        return { type: 'success', user: authenticatedUser };
     }
 
     // See https://github.com/exegesis-js/exegesis/blob/master/docs/Options.md
@@ -52,7 +60,6 @@ async function createServer() {
 
     // If you have any body parsers, this should go before them.
     app.use(exegesisMiddleware);
-
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({
         extended: true
