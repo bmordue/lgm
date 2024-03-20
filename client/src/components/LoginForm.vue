@@ -1,5 +1,5 @@
 <template>
-    <div id="app">
+    <div id="login">
         <form @submit.prevent="login">
             <input v-model="username" placeholder="username">
             <input v-model="password" placeholder="password" type="password">
@@ -11,7 +11,7 @@
 <script lang="ts">
 import { useUserStore } from '../stores/User.store';
 export default {
-    name: "App",
+    name: "LoginForm",
     data() {
         return {
             username: "",

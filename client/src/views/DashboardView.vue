@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
 import { useUserStore } from '../stores/User.store'
+import  router  from '../router';
+import { useGamesStore, type World } from '@/stores/Games.store';
 
 const API_URL = "http://localhost:3000"
 const gameList = ref([])
@@ -12,7 +14,7 @@ watchEffect(async () => {
 async function callCreate() {
   const userStore = useUserStore();
 
-  const token = await userStore.getToken();
+  const token = userStore.getToken();
 
   const response = await fetch(`${API_URL}/games`, {
     method: "post",
@@ -20,10 +22,26 @@ async function callCreate() {
       'Authorization': `Bearer ${token}`
     }
   });
+
+  // TODO: update gameList here!
 }
 
-async function join(id :number) {
-  await fetch(`${API_URL}/games/${id}`, { method: "put" });
+async function join(id: number) {
+  const userStore = useUserStore();
+
+  const token = userStore.getToken();
+
+  const resp = await fetch(`${API_URL}/games/${id}`, {
+    method: "put", headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  const joinBody = await resp.json() as {gameId: number, playerId :number, turn :number, world :World};
+  const gamesStore = useGamesStore();
+  gamesStore.updateJoinResponse(joinBody);
+  router.push('/game'); // TODO: route to game screen here.
+
+  
 }
 
 </script>
