@@ -7,7 +7,8 @@ export const useGamesStore = defineStore('games', {
       gameTurns: [] as GameTurn[],
       currentGameId: null as number | null,
       currentGameWorld: null as World | null,
-      currentGameTurn: 0
+      currentGameTurn: 0,
+      currentGamePlayerId: null as number | null
     }
   },
   actions: {
@@ -24,13 +25,20 @@ export const useGamesStore = defineStore('games', {
     setCurrentGameTurn(turn : number) {
       this.currentGameTurn = turn;
     },
+    setCurrentGamePlayerId(playerId :number) {
+      this.currentGamePlayerId = playerId;
+    },
     updateJoinResponse(resp :{gameId: number, playerId :number, turn :number, world :World}) {
       this.setCurrentGameId(resp.gameId);
       this.setCurrentGameTurn(resp.turn);
       this.setCurrentGameWorld(resp.world);
+      this.setCurrentGamePlayerId(resp.playerId);
     },
     getCurrentGame() {
       return {gameId: this.currentGameId, turn: this.currentGameTurn, world: this.currentGameWorld};
+    },
+    getCurrentPlayerId() {
+      return this.currentGamePlayerId;
     }
 
   }

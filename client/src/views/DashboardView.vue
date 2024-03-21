@@ -3,8 +3,8 @@ import { ref, watchEffect } from 'vue'
 import { useUserStore } from '../stores/User.store'
 import  router  from '../router';
 import { useGamesStore, type World } from '@/stores/Games.store';
+import { API_URL } from '@/main';
 
-const API_URL = "http://localhost:3000"
 const gameList = ref([])
 
 watchEffect(async () => {

@@ -2,6 +2,7 @@
 import { ref, watchEffect } from 'vue'
 import { useUserStore } from '../stores/User.store'
 import { useGamesStore, type Actor } from '../stores/Games.store'
+import { API_URL } from '@/main';
 
 const game = ref({})
 
@@ -13,6 +14,21 @@ watchEffect(async () => {
 
 function actorToString(actor :Actor) {
   return `Owner: ${actor.owner} (${actor.pos.x}, ${actor.pos.y}) [${actor.id}]`;
+}
+
+async function postOrders() {
+  const userStore = useUserStore();
+
+const token = userStore.getToken();
+const g = gamesStore.getCurrentGame();
+const playerId = gamesStore.getCurrentPlayerId();
+
+const response = await fetch(`${API_URL}/games/${g.gameId}/turns/${g.turn}/players/${splayerId}`, {
+  method: "post", headers: {
+    'Authorization': `Bearer ${token}`
+  }
+});
+
 }
 
 </script>
@@ -37,6 +53,6 @@ function actorToString(actor :Actor) {
       </li>
       </ul><br />
     </p>
-    <button @click="callPostOrders()">Post orders</button>
+    <button @click="postOrders()">Post orders</button>
   </template>
 
