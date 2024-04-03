@@ -5,6 +5,7 @@ import * as exegesisExpress from 'exegesis-express';
 import * as path from 'path';
 import * as http from "http";
 import { userForToken } from './controllers/UsersController';
+import { inspect } from 'util';
 
 /* 
 // import * as path from 'path';
@@ -16,6 +17,10 @@ const __dirname = path.dirname(__filename);
 
 async function createServer() {
     async function sessionAuthenticator(pluginContext) {
+        if (!pluginContext.req.headers.authorization) {
+            return { type: 'missing', statusCode: 401, message: 'Authorization header is missing'};
+        }
+
         const bearerToken = pluginContext.req.headers.authorization.split('Bearer ')[1];
 
         if (!bearerToken) {
@@ -66,7 +71,7 @@ async function createServer() {
 
     // Handle any unexpected errors
     app.use((err, req, res, next) => {
-        res.status(500).json({ message: `Internal error: ${err.message}` });
+        res.status(500).json({ message: `Internal error: ${err.message}\n\n${inspect(err)}` });
     });
 
     const server = http.createServer(app);
