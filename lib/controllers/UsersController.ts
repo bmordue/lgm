@@ -3,8 +3,7 @@ import * as crypto from 'crypto';
 
 const userTokens: UserToken[] = []
 
-export function
-  loginUser(context: ExegesisContext) {
+export function loginUser(context: ExegesisContext) {
   const { username, password } = context.requestBody;
 
   if (!username || !password) {
@@ -30,7 +29,7 @@ export function tokenExists(token: string) {
   return userTokens.find(u => u.token == token) != null;
 }
 
-export function userForToken(token :string) {
+export function userForToken(token: string) {
   const foundUser = userTokens.find(u => u.token == token);
   if (!foundUser) {
     console.log(JSON.stringify(userTokens, null, 4));

@@ -20,6 +20,7 @@ const router = createRouter({
     {path: '/login', name: 'login', component: () => import('../views/LoginView.vue')},
     {path: '/reset', name: 'reset', component: () => import('../views/ResetView.vue')},
     {path: '/dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue')},
+    {path: '/game', name: 'game', component: () => import('../views/GameView.vue')}
   ]
 })
 
