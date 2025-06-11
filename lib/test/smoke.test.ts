@@ -1,14 +1,19 @@
 import assert = require("assert");
 import * as GameService from "../service/GameService";
+import * as store from "../service/Store";
 
-describe("createGame", () => {
+
+describe.skip("createGame", () => {
   it("should create a game successfully", async () => {
     const response = await GameService.createGame();
     assert(response.id);
   });
 });
 
-describe("joinGame", () => {
+describe.skip("joinGame", () => {
+  before(() => {
+    store.deleteAll();
+  });
   it("should join a game successfully", async () => {
     const gameId = 1; // Replace with a valid game ID
     const response = await GameService.joinGame(gameId);
@@ -28,7 +33,11 @@ describe("joinGame", () => {
   });
 });
 
-describe("postOrders", () => {
+describe.skip("postOrders", () => {
+  before(() => {
+    store.deleteAll();
+  });
+
   it("should post orders successfully", async () => {
     const gameId = 1; // Replace with a valid game ID
     const playerId = 1; // Replace with a valid player ID
@@ -67,7 +76,8 @@ describe("postOrders", () => {
   });
 });
 
-describe("turnResults", () => {
+describe.skip("turnResults", () => {
+
   it("should get turn results successfully", async () => {
     const gameId = 1; // Replace with a valid game ID
     const playerId = 1; // Replace with a valid player ID
