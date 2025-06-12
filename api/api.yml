@@ -212,6 +212,25 @@ components:
           type: array
           items:
             type: integer
+        games:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameSummary'
+    GameSummary:
+      required:
+        - id
+        - playerCount
+        - maxPlayers
+        - isFull
+      properties:
+        id:
+          type: integer
+        playerCount:
+          type: integer
+        maxPlayers:
+          type: integer
+        isFull:
+          type: boolean
   # securitySchemes:
   #   bearerAuth:
   #     type: http

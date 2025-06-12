@@ -8,7 +8,9 @@ export const useGamesStore = defineStore('games', {
       currentGameId: null as number | null,
       currentGameWorld: null as World | null,
       currentGameTurn: 0,
-      currentGamePlayerId: null as number | null
+      currentGamePlayerId: null as number | null,
+      currentPlayerCount: 0,
+      maxPlayers: 4
     }
   },
   actions: {
@@ -28,14 +30,22 @@ export const useGamesStore = defineStore('games', {
     setCurrentGamePlayerId(playerId :number) {
       this.currentGamePlayerId = playerId;
     },
-    updateJoinResponse(resp :{gameId: number, playerId :number, turn :number, world :World}) {
+    updateJoinResponse(resp :{gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number}) {
       this.setCurrentGameId(resp.gameId);
       this.setCurrentGameTurn(resp.turn);
       this.setCurrentGameWorld(resp.world);
       this.setCurrentGamePlayerId(resp.playerId);
+      this.currentPlayerCount = resp.playerCount;
+      this.maxPlayers = resp.maxPlayers;
     },
     getCurrentGame() {
-      return {gameId: this.currentGameId, turn: this.currentGameTurn, world: this.currentGameWorld};
+      return {
+        gameId: this.currentGameId, 
+        turn: this.currentGameTurn, 
+        world: this.currentGameWorld,
+        playerCount: this.currentPlayerCount,
+        maxPlayers: this.maxPlayers
+      };
     },
     getCurrentPlayerId() {
       return this.currentGamePlayerId;
