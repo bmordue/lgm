@@ -59,6 +59,35 @@ describe("DefaultService", function () {
       assert.equal(firstResp.gameId, secondResp.gameId);
       assert.notEqual(firstResp.playerId, secondResp.playerId);
     });
+
+    it("should reject duplicate joins with same username", async () => {
+      const gameId = (await lgm.createGame()).id;
+      await lgm.joinGame(gameId, "testuser");
+      
+      try {
+        await lgm.joinGame(gameId, "testuser");
+        assert.fail("Expected error for duplicate join");
+      } catch (error) {
+        assert.equal(error.message, "Player already joined this game");
+      }
+    });
+
+    it("should reject joining full game", async () => {
+      const gameId = (await lgm.createGame()).id;
+      
+      // Fill the game to capacity (4 players)
+      await lgm.joinGame(gameId, "player1");
+      await lgm.joinGame(gameId, "player2");
+      await lgm.joinGame(gameId, "player3");
+      await lgm.joinGame(gameId, "player4");
+      
+      try {
+        await lgm.joinGame(gameId, "player5");
+        assert.fail("Expected error for full game");
+      } catch (error) {
+        assert.equal(error.message, "Game is full");
+      }
+    });
   });
 
   describe("listGames", () => {

@@ -76,12 +76,35 @@ function joinGameResponseOf(resp: JoinGameResponse): JoinGameResponse {
   return resp;
 }
 
-export async function joinGame(gameId: number): Promise<JoinGameResponse> {
+const MAX_PLAYERS_PER_GAME = 4;
+
+export async function joinGame(gameId: number, username?: string): Promise<JoinGameResponse> {
   logger.debug("joinGame");
   try {
     logger.debug(`gameId: ${inspect(gameId)}`);
     const game = await store.read<Game>(store.keys.games, gameId);
-    const playerId = await store.create(store.keys.players, { gameId: gameId });
+    
+    // Check if game is full
+    const currentPlayerCount = game.players ? game.players.length : 0;
+    if (currentPlayerCount >= MAX_PLAYERS_PER_GAME) {
+      return Promise.reject(new Error("Game is full"));
+    }
+    
+    // Check for duplicate joins by username
+    if (username && game.players) {
+      for (const existingPlayerId of game.players) {
+        try {
+          const existingPlayer = await store.read<any>(store.keys.players, existingPlayerId);
+          if (existingPlayer.username === username) {
+            return Promise.reject(new Error("Player already joined this game"));
+          }
+        } catch (e) {
+          logger.debug(`Could not read player ${existingPlayerId}: ${e.message}`);
+        }
+      }
+    }
+    
+    const playerId = await store.create(store.keys.players, { gameId: gameId, username: username });
     const updatedGame = addPlayerToGame(game, playerId);
     logger.debug("joinGame update game");
     await store.replace(store.keys.games, gameId, updatedGame);

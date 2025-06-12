@@ -6,7 +6,8 @@ module.exports.createGame = function createGame() {
 };
 
 module.exports.joinGame = function joinGame(context: ExegesisContext) {
-  return GameService.joinGame(context.params.path.id);
+  const username = context.user?.username;
+  return GameService.joinGame(context.params.path.id, username);
 };
 
 module.exports.postOrders = function postOrders(context: ExegesisContext) {
