@@ -40,6 +40,8 @@ export interface JoinGameResponse {
   playerId: number;
   turn: number;
   world: World;
+  playerCount: number;
+  maxPlayers: number;
 }
 
 export interface TurnResultsResponse {
@@ -48,8 +50,16 @@ export interface TurnResultsResponse {
   message?: string;
 }
 
+export interface GameSummary {
+  id: number;
+  playerCount: number;
+  maxPlayers: number;
+  isFull: boolean;
+}
+
 export interface ListGamesResponse {
   gameIds: Array<number>;
+  games: Array<GameSummary>;
 }
 
 /**
@@ -315,10 +325,18 @@ export async function turnResults(
 }
 
 export async function listGames(): Promise<ListGamesResponse> {
-  const ids = (await store.readAll<Game>(store.keys.games, () => true)).map(
-    (g) => g.id
-  );
-  return { gameIds: ids };
+  const games = await store.readAll<Game>(store.keys.games, () => true);
+  const ids = games.map((g) => g.id);
+  const gameSummaries: GameSummary[] = games.map((g) => {
+    const playerCount = g.players ? g.players.length : 0;
+    return {
+      id: g.id!,
+      playerCount,
+      maxPlayers: MAX_PLAYERS_PER_GAME,
+      isFull: playerCount >= MAX_PLAYERS_PER_GAME
+    };
+  });
+  return { gameIds: ids, games: gameSummaries };
 }
 
 // DANGER - testing only; drop everything in the store

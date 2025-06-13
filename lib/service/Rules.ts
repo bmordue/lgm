@@ -302,7 +302,15 @@ export async function filterGameForPlayer(gameId: number, playerId: number): Pro
         const game = await store.read<Game>(store.keys.games, gameId);
         const world = await store.read<World>(store.keys.worlds, game.worldId);
         const filteredWorld = await filterWorldForPlayer(world, playerId);
-        return Promise.resolve({ gameId: game.id, playerId: playerId, turn: game.turn, world: filteredWorld });
+        const playerCount = game.players ? game.players.length : 0;
+        return Promise.resolve({ 
+            gameId: game.id, 
+            playerId: playerId, 
+            turn: game.turn, 
+            world: filteredWorld,
+            playerCount: playerCount,
+            maxPlayers: 4
+        });
     } catch (e) {
         return Promise.reject(e);
     }
