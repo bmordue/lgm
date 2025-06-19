@@ -1,6 +1,8 @@
 import { GridPosition, Terrain } from "./Models";
 import { warn } from "../utils/Logger";
 
+const MAX_RANGE = 10; // Define maximum visibility range
+
 export function within(
   x: number,
   y: number,
@@ -29,37 +31,73 @@ export function visibility(
     );
   }
 
-  const visible: boolean[][] = [];
-  for (let x = 0; x < terrain.length; x++) {
-    visible.push(new Array<boolean>(terrain[x].length));
-    for (let y = 0; y < terrain[x].length; y++) {
-      if (terrain[x][y] === Terrain.BLOCKED) {
-        visible[x][y] = false;
-      } else visible[x][y] = true;
-    }
-  }
+  const visible: boolean[][] = Array(terrain.length)
+    .fill(null)
+    .map(() => Array(terrain[0].length).fill(false));
 
-  // for each element in the visible grid
-  // check whether it is visible from the starting point
-  // if it is, set it to true
-  // if not, set it to false
-  for (let x = 0; x < visible.length; x++) {
-    for (let y = 0; y < visible[x].length; y++) {
-      if (terrain[x][y] === Terrain.BLOCKED) {
-        // don't check visibility from blocked terrain
+  for (let x = 0; x < terrain.length; x++) {
+    for (let y = 0; y < terrain[x].length; y++) {
+      const distance = Math.sqrt(Math.pow(from.x - x, 2) + Math.pow(from.y - y, 2));
+      if (distance > MAX_RANGE) {
+        visible[x][y] = false;
         continue;
       }
-      const path = findPath(from, { x: x, y: y }, terrain);
-      if (
-        path.filter((p) => terrain[p.x][p.y] === Terrain.BLOCKED).length !== 0
-      ) {
-        visible[x][y] = false;
-      } else {
+
+      if (from.x === x && from.y === y) {
         visible[x][y] = true;
+        continue;
+      }
+
+      const path = findPath(from, { x: x, y: y }, terrain);
+
+      let occluded = false;
+      // Check intermediate points on the path for blocking terrain.
+      // The path includes 'from' and goes up to, but doesn't necessarily include, '{x,y}' if blocked.
+      // Or it might include {x,y} if path is clear or {x,y} is the first blockage.
+
+      // Iterate up to path.length - 1 to check segments leading to the tile BEFORE the target.
+      // If target tile itself is blocked, path might end there.
+      // Or if an intermediate tile is blocked, path ends there.
+      for (let i = 0; i < path.length; i++) {
+        const pos = path[i];
+        // If this path segment is the target tile itself, don't check it for occlusion.
+        // Occlusion is by tiles *between* 'from' and 'target'.
+        if (pos.x === x && pos.y === y) {
+          break;
+        }
+        // If an intermediate tile on the path is blocked
+        if (terrain[pos.x][pos.y] === Terrain.BLOCKED) {
+          occluded = true;
+          break;
+        }
+      }
+
+      if (!occluded) {
+        // If not occluded by an intermediate tile, the target tile (x,y) is visible.
+        // This is true whether terrain[x][y] is EMPTY or BLOCKED.
+        // We also need to ensure that the path actually REACHED the target tile,
+        // otherwise findPath stopped short due to a blockage that IS the target tile.
+        const lastPathElement = path[path.length-1];
+        if(lastPathElement.x === x && lastPathElement.y === y) {
+            visible[x][y] = true;
+        } else {
+            // Path did not reach (x,y) because (x,y) itself is blocked and findPath stops there.
+            // In this case, (x,y) is visible because the blockage is seen.
+            // Or an intermediate tile was blocked, which should have been caught by `occluded = true`
+            // This branch needs care. If lastPathElement is not (x,y) AND not occluded,
+            // it implies (x,y) itself is the first blocker on the path.
+            if (terrain[x][y] === Terrain.BLOCKED && path.some(p => p.x ===x && p.y ===y)) {
+                 visible[x][y] = true; // The blocking tile (x,y) is visible
+            } else {
+                 visible[x][y] = false; // Should have been caught by occluded logic or distance check
+            }
+        }
+      } else {
+        visible[x][y] = false; // Occluded by an intermediate tile
       }
     }
   }
-
+  visible[from.x][from.y] = true; // Ensure starting point is always visible
   return visible;
 }
 
@@ -97,20 +135,39 @@ export function findPath(
   let current = { x: start.x, y: start.y };
   const path: GridPosition[] = [];
   let done = false;
-  const maxSteps = terrain.length + terrain[0].length; // obviously not the best way to do this, but is above the max possible steps
+  // Max steps: sum of dimensions is a safe upper bound for non-diagonal-heavy paths
+  const maxSteps = terrain.length + terrain[0].length;
   let steps = 0;
+
   while (!done) {
+    path.push({x: current.x, y: current.y}); // Push current position
+
     if (current.x === goal.x && current.y === goal.y) {
-      done = true;
+      done = true; // Reached goal
+      continue;
     }
+
+    if (terrain[current.x][current.y] === Terrain.BLOCKED && (current.x !== start.x || current.y !== start.y)) {
+      done = true; // Hit a blocked tile (unless it's the start tile itself)
+      continue;
+    }
+
     steps++;
     if (steps > maxSteps) {
-      done = true;
+      // warn(`findPath exceeded maxSteps from (${start.x},${start.y}) to (${goal.x},${goal.y})`);
+      done = true; // Safety break
+      continue;
     }
-    path.push(current);
+
     current = findNextStep(current, goal);
-    if (terrain[current.x][current.y] === Terrain.BLOCKED) {
-      done = true;
+
+    // Check if next step is out of bounds
+    if (!within(current.x, current.y, terrain)) {
+        // warn(`findPath next step out of bounds from (${start.x},${start.y}) to (${goal.x},${goal.y}) -> next was (${current.x},${current.y})`);
+        done = true; // Stop if out of bounds
+        // Do not add 'current' to path as it's invalid.
+        // The path will end at the last valid position.
+        continue;
     }
   }
   return path;
