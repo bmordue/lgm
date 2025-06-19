@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
+import HexGrid from '@/components/HexGrid.vue';
 import { useUserStore } from '../stores/User.store'
 import { useGamesStore, type Actor } from '../stores/Games.store'
 import { API_URL } from '@/main';
@@ -70,11 +71,10 @@ const response = await fetch(`${API_URL}/games/${g.gameId}/turns/${g.turn}/playe
       
       <div class="main-panel">
         <h3>World</h3>
-        <div class="world-grid">
-          <div v-for="row in game.world?.terrain || []" class="terrain-row">
-            <span>{{ row.join(' ').replaceAll('0', '.').replaceAll('1','X') }}</span>
-          </div>
+        <div class="world-grid" v-if="game.world">
+          <hex-grid :world="game.world" />
         </div>
+        <div v-else>Loading world data...</div>
         
         <h3>Actors</h3>
         <div class="actors-list">
@@ -128,16 +128,16 @@ const response = await fetch(`${API_URL}/games/${g.gameId}/turns/${g.turn}/playe
 }
 
 .world-grid {
-  font-family: monospace;
+  /* font-family: monospace; // Keep or remove based on HexGrid's text styling */
   background: #f9f9f9;
   padding: 10px;
   border-radius: 5px;
   margin-bottom: 20px;
+  /* The HexGrid component will manage its own internal layout and sizing. */
+  /* Ensure this container doesn't overly constrain it or add conflicting styles. */
 }
 
-.terrain-row {
-  line-height: 1.2;
-}
+/* .terrain-row styling is no longer needed as HexGrid handles its own rendering. */
 
 .actors-list {
   font-family: monospace;
