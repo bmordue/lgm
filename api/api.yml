@@ -203,9 +203,17 @@ components:
         placeholder: placeholder
     TurnOrders_orders:
       type: object
+      required:
+        - actorId
+        - toQ
+        - toR
       properties:
-        placeholder:
-          type: string
+        actorId:
+          type: integer
+        toQ:
+          type: integer
+        toR:
+          type: integer
     ListGamesResponse:
       properties:
         gameIds:
