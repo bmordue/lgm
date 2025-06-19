@@ -12,7 +12,7 @@
 
 ## User Experience (Medium Priority)
 - [x] Interactive Game Board: Replace text-based terrain with clickable hex grid (PR https://github.com/bmordue/lgm/pull/101)
-- [ ] Order Submission UI: Add visual movement planning and turn submission
+- [ ] Order Submission UI: Add visual movement planning and turn submission (PR https://github.com/bmordue/lgm/pull/103)
 - [ ] Real-time Updates: Fix game list refresh and add live game state updates
 
 ## Production Readiness (Medium Priority)
