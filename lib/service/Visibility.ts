@@ -1,5 +1,16 @@
-import { GridPosition, Terrain } from "./Models";
+import { GridPosition, Terrain, Actor } from "./Models"; // Added Actor
+import { Hex, OffsetCoord } from "../Hex"; // Added Hex and OffsetCoord
 import { warn } from "../utils/Logger";
+
+// Helper to convert Hex to GridPosition for odd-q offset (flat-topped hexes)
+// Assumes GridPosition.x is row index, GridPosition.y is column index
+function hexToGridPosition(hex: Hex): GridPosition {
+    const col: number = hex.q; // y-coordinate in GridPosition
+    // For odd-q, RedBlobGames: row = r + (q + (q&1)*offset) / 2. Where ODD offset = -1.
+    // So, row = r + (q - (q&1)) / 2
+    const row: number = hex.r + (hex.q - (hex.q & 1)) / 2; // x-coordinate in GridPosition
+    return { x: row, y: col };
+}
 
 export function within(
   x: number,
@@ -114,4 +125,62 @@ export function findPath(
     }
   }
   return path;
+}
+
+export function hasLineOfSight(
+    startHex: Hex,
+    endHex: Hex,
+    terrain: Terrain[][], // Expected to be terrain[row][col]
+    actors: Actor[],
+    // Optional mapper for flexibility, defaults to our odd-q assumption
+    hexToGridMapper: (h: Hex) => GridPosition = hexToGridPosition
+): boolean {
+    const pathHexes: Hex[] = startHex.linedraw(endHex);
+
+    if (pathHexes.length === 0) {
+        // This case should ideally not be reached if startHex.linedraw is robust.
+        // If startHex and endHex are the same, linedraw usually returns [startHex].
+        // Returning true for 0 length path implies no obstruction.
+        return true;
+    }
+
+    for (let i = 0; i < pathHexes.length; i++) {
+        const currentHex = pathHexes[i];
+
+        // The first hex in the path is the startHex. We don't check for obstructions at the viewpoint itself.
+        if (i === 0) {
+            continue;
+        }
+
+        const gridPos = hexToGridMapper(currentHex);
+
+        // Check if the current hex on the path is within map boundaries.
+        // The existing 'within(x, y, grid)' function expects x as row index, y as column index.
+        if (!within(gridPos.x, gridPos.y, terrain)) {
+            // A hex on the line is off-map, so LoS is blocked by map edge.
+            return false;
+        }
+
+        // Check terrain for blockage.
+        // terrain[row][col] which is terrain[gridPos.x][gridPos.y]
+        if (terrain[gridPos.x][gridPos.y] === Terrain.BLOCKED) {
+            return false; // LoS blocked by terrain
+        }
+
+        // Check for blocking units on the current hex,
+        // but only if this hex is not the final destination (endHex).
+        // Units on the endHex itself do not block LoS *to* that hex.
+        if (i < pathHexes.length - 1) {
+            for (const actor of actors) {
+                // Assuming actor.pos is a GridPosition {x: row, y: col}
+                if (actor.pos.x === gridPos.x && actor.pos.y === gridPos.y) {
+                    // Future: Could check actor.state === ActorState.ALIVE
+                    // Future: Could consider unit size based on CombatSystem.md definitions
+                    return false; // LoS blocked by an actor
+                }
+            }
+        }
+    }
+    // If the loop completes, no obstructions were found along the path.
+    return true;
 }
