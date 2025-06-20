@@ -13,6 +13,7 @@ import {
   World,
   TurnOrders,
   TurnResult,
+  OrderType, // Added OrderType
 } from "./Models";
 import { inspect } from "util";
 
@@ -186,6 +187,7 @@ function validateRequestOrders(
     const out = {
       actor: await store.read<Actor>(store.keys.actors, o.actorId),
       ordersList: fillOrTruncateOrdersList(numbersToDirections(o.ordersList)),
+      orderType: OrderType.MOVE, // Added this line
     };
     logger.debug(util.format("ActorOrder: %j", out));
 

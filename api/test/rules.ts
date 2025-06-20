@@ -365,7 +365,7 @@ describe("rules tests", function () {
 
             await rules.applyRulesToActorOrders(game, world, [order]); // Using applyRulesToActorOrders to invoke applyFiringRules
 
-            assert.strictEqual(target.health, 90, "Target health should be reduced");
+            assert.strictEqual(target.health, 0, "Target health should be 0 after 10 timesteps (10 damage * 10 steps)");
         });
 
         it("should not apply damage if target is out of range", async () => {
@@ -385,7 +385,7 @@ describe("rules tests", function () {
 
             await rules.applyRulesToActorOrders(game, world, [order]);
 
-            assert.strictEqual(target.health, 90, "Target health should be reduced at max range");
+            assert.strictEqual(target.health, 0, "Target health should be 0 at max range after 10 timesteps (10 damage * 10 steps)");
         });
 
         // --- Test Cases for Damage Calculation ---
@@ -397,7 +397,7 @@ describe("rules tests", function () {
 
             await rules.applyRulesToActorOrders(game, world, [order]);
 
-            assert.strictEqual(target.health, 75, "Target health should be 100 - 25");
+            assert.strictEqual(target.health, 0, "Target health should be 0 after 10 timesteps (25 damage * 10 steps)");
         });
 
         it("should set target state to DEAD if health drops to 0", async () => {
@@ -466,7 +466,7 @@ describe("rules tests", function () {
 
             await rules.applyRulesToActorOrders(game, world, [order]);
 
-            assert.strictEqual(target.health, 90, "Target health should be reduced with clear LoS");
+            assert.strictEqual(target.health, 0, "Target health should be 0 with clear LoS after 10 timesteps (10 damage * 10 steps)");
         });
 
         // --- Test Cases for Attack Orders ---

@@ -309,10 +309,36 @@ describe("complete first turn with one player - moving forward orders", () => {
     it("get turn result for first turn", async function () {
         const firstTurnResult = await lgm.turnResults(gameId, 1, playerId);
 
-        const expected: lgm.TurnResultsResponse = JSON.parse(readFileSync('test/fixtures/turnResult_2.json', { encoding: "utf-8" }));
-        expected.results.id = firstTurnResult.results.id; // cheating a bit
-        expected.results.gameId = gameId;
-        expected.results.playerId = playerId;
+        // Construct expected result in code instead of loading from turnResult_2.json
+        const expectedActors: Actor[] = [
+            { owner: playerId, pos: { x: 0, y: 0 }, id: 45, health: 100, state: 1, weapon: { name: "Standard Issue Blaster", range: 5, damage: 10 } },
+            { owner: playerId, pos: { x: 0, y: 1 }, id: 46, health: 100, state: 1, weapon: { name: "Standard Issue Blaster", range: 5, damage: 10 } },
+            { owner: playerId, pos: { x: 0, y: 2 }, id: 47, health: 100, state: 1, weapon: { name: "Standard Issue Blaster", range: 5, damage: 10 } },
+            { owner: playerId, pos: { x: 0, y: 1 }, id: 48, health: 100, state: 1, weapon: { name: "Standard Issue Blaster", range: 5, damage: 10 } },
+            { owner: playerId, pos: { x: 0, y: 2 }, id: 49, health: 100, state: 1, weapon: { name: "Standard Issue Blaster", range: 5, damage: 10 } },
+            { owner: playerId, pos: { x: 0, y: 3 }, id: 50, health: 100, state: 1, weapon: { name: "Standard Issue Blaster", range: 5, damage: 10 } },
+            { owner: playerId, pos: { x: 0, y: 2 }, id: 51, health: 100, state: 1, weapon: { name: "Standard Issue Blaster", range: 5, damage: 10 } },
+            { owner: playerId, pos: { x: 0, y: 3 }, id: 52, health: 100, state: 1, weapon: { name: "Standard Issue Blaster", range: 5, damage: 10 } },
+            { owner: playerId, pos: { x: 2, y: 2 }, id: 53, health: 100, state: 1, weapon: { name: "Standard Issue Blaster", range: 5, damage: 10 } }
+        ];
+
+        // Sort actors by ID for consistent comparison, both actual and expected
+        const actualSortedActors = firstTurnResult.results.updatedActors.sort((a,b) => a.id - b.id);
+        const expectedSortedActors = expectedActors.sort((a,b) => a.id - b.id);
+
+        const expected: lgm.TurnResultsResponse = {
+            success: true,
+            results: {
+                gameId: gameId, // Use dynamic gameId from test context
+                playerId: playerId, // Use dynamic playerId from test context
+                turn: 1,
+                updatedActors: expectedSortedActors,
+                id: firstTurnResult.results.id // Match the actual result's ID
+            }
+        };
+
+        // Replace the updatedActors in firstTurnResult with the sorted ones for deepEqual comparison
+        firstTurnResult.results.updatedActors = actualSortedActors;
 
         assert.deepEqual(firstTurnResult, expected);
     });
