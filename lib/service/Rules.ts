@@ -5,12 +5,20 @@ import logger = require('../utils/Logger');
 import util = require('util');
 import {
     Game, GridPosition, Direction, ActorOrders, Actor, ActorState, World,
-    Terrain, TurnStatus, TurnOrders, TurnResult
+    Terrain, TurnStatus, TurnOrders, TurnResult, OrderType, Weapon
 } from './Models';
 import { JoinGameResponse } from './GameService';
-import { visibility } from '../service/Visibility';
+import { visibility, hasLineOfSight } from '../service/Visibility';
+import { Hex } from '../Hex';
 
 export const TIMESTEP_MAX = 10;
+
+// Helper function to convert GridPosition to Hex
+function gridPositionToHex(pos: GridPosition): Hex {
+    const q = pos.y; // column is q
+    const r = pos.x - (pos.y - (pos.y & 1)) / 2; // row is x, convert to axial r for odd-q
+    return new Hex(q, r, -q - r); // s = -q - r
+}
 
 function findOrdersForTurn(gameId: number, turn: number) {
     logger.debug("rules.ordersForTurn");
@@ -77,22 +85,23 @@ export function applyDirection(oldPos: GridPosition, direction: Direction): Grid
 }
 
 export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, world: World, timestep: number,): Promise<Actor> {
+    const actor = actorOrders.actor; // Moved to top
+
+    if (actorOrders.orderType !== OrderType.MOVE || !actorOrders.ordersList || actorOrders.ordersList.length === 0) {
+        // If not a move order, or no directions, or empty directions list, return actor unchanged.
+        // Explicitly checking ordersList.length === 0 as empty array might pass !actorOrders.ordersList if it's just an empty array vs undefined/null.
+        return actor;
+    }
 
     const moveDirections: Array<Direction> = actorOrders.ordersList;
     const moveDirection: Direction = timestep < moveDirections.length
         ? moveDirections[timestep]
         : Direction.NONE;
 
-    const actor = actorOrders.actor;
+    // Removed redundant actor null check, actor is guaranteed by this point.
+    // Removed redundant actor declaration.
 
-    if (!actor) {
-        const msg = "Rules.applyMovementOrders(): actor is not present in actorOrders";
-        logger.error(util.format(msg));
-        logger.error(util.format("%j", actorOrders));
-        throw new Error(msg);
-    }
-
-    const newGridPos = applyDirection(actorOrders.actor.pos, moveDirection as Direction);
+    const newGridPos = applyDirection(actor.pos, moveDirection as Direction); // Use actor.pos directly
 
     // check against world.terrain boundaries
     if (newGridPos.x < 0
@@ -125,13 +134,68 @@ export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, 
     return actor;
 }
 
-async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: World, timestep: number,): Promise<Actor> {
-    const visibleEnemies = [];
-    if (visibleEnemies.length > 0) {
-        const target: Actor = visibleEnemies[0];
-        target.state = ActorState.DEAD; // insta-kill!
+async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: World, timestep: number): Promise<Actor> {
+    const attacker = actorOrders.actor;
+
+    if (actorOrders.orderType !== OrderType.ATTACK) {
+        return attacker; // Not an attack order
     }
-    return actorOrders.actor;
+
+    if (typeof actorOrders.targetId === 'undefined') {
+        logger.debug(`Actor ${attacker.id} has ATTACK order but no targetId.`);
+        return attacker; // No target specified
+    }
+
+    if (!attacker.weapon) {
+        logger.error(`Actor ${attacker.id} has no weapon, cannot execute ATTACK order.`);
+        return attacker;
+    }
+
+    const targetActor = world.actors.find(a => a.id === actorOrders.targetId);
+
+    if (!targetActor) {
+        logger.warn(`ATTACK order: Target actor with ID ${actorOrders.targetId} not found for attacker ${attacker.id}.`);
+        return attacker;
+    }
+
+    if (targetActor.state === ActorState.DEAD) {
+        logger.info(`ATTACK order: Target actor ${targetActor.id} is already dead.`);
+        return attacker;
+    }
+
+    if (attacker.id === targetActor.id) {
+        logger.info(`ATTACK order: Actor ${attacker.id} cannot target itself.`);
+        return attacker;
+    }
+
+    const startHex = gridPositionToHex(attacker.pos);
+    const targetHex = gridPositionToHex(targetActor.pos);
+
+    // 1. Check Weapon Range
+    const distance = startHex.distance(targetHex); // Axial distance
+    if (distance > attacker.weapon.range) {
+        logger.info(`ATTACK order: Target ${targetActor.id} is out of range for ${attacker.id} (range: ${attacker.weapon.range}, distance: ${distance}).`);
+        return attacker;
+    }
+
+    // 2. Check Line of Sight
+    const losClear = hasLineOfSight(startHex, targetHex, world.terrain, world.actors);
+    if (!losClear) {
+        logger.info(`ATTACK order: Line of sight from ${attacker.id} to ${targetActor.id} is blocked.`);
+        return attacker;
+    }
+
+    // Apply damage
+    targetActor.health -= attacker.weapon.damage;
+    logger.info(`Actor ${attacker.id} attacked Actor ${targetActor.id} with ${attacker.weapon.name} for ${attacker.weapon.damage} damage. Target health now: ${targetActor.health}`);
+
+    if (targetActor.health <= 0) {
+        targetActor.health = 0; // Ensure health doesn't go negative
+        targetActor.state = ActorState.DEAD;
+        logger.info(`Actor ${targetActor.id} has been defeated.`);
+    }
+
+    return attacker;
 }
 
 // update actors based on turn orders
@@ -385,16 +449,36 @@ export async function setupActors(game: Game, playerId: number) {
             if (attempts >= MAX_ATTEMPTS) {
                 const msg = "Actor placement: failed to place actors for new player";
                 logger.error(msg);
-                done = true;
+                done = true; // Still mark as done to exit loop, even if placement is not ideal.
             }
         }
     }
 
+    const defaultWeapon: Weapon = {
+        name: "Standard Issue Blaster",
+        range: 5, // Example range
+        damage: 10 // Example damage
+        // ammo is optional, so not included here
+    };
+
     for (let i = 0; i < 9; i++) {
-        actors.push({ owner: playerId, pos: { x: Math.floor(i / 3), y: i % 3 } });
+        actors.push({
+            owner: playerId,
+            pos: { x: x + Math.floor(i / 3), y: y + i % 3 }, // Use the determined x, y for starting position
+            health: 100, // Example starting health
+            state: ActorState.ALIVE,
+            weapon: defaultWeapon
+        });
     }
     await Promise.all(actors.map((a) => {
-        return store.create<Actor>(store.keys.actors, a);
+        // The 'a' here is the actor object we just pushed, already including health, state, weapon.
+        // However, store.create<Actor> likely expects the specific type Actor,
+        // and our 'a' is currently an anonymous object.
+        // We need to ensure the object 'a' passed to store.create conforms to the Actor interface.
+        // As 'a' is constructed with all necessary properties, this should be fine.
+        // If 'store.create' has strict type checking beyond properties, this might need adjustment,
+        // but typically it would accept an object that fits the interface.
+        return store.create<Actor>(store.keys.actors, a as Actor); // Added 'as Actor' for type assertion if needed by store.create
     }));
     return actors;
 }

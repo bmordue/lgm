@@ -28,6 +28,15 @@ export interface Actor {
     pos: GridPosition,
     state: ActorState,
     owner: number // playerId
+    health: number;
+    weapon: Weapon;
+}
+
+export interface Weapon {
+    name: string;
+    range: number; // in hexes
+    damage: number;
+    ammo?: number; // optional
 }
 
 export interface TurnOrders {
@@ -57,7 +66,14 @@ export interface GridPosition {
     y: number
 }
 
+export enum OrderType {
+    MOVE,
+    ATTACK
+}
+
 export interface ActorOrders {
-    actor: Actor;
-    ordersList: Array<Direction>;
+    actor: Actor; // Or actorId: number; depending on current usage
+    orderType: OrderType;
+    ordersList?: Array<Direction>; // For MOVE orders
+    targetId?: number; // For ATTACK orders, ID of the target Actor
 }
