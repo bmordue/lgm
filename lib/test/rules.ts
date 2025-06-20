@@ -1,6 +1,6 @@
 import rules = require('../service/Rules');
 import assert = require('assert');
-import { Actor, ActorOrders, ActorState, Direction, Game, GridPosition, World, Terrain } from '../service/Models';
+import { Actor, ActorOrders, ActorState, Direction, Game, GridPosition, World, Terrain, OrderType, Weapon } from '../service/Models';
 import { TIMESTEP_MAX } from '../service/Rules';
 
 
@@ -313,6 +313,219 @@ describe("rules tests", function () {
             // (5,5) is within range. However, path from (0,0) to (5,5) can be occluded by other blocks in generateTerrain() (e.g. terrain[3][4]).
             // If visibility() returns false for (5,5), then it should be UNEXPLORED.
             assert.equal(filteredWorld.terrain[5][5], Terrain.UNEXPLORED, "Tile (5,5) should be UNEXPLORED due to occlusion by a standard map block");
+        });
+    });
+
+    describe("applyFiringRules", function () {
+        // Test setup variables will go here
+        let game: Game;
+        let world: World;
+        let attacker: Actor;
+        let target: Actor;
+        const defaultWeapon: Weapon = { name: "Test Blaster", range: 5, damage: 10 };
+        const longRangeWeapon: Weapon = { name: "Test Sniper", range: 10, damage: 25 };
+
+        beforeEach(async () => {
+            // Initialize a simple 10x10 empty terrain for most tests
+            const terrain: Terrain[][] = Array(10).fill(null).map(() => Array(10).fill(Terrain.EMPTY));
+
+            attacker = {
+                id: 1,
+                pos: { x: 0, y: 0 },
+                state: ActorState.ALIVE,
+                owner: 1,
+                health: 100,
+                weapon: { ...defaultWeapon }
+            };
+            target = {
+                id: 2,
+                pos: { x: 0, y: 1 },
+                state: ActorState.ALIVE,
+                owner: 2,
+                health: 100,
+                weapon: { ...defaultWeapon }
+            };
+
+            world = {
+                id: 0,
+                actors: [attacker, target],
+                terrain: terrain
+            };
+            game = { turn: 1, worldId: 0, players: [1, 2] };
+        });
+
+        // --- Test Cases for Weapon Range ---
+        it("should allow attack if target is within range and LoS is clear", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 1 }; // Distance 1, range 5
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]); // Using applyRulesToActorOrders to invoke applyFiringRules
+
+            assert.strictEqual(target.health, 90, "Target health should be reduced");
+        });
+
+        it("should not apply damage if target is out of range", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 6 }; // Distance 6, range 5
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 100, "Target health should not change if out of range");
+        });
+
+        it("should allow attack at exact maximum range", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 5 }; // Distance 5, range 5
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 90, "Target health should be reduced at max range");
+        });
+
+        // --- Test Cases for Damage Calculation ---
+        it("should reduce target health by weapon damage", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 1 };
+            attacker.weapon.damage = 25;
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 75, "Target health should be 100 - 25");
+        });
+
+        it("should set target state to DEAD if health drops to 0", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 1 };
+            target.health = 5;
+            attacker.weapon.damage = 10;
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 0, "Target health should be 0");
+            assert.strictEqual(target.state, ActorState.DEAD, "Target state should be DEAD");
+        });
+
+        it("should set target health to 0 if damage exceeds current health (not negative)", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 1 };
+            target.health = 5;
+            attacker.weapon.damage = 100;
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 0, "Target health should be capped at 0");
+            assert.strictEqual(target.state, ActorState.DEAD, "Target state should be DEAD");
+        });
+
+        // --- Test Cases for Line of Sight (LoS) ---
+        it("should not apply damage if LoS is blocked by terrain", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 2 }; // Distance 2, range 5
+            world.terrain[0][1] = Terrain.BLOCKED; // Block LoS between (0,0) and (0,2)
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 100, "Target health should not change if LoS blocked by terrain");
+        });
+
+        it("should not apply damage if LoS is blocked by another actor", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 2 }; // Distance 2, range 5
+            const blocker: Actor = {
+                id: 3,
+                pos: { x: 0, y: 1 }, // Positioned between attacker and target
+                state: ActorState.ALIVE,
+                owner: 3,
+                health: 100,
+                weapon: { ...defaultWeapon }
+            };
+            world.actors.push(blocker);
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 100, "Target health should not change if LoS blocked by another actor");
+        });
+
+        it("should allow attack if LoS is clear (even with other actors not in path)", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 1 };
+            const otherActor: Actor = { id: 3, pos: {x: 5, y: 5}, state: ActorState.ALIVE, owner: 3, health: 100, weapon: defaultWeapon};
+            world.actors.push(otherActor); // Add another actor far away
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 90, "Target health should be reduced with clear LoS");
+        });
+
+        // --- Test Cases for Attack Orders ---
+        it("should not do anything if orderType is not ATTACK", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 1 };
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.MOVE, ordersList: [Direction.NONE], targetId: target.id }; // MOVE order
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 100, "Target health should not change for MOVE order");
+        });
+
+        it("should not attack if targetId is missing", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK }; // No targetId
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 100, "Target health should not change if targetId is missing");
+        });
+
+        it("should not attack if attacker has no weapon", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 1 };
+            (attacker as any).weapon = undefined; // Remove weapon
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 100, "Target health should not change if attacker has no weapon");
+        });
+
+        it("should not attack if target actor does not exist", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: 999 }; // Non-existent target
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+            // No direct assertion on health of a non-existent target, but code should not crash.
+            // We can check attacker's state or if any error was logged if needed, but for now, just graceful execution.
+            assert.ok(true, "Execution should complete without error for non-existent target.");
+        });
+
+        it("should not attack if target is already DEAD", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            target.pos = { x: 0, y: 1 };
+            target.state = ActorState.DEAD;
+            target.health = 0;
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(target.health, 0, "Dead target's health should remain 0");
+        });
+
+        it("should not allow actor to attack itself", async () => {
+            attacker.pos = { x: 0, y: 0 };
+            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: attacker.id }; // Target self
+
+            await rules.applyRulesToActorOrders(game, world, [order]);
+
+            assert.strictEqual(attacker.health, 100, "Attacker health should not change when targeting self");
         });
     });
 });
