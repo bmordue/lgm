@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-        "outDir": "./built/api",
+        "outDir": "./built/",
         "allowJs": true,
         "target": "es5",
         "noFallthroughCasesInSwitch": true,
@@ -8,6 +8,6 @@
         "sourceMap": true
     },
     "include": [
-        "api/**/*ts"
+        "./**/*ts"
     ]
 }

@@ -261,7 +261,7 @@ describe("complete first turn with one player - standing still orders", () => {
     it("get turn result for first turn", async function () {
         const firstTurnResult = await lgm.turnResults(gameId, 1, playerId);
 
-        const expected: lgm.TurnResultsResponse = JSON.parse(readFileSync('lib/test/fixtures/turnResult_1.json', { encoding: "utf-8" }));
+        const expected: lgm.TurnResultsResponse = JSON.parse(readFileSync('test/fixtures/turnResult_1.json', { encoding: "utf-8" }));
         expected.results.id = firstTurnResult.results.id; // cheating a bit
         expected.results.gameId = gameId;
         expected.results.playerId = playerId;
@@ -309,7 +309,7 @@ describe("complete first turn with one player - moving forward orders", () => {
     it("get turn result for first turn", async function () {
         const firstTurnResult = await lgm.turnResults(gameId, 1, playerId);
 
-        const expected: lgm.TurnResultsResponse = JSON.parse(readFileSync('lib/test/fixtures/turnResult_2.json', { encoding: "utf-8" }));
+        const expected: lgm.TurnResultsResponse = JSON.parse(readFileSync('test/fixtures/turnResult_2.json', { encoding: "utf-8" }));
         expected.results.id = firstTurnResult.results.id; // cheating a bit
         expected.results.gameId = gameId;
         expected.results.playerId = playerId;

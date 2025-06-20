@@ -39,7 +39,6 @@
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-code": "^1.0.18",
     "@stryker-mutator/core": "^9.0.1",
     "@stryker-mutator/mocha-runner": "^9.0.1",
     "@types/cookie-parser": "^1.4.3",
