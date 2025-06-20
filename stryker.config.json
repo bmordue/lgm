@@ -14,9 +14,9 @@
   "testRunner_comment": "Take a look at (missing 'homepage' URL in package.json) for information about the mocha plugin.",
   "coverageAnalysis": "perTest",
   "buildCommand": "tsc",
-  "mutate": ["lib/**/*.ts", "!lib/test/*", "!lib/Hex.ts"],
+  "mutate": ["api/**/*.ts", "!api/test/*", "!api/Hex.ts"],
   "testRunner": "mocha",
   "mochaOptions": {
-    "spec": [ "built/test" ]
+    "spec": [ "built/api/test" ]
   }
 }
