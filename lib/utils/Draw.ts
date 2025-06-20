@@ -18,7 +18,7 @@ import { GridPosition, Terrain, World } from '../service/Models';
 export function hexSvg(pos: GridPosition, S: number, colour = "black"): string {
     const k = Math.sqrt(3);
 
-    const pixelOffsetX = k * S * (pos.x + 0.5 * pos.y);
+    const pixelOffsetX = k * S * (pos.x + 0.5 * (pos.y % 2));
     const pixelOffsetY = k * S * pos.y;
 
     const Ax = pixelOffsetX;

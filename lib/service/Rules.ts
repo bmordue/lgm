@@ -8,6 +8,7 @@ import {
     Terrain, TurnStatus, TurnOrders, TurnResult
 } from './Models';
 import { JoinGameResponse } from './GameService';
+import { visibility } from '../service/Visibility';
 
 export const TIMESTEP_MAX = 10;
 
@@ -293,8 +294,43 @@ export async function createWorld(): Promise<number> {
     }
 }
 
-async function filterWorldForPlayer(world: World, playerId: number): Promise<World> {
-    return Promise.resolve(world); // TODO: everyone can see everything!
+export async function filterWorldForPlayer(world: World, playerId: number): Promise<World> {
+    const playerActors = world.actors.filter(actor => actor.owner === playerId);
+
+    // if there are no player actors, return an empty world
+    if (playerActors.length === 0) {
+        const emptyTerrain = world.terrain.map(col => col.map(() => Terrain.UNEXPLORED));
+        return Promise.resolve({ ...world, actors: [], terrain: emptyTerrain });
+    }
+
+    const playerVisibility = playerActors.map(actor => visibility(actor.pos, world.terrain));
+
+    // Combine visibility data from all player-owned actors
+    const combinedVisibility: boolean[][] = world.terrain.map(
+        (col, x) => col.map((_, y) => playerVisibility.some(vis => vis[x][y]))
+    );
+
+    const filteredActors = world.actors.filter(actor => {
+        // Include all actors owned by the current player
+        if (actor.owner === playerId) {
+            return true;
+        }
+        // Include enemy actors only if they are on a visible tile
+        return combinedVisibility[actor.pos.x][actor.pos.y];
+    });
+
+    const filteredTerrain = world.terrain.map((col, x) =>
+        col.map((terrainTile, y) => {
+            if (combinedVisibility[x][y]) {
+                return terrainTile;
+            } else {
+                // TODO: Implement "shroud" feature (previously seen terrain remains visible)
+                return Terrain.UNEXPLORED;
+            }
+        })
+    );
+
+    return Promise.resolve({ ...world, actors: filteredActors, terrain: filteredTerrain });
 }
 
 export async function filterGameForPlayer(gameId: number, playerId: number): Promise<JoinGameResponse> {
