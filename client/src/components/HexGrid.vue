@@ -1,6 +1,6 @@
 <template>
   <svg :viewBox="viewBox" @click="handleSvgClick"> <!-- Changed click handler to svg specific -->
-    <g v-for="(hex, index) in hexes" :key="index" :transform="getHexTransform(hex)" @click.stop="handleHexClick(hex)"> <!-- Added click per hex, with stop propagation -->
+    <g v-for="(hex, index) in hexes" :key="index" :transform="getHexTransform(hex)" @click.stop="handleHexClick(hex)" @contextmenu.prevent="handleHexRightClick(hex)">
       <polygon
         :points="getHexPoints(hex)"
         :class="getHexClass(hex)"
@@ -15,10 +15,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, computed, ref } from 'vue'; // Added ref
-import { World, Terrain } from '../../../lib/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not
+import { defineComponent, PropType, computed, ref, Ref } from 'vue'; // Added ref
+import { World, Terrain, Actor as ServiceActor } from '../../../lib/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not. Renamed Actor to ServiceActor to avoid conflict.
 import { Hex, Point, Layout, OffsetCoord } from '../../../lib/Hex';
 import { Actor, PlannedMove, Coord } from '../../../stores/Games.store'; // Added imports
+import { hasLineOfSight } from '../../../lib/service/Visibility';
 
 interface HexStyle {
   fill?: string;
@@ -46,15 +47,39 @@ export default defineComponent({
   setup(props, { emit }) { // Added emit to setup context
     const offsetType = OffsetCoord.ODD;
     const selectedHexRef = ref<Hex | null>(null); // Will keep for hex selection visualization if needed, or remove if superseded by actor selection
-    const selectedActorId = ref<number | null>(null); // For selected actor ID
-    const plannedMoves = ref<PlannedMove[]>([]); // For storing planned moves
+    // const selectedActorId = ref<number | null>(null); // For selected actor ID - Commented out for visibility checker
+    // const plannedMoves = ref<PlannedMove[]>([]); // For storing planned moves - Commented out for visibility checker
+
+    const hexToString = (hex: Hex) => `${hex.q},${hex.r},${hex.s}`;
+
+    const visibilitySourceHex: Ref<Hex | null> = ref(null);
+    const visibleHexes: Ref<Set<string>> = ref(new Set());
+    const localTerrain: Ref<Terrain[][]> = ref([]);
+
+    const initializeLocalTerrain = (rows: number, cols: number) => {
+      const terrain: Terrain[][] = [];
+      for (let i = 0; i < rows; i++) {
+        terrain[i] = [];
+        for (let j = 0; j < cols; j++) {
+          terrain[i][j] = Terrain.EMPTY;
+        }
+      }
+      localTerrain.value = terrain;
+    };
+
+    initializeLocalTerrain(10, 10);
 
     const hexes = computed(() => {
       const h: Hex[] = [];
-      if (!props.world.terrain) return h;
-      for (let r_offset = 0; r_offset < props.world.terrain.length; r_offset++) {
-        const rowTerrain = props.world.terrain[r_offset];
+      if (!localTerrain.value || localTerrain.value.length === 0) return h;
+      // Assuming localTerrain is [row][col] and we want to use 'odd-r' for cube conversion consistent with existing code.
+      // r_offset (row index) will be the outer loop for terrain access.
+      // q_offset (col index) will be the inner loop.
+      for (let r_offset = 0; r_offset < localTerrain.value.length; r_offset++) {
+        const rowTerrain = localTerrain.value[r_offset];
         for (let q_offset = 0; q_offset < rowTerrain.length; q_offset++) {
+          // Using OffsetCoord.ODD and roffsetToCube as before.
+          // new OffsetCoord(col, row) -> new OffsetCoord(q_offset, r_offset)
           h.push(OffsetCoord.roffsetToCube(offsetType, new OffsetCoord(q_offset, r_offset)));
         }
       }
@@ -86,53 +111,40 @@ export default defineComponent({
       const offsetCoord = OffsetCoord.roffsetFromCube(offsetType, hex);
       const col = offsetCoord.col;
       const row = offsetCoord.row;
-      if (props.world.terrain && row >= 0 && row < props.world.terrain.length && col >= 0 && col < props.world.terrain[row].length) {
-        return props.world.terrain[row][col];
+      if (localTerrain.value && row >= 0 && row < localTerrain.value.length && col >= 0 && col < localTerrain.value[row].length) {
+        return localTerrain.value[row][col];
       }
       return null;
     };
 
     const getHexStyle = (hex: Hex): HexStyle => {
-      const style: HexStyle = {};
-      const terrainType = getTerrainTypeForHex(hex);
-
-      // Only set fill based on terrain. Selection styling is handled by CSS class.
-      switch (terrainType) {
-        case Terrain.BLOCKED:
-          style.fill = '#5D6D7E'; // Darker grey for blocked
-          break;
-        case Terrain.EMPTY:
-          style.fill = '#EAECEE'; // Lighter grey for empty
-          break;
-        default:
-          style.fill = 'transparent'; // Should not happen for known terrain
-          break;
-      }
-      return style;
+      // Fill is now handled by CSS classes based on terrain, visibility, etc.
+      // This function can be used for other dynamic styles if needed in the future.
+      // For now, return a base style or an empty object if covered by CSS.
+      // Let's ensure a default stroke is applied if not specified by other classes.
+      return {
+        // stroke: '#34495E', // This is already in .hex-polygon CSS
+        // strokeWidth: 1,    // This is already in .hex-polygon CSS
+      };
     };
 
     const getHexClass = (hex: Hex): string[] => {
         const classes = ['hex-polygon'];
-        const terrainType = getTerrainTypeForHex(hex);
+        const terrainType = getTerrainTypeForHex(hex); // This now uses localTerrain
 
         // Add class for terrain type
         if (terrainType === Terrain.EMPTY) classes.push('terrain-empty');
         if (terrainType === Terrain.BLOCKED) classes.push('terrain-blocked');
 
-        // Class for selected actor's hex
-        if (selectedActorId.value !== null) {
-            const actor = props.actors.find(a => a.id === selectedActorId.value);
-            if (actor && actor.pos.x === hex.q && actor.pos.y === hex.r) { // Assuming actor.pos.x is q, actor.pos.y is r
-                classes.push('selected-actor');
-            }
+        const sHex = hexToString(hex); // Use the helper
+        if (visibilitySourceHex.value &&
+            visibilitySourceHex.value.q === hex.q &&
+            visibilitySourceHex.value.r === hex.r &&
+            visibilitySourceHex.value.s === hex.s) {
+            classes.push('visibility-source');
+        } else if (visibleHexes.value.has(sHex)) {
+            classes.push('visible');
         }
-
-        // Class for planned paths (start and end hexes)
-        plannedMoves.value.forEach(move => {
-            if ((move.startPos.x === hex.q && move.startPos.y === hex.r) || (move.endPos.x === hex.q && move.endPos.y === hex.r)) {
-                classes.push('planned-path');
-            }
-        });
 
         // Previous selection logic based on selectedHexRef (can be removed or adapted)
         if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r && selectedHexRef.value.s === hex.s) {
@@ -142,59 +154,43 @@ export default defineComponent({
     };
 
     const getHexText = (hex: Hex): string => {
-      // Display actor ID on hex if present
-      const actor = props.actors.find(a => a.pos.x === hex.q && a.pos.y === hex.r); // Assuming actor.pos.x is q, actor.pos.y is r
-      if (actor) {
-        return `A:${actor.id}`;
-      }
       return `${hex.q},${hex.r}`;
     }
     const getHexFontSize = (): number => layout.size.x / 3.8;
 
-    const handleHexClick = (hex: Hex) => {
-      // Assuming actor.pos.x is q and actor.pos.y is r for direct comparison with hex.q, hex.r
-      const actorAtHex = props.actors.find(actor => actor.pos.x === hex.q && actor.pos.y === hex.r);
+    const handleHexClick = (clickedHex: Hex) => {
+      visibilitySourceHex.value = clickedHex;
+      visibleHexes.value.clear();
 
-      if (selectedActorId.value !== null) {
-        const selectedActor = props.actors.find(a => a.id === selectedActorId.value);
-        if (!selectedActor) { // Should not happen if selectedActorId is valid
-            selectedActorId.value = null;
+      const hexToLocalGrid = (h: Hex) => {
+        const offset = OffsetCoord.roffsetFromCube(offsetType, h);
+        return { x: offset.row, y: offset.col };
+      };
+
+      if (visibilitySourceHex.value) {
+        const sourceHex = visibilitySourceHex.value;
+        hexes.value.forEach(targetHex => {
+          if (sourceHex.q === targetHex.q && sourceHex.r === targetHex.r && sourceHex.s === targetHex.s) {
             return;
-        }
+          }
+          if (hasLineOfSight(sourceHex, targetHex, localTerrain.value, [], hexToLocalGrid)) {
+            visibleHexes.value.add(hexToString(targetHex));
+          }
+        });
+      }
+    };
 
-        // Case 1: Clicked on the selected actor's hex again (deselect)
-        if (actorAtHex && actorAtHex.id === selectedActorId.value) {
-          console.log(`Deselected actor ID: ${selectedActorId.value}`);
-          selectedActorId.value = null;
-        }
-        // Case 2: Selected an actor, and clicked on an empty hex (plan move)
-        else if (!actorAtHex) {
-          const newPlannedMove: PlannedMove = {
-            actorId: selectedActorId.value,
-            // Assuming selectedActor.pos is already the correct axial Coord {x,y} for {q,r}
-            startPos: { x: selectedActor.pos.x, y: selectedActor.pos.y },
-            endPos: { x: hex.q, y: hex.r },
-          };
-          plannedMoves.value.push(newPlannedMove);
-          emit('move-planned', newPlannedMove);
-          console.log('Planned move:', newPlannedMove);
-          selectedActorId.value = null; // Reset selection after planning a move
-        }
-        // Case 3: Selected an actor, and clicked on another actor's hex (do nothing or switch selection - current: do nothing)
-        else if (actorAtHex && actorAtHex.id !== selectedActorId.value) {
-            console.log(`Cannot move to hex occupied by another actor (ID: ${actorAtHex.id}). Click actor to select, or empty hex to move.`);
-            // Optionally, could switch selectedActorId.value = actorAtHex.id here
-        }
-      } else {
-        // Case 4: No actor selected, try to select one
-        if (actorAtHex) {
-          selectedActorId.value = actorAtHex.id;
-          console.log(`Selected actor ID: ${actorAtHex.id}`);
-        } else {
-          // Clicked on an empty hex with no actor selected (do nothing or handle as map interaction)
-          selectedHexRef.value = hex; // Keep this for general hex selection feedback if needed
-          const offsetCoord = OffsetCoord.roffsetFromCube(offsetType, hex);
-          console.log('Clicked empty hex (axial):', hex.q, hex.r, hex.s, `- Terrain Index (offset col,row): ${offsetCoord.col},${offsetCoord.row}`);
+    const handleHexRightClick = (hex: Hex) => {
+      const offsetCoord = OffsetCoord.roffsetFromCube(offsetType, hex);
+      const r = offsetCoord.row;
+      const c = offsetCoord.col;
+
+      if (localTerrain.value && r >= 0 && r < localTerrain.value.length && c >= 0 && c < localTerrain.value[r].length) {
+        const currentTerrain = localTerrain.value[r][c];
+        localTerrain.value[r][c] = currentTerrain === Terrain.BLOCKED ? Terrain.EMPTY : Terrain.BLOCKED;
+
+        if (visibilitySourceHex.value) {
+          handleHexClick(visibilitySourceHex.value);
         }
       }
     };
@@ -202,7 +198,7 @@ export default defineComponent({
     const handleSvgClick = (event: MouseEvent) => {
         if (event.target === event.currentTarget) {
             selectedHexRef.value = null;
-            selectedActorId.value = null; // Also deselect actor on background click
+            // selectedActorId.value = null; // Also deselect actor on background click
             console.log('Clicked SVG background, deselected hex and actor.');
         }
     };
@@ -210,8 +206,8 @@ export default defineComponent({
     return {
       hexes,
       selectedHexRef,
-      selectedActorId, // Expose selectedActorId
-      plannedMoves,    // Expose plannedMoves
+      // selectedActorId, // Expose selectedActorId
+      // plannedMoves,    // Expose plannedMoves
       viewBox,
       getHexPoints,
       getHexTransform,
@@ -221,6 +217,10 @@ export default defineComponent({
       getHexFontSize,
       handleHexClick,
       handleSvgClick,
+      visibilitySourceHex,
+      visibleHexes,
+      localTerrain,
+      handleHexRightClick, // Expose new handler
     };
   },
 });
@@ -265,12 +265,22 @@ svg {
 
 
 /* Specific terrain styling via classes (alternative to inline styles from getHexStyle) */
-/* If getHexStyle is preferred for fill, these can be removed or be supplementary */
 .terrain-empty {
-  /* fill: #EAECEE; */ /* Example if using class-based fill */
+  fill: #EAECEE;
 }
 .terrain-blocked {
-  /* fill: #5D6D7E; */ /* Example if using class-based fill */
+  fill: #5D6D7E;
+}
+
+.hex-polygon.visibility-source {
+  fill: #2980b9; /* Blue for the source hex */
+  stroke: #1a5276;
+  stroke-width: 2.5;
+}
+
+.hex-polygon.visible {
+  fill: #abeade; /* Light teal/cyan for visible hexes */
+  /* fill-opacity: 0.7; */ /* Optional: make them slightly transparent */
 }
 
 .hex-text {
