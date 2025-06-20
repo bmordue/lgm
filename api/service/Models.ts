@@ -28,8 +28,8 @@ export interface Actor {
     pos: GridPosition,
     state: ActorState,
     owner: number // playerId
-    health: number;
-    weapon: Weapon;
+    health?: number;
+    weapon?: Weapon;
 }
 
 export interface Weapon {

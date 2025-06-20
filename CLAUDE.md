@@ -34,7 +34,7 @@ LGM is a turn-based strategy game where players control 9 actors (units) on a he
 - `Models` - Core data structures (Game, World, Actor, TurnOrders, TurnResult)
 
 ### API Design
-OpenAPI 3.0 specification (`api/api.yml`) with Exegesis middleware. Authentication via bearer tokens stored in memory. Main endpoints:
+OpenAPI 3.0 specification (`api/spec/api.yml`) with Exegesis middleware. Authentication via bearer tokens stored in memory. Main endpoints:
 - Game lifecycle: `POST /games`, `PUT /games/{id}` (join), `GET /games`
 - Turn mechanics: `POST /games/{gameId}/turns/{turn}/players/{playerId}` (orders), `GET` variant (results)
 - Auth: `POST /users/login`

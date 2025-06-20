@@ -223,7 +223,10 @@ function turnResultsPerPlayer(game: Game, updatedActors: Array<Actor>): Array<Tu
             gameId: game.id,
             playerId: playerId,
             turn: game.turn,
-            updatedActors: updatedActors.filter((a) => a.owner == playerId)
+            // Shallow clone actors to ensure all enumerable properties are on the returned objects
+            updatedActors: updatedActors
+                .filter((a) => a.owner == playerId)
+                .map(a => ({ ...a }))
         };
     });
 }
@@ -445,13 +448,29 @@ export async function setupActors(game: Game, playerId: number) {
             x += 2; // TODO this is a real poor way to place actors!!
             y += 2;
 
-            attempts++;
-            if (attempts >= MAX_ATTEMPTS) {
-                const msg = "Actor placement: failed to place actors for new player";
-                logger.error(msg);
-                done = true; // Still mark as done to exit loop, even if placement is not ideal.
+            // Check if new x,y would place actors out of bounds for a 3x3 grid
+            if (x + 2 >= world.terrain.length || y + 2 >= world.terrain[0].length) {
+                logger.error(`Actor placement: new base (x:${x}, y:${y}) is out of bounds for world (${world.terrain.length}x${world.terrain[0].length}). Cannot place actors for player ${playerId}.`);
+                done = true; // Exit loop, this will result in no actors for this player.
+                // This situation implies the world is too full or placement logic needs improvement.
+            } else {
+                attempts++;
+                if (attempts >= MAX_ATTEMPTS) {
+                    const msg = `Actor placement: failed to place actors for new player ${playerId} after ${MAX_ATTEMPTS} attempts.`;
+                    logger.error(msg);
+                    done = true; // Still mark as done to exit loop, even if placement is not ideal.
+                }
             }
         }
+    }
+
+    // If done is true but x,y are such that actors would be out of bounds (e.g. MAX_ATTEMPTS hit, then x,y were set too high)
+    // This check is a safeguard, primary check is above.
+    if (x + 2 >= world.terrain.length || y + 2 >= world.terrain[0].length) {
+      if (actors.length === 0) { // Only log if we haven't already logged the error above and decided not to create actors.
+        logger.warn(`Actor placement: final base position (x:${x}, y:${y}) for player ${playerId} is out of bounds. No actors will be created.`);
+      }
+      return []; // Return empty list of actors
     }
 
     const defaultWeapon: Weapon = {
@@ -470,15 +489,19 @@ export async function setupActors(game: Game, playerId: number) {
             weapon: defaultWeapon
         });
     }
-    await Promise.all(actors.map((a) => {
-        // The 'a' here is the actor object we just pushed, already including health, state, weapon.
-        // However, store.create<Actor> likely expects the specific type Actor,
-        // and our 'a' is currently an anonymous object.
-        // We need to ensure the object 'a' passed to store.create conforms to the Actor interface.
-        // As 'a' is constructed with all necessary properties, this should be fine.
-        // If 'store.create' has strict type checking beyond properties, this might need adjustment,
-        // but typically it would accept an object that fits the interface.
-        return store.create<Actor>(store.keys.actors, a as Actor); // Added 'as Actor' for type assertion if needed by store.create
-    }));
-    return actors;
+    // Only proceed to create and store actors if placement was successful (i.e., x,y are valid)
+    // The check for x+2, y+2 at the start of this block ensures this.
+    // If actors array remained empty due to placement issues, this loop won't run.
+
+    if (actors.length > 0) { // Should only be > 0 if valid placement was found and defaultWeapon was set.
+        await Promise.all(actors.map((a) => {
+            return store.create<Actor>(store.keys.actors, a as Actor);
+        }));
+    } else {
+        // This case implies placement failed and loop for actor creation was skipped.
+        // Ensure we return an empty array, consistent with the earlier return [] if x,y were bad.
+        logger.warn(`Actor placement: No actors were created for player ${playerId} due to placement issues.`);
+        return [];
+    }
+    return actors; // Returns actors if created, or an empty array if placement failed.
 }

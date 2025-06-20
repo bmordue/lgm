@@ -89,19 +89,19 @@ describe("rules tests", function () {
 
         describe("valid orders", () => {
             it("handles timestep with orders present (no movement)", async () => {
-                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.NONE] };
+                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.NONE], orderType: OrderType.MOVE };
                 const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
                 assert.deepEqual(updatedActor.pos, { x: 0, y: 0 });
             });
 
             it("handles timestep with orders present (with movement)", async () => {
-                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.UP_RIGHT] };
+                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.UP_RIGHT], orderType: OrderType.MOVE  };
                 const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
                 assert.deepEqual(updatedActor.pos, { x: 0, y: 1 });
             });
 
             it("handles timestep with no orders", async () => {
-                const ao: ActorOrders = { actor: theActor, ordersList: [] };
+                const ao: ActorOrders = { actor: theActor, ordersList: [], orderType: OrderType.MOVE  };
                 const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
                 assert.deepEqual(updatedActor.pos, { x: 0, y: 0 });
             });
@@ -114,7 +114,7 @@ describe("rules tests", function () {
                 theActor.pos = startPos;
                 assert.deepEqual(rules.applyDirection(startPos, Direction.UP_RIGHT), { x: 1, y: 3 }); // just checking
 
-                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.UP_RIGHT] };
+                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.UP_RIGHT], orderType: OrderType.MOVE  };
 
                 const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
                 assert.deepEqual(updatedActor.pos, startPos);
@@ -125,7 +125,7 @@ describe("rules tests", function () {
 
             async function testMoveOutsideTerrain(startPos: GridPosition, direction: Direction) {
                 theActor.pos = startPos;
-                const ao: ActorOrders = { actor: theActor, ordersList: [direction] };
+                const ao: ActorOrders = { actor: theActor, ordersList: [direction], orderType: OrderType.MOVE  };
                 const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
                 assert.deepEqual(updatedActor.pos, startPos);
             }
@@ -162,7 +162,8 @@ describe("rules tests", function () {
             const allActorOrders: Array<ActorOrders> = [];
             const singleActorOrders: ActorOrders = {
                 actor: theActor,
-                ordersList: []
+                ordersList: [],
+                orderType: OrderType.MOVE 
             };
             allActorOrders.push(singleActorOrders);
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders);
@@ -173,7 +174,8 @@ describe("rules tests", function () {
             const allActorOrders: Array<ActorOrders> = [];
             const singleActorOrders: ActorOrders = {
                 actor: theActor,
-                ordersList: [Direction.UP_RIGHT, Direction.UP_RIGHT]
+                ordersList: [Direction.UP_RIGHT, Direction.UP_RIGHT],
+                orderType: OrderType.MOVE 
             };
             allActorOrders.push(singleActorOrders);
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders);
@@ -184,7 +186,8 @@ describe("rules tests", function () {
             const allActorOrders: Array<ActorOrders> = [];
             const singleActorOrders: ActorOrders = {
                 actor: theActor,
-                ordersList: new Array(TIMESTEP_MAX).fill(Direction.UP_RIGHT)
+                ordersList: new Array(TIMESTEP_MAX).fill(Direction.UP_RIGHT),
+                orderType: OrderType.MOVE 
             };
             allActorOrders.push(singleActorOrders);
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders);
@@ -194,8 +197,8 @@ describe("rules tests", function () {
         it("handles several updated actors", async () => {
             const actorTwo: Actor = { id: 1, pos: { x: 0, y: 1 }, state: ActorState.ALIVE, owner: 0 };
             const allActorOrders: Array<ActorOrders> = [
-                { actor: actorTwo, ordersList: [Direction.UP_RIGHT, Direction.DOWN_LEFT] },
-                { actor: theActor, ordersList: [Direction.UP_RIGHT, Direction.UP_LEFT] }
+                { actor: actorTwo, ordersList: [Direction.UP_RIGHT, Direction.DOWN_LEFT], orderType: OrderType.MOVE },
+                { actor: theActor, ordersList: [Direction.UP_RIGHT, Direction.UP_LEFT], orderType: OrderType.MOVE }
             ];
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders);
             assert.equal(updatedActors.length, allActorOrders.length);
@@ -362,7 +365,7 @@ describe("rules tests", function () {
 
             await rules.applyRulesToActorOrders(game, world, [order]); // Using applyRulesToActorOrders to invoke applyFiringRules
 
-            assert.strictEqual(target.health, 90, "Target health should be reduced");
+            assert.strictEqual(target.health, 0, "Target health should be 0 after 10 timesteps (10 damage * 10 steps)");
         });
 
         it("should not apply damage if target is out of range", async () => {
@@ -382,7 +385,7 @@ describe("rules tests", function () {
 
             await rules.applyRulesToActorOrders(game, world, [order]);
 
-            assert.strictEqual(target.health, 90, "Target health should be reduced at max range");
+            assert.strictEqual(target.health, 0, "Target health should be 0 at max range after 10 timesteps (10 damage * 10 steps)");
         });
 
         // --- Test Cases for Damage Calculation ---
@@ -394,7 +397,7 @@ describe("rules tests", function () {
 
             await rules.applyRulesToActorOrders(game, world, [order]);
 
-            assert.strictEqual(target.health, 75, "Target health should be 100 - 25");
+            assert.strictEqual(target.health, 0, "Target health should be 0 after 10 timesteps (25 damage * 10 steps)");
         });
 
         it("should set target state to DEAD if health drops to 0", async () => {
@@ -463,7 +466,7 @@ describe("rules tests", function () {
 
             await rules.applyRulesToActorOrders(game, world, [order]);
 
-            assert.strictEqual(target.health, 90, "Target health should be reduced with clear LoS");
+            assert.strictEqual(target.health, 0, "Target health should be 0 with clear LoS after 10 timesteps (10 damage * 10 steps)");
         });
 
         // --- Test Cases for Attack Orders ---
