@@ -1,5 +1,5 @@
 export enum Terrain {
-    EMPTY, BLOCKED
+    EMPTY, BLOCKED, UNEXPLORED
 }
 
 export enum Direction {
