@@ -14,25 +14,37 @@ interface GameSummary {
 
 const gameList = ref<GameSummary[]>([])
 
-watchEffect(async () => {
+async function fetchGameList() {
   const response = await fetch(`${API_URL}/games`);
   const data = await response.json();
   gameList.value = data.games || [];
+}
+
+watchEffect(() => {
+  fetchGameList();
 });
 
 async function callCreate() {
   const userStore = useUserStore();
-
   const token = userStore.getToken();
 
-  const response = await fetch(`${API_URL}/games`, {
-    method: "post",
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
+  try {
+    const response = await fetch(`${API_URL}/games`, {
+      method: "post",
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
 
-  // TODO: update gameList here!
+    if (response.ok) {
+      await fetchGameList(); // Update game list after successful creation
+    } else {
+      const error = await response.json().catch(() => ({ message: "Failed to create game and parse error" }));
+      alert(`Failed to create game: ${error.message || 'Unknown error'}`);
+    }
+  } catch (error) {
+    alert('Network error while creating game. Please try again.');
+  }
 }
 
 async function join(game: GameSummary) {

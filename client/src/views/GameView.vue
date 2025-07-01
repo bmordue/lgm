@@ -92,16 +92,27 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     if (response.ok) {
       console.log("Orders submitted successfully!");
       plannedMoves.value = []; // Clear planned moves on success
-      // TODO: Potentially refresh game state or notify user, fetch new turn data etc.
-      // gamesStore.get(g.gameId) or similar to refresh game state might be needed.
+      alert("Orders submitted successfully!"); // Simple notification
+
+      // Refresh game state
+      const currentGameId = gamesStore.getCurrentGame().gameId;
+      if (currentGameId) {
+        // Assuming there's a method to fetch/refresh a specific game by ID
+        // This might need to be implemented in Games.store.ts if not present
+        // For now, let's simulate a refresh by re-assigning from the store,
+        // assuming the store itself might have ways to update.
+        // A more robust solution would be an explicit fetch action.
+        await gamesStore.fetchGameDetails(currentGameId); // Hypothetical method
+        game.value = gamesStore.getCurrentGame();
+      }
     } else {
       const errorData = await response.json().catch(() => ({ message: "Failed to parse error response" }));
       console.error("Failed to submit orders:", response.status, errorData);
-      // TODO: Notify user of error (e.g. using a toast notification)
+      alert(`Failed to submit orders: ${errorData.message || response.statusText}`);
     }
   } catch (error) {
     console.error("Error submitting orders:", error);
-    // TODO: Notify user of error
+    alert(`Error submitting orders: ${error instanceof Error ? error.message : 'Unknown network error'}`);
   }
 }
 
