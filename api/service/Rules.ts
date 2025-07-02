@@ -8,10 +8,16 @@ import {
     Terrain, TurnStatus, TurnOrders, TurnResult, OrderType, Weapon
 } from './Models';
 import { JoinGameResponse } from './GameService';
-import { visibility, hasLineOfSight } from '../service/Visibility';
+// Removed 'visibility' import, replaced 'hasLineOfSight' with 'getVisibleWorldForPlayer' and specific 'hasLineOfSight as combatLineOfSight'
+import { getVisibleWorldForPlayer, hasLineOfSight as combatLineOfSight } from '../service/Visibility';
 import { Hex } from '../Hex';
 
 export const TIMESTEP_MAX = 10;
+
+// Store the original world state that processGameTurn loads.
+// This is a bit of a module-level variable, which isn't ideal, but
+// helps pass the terrain info to turnResultsPerPlayer without major refactoring of processGameTurn.
+let currentTurnWorldTerrain: Terrain[][] | undefined;
 
 // Helper function to convert GridPosition to Hex
 function gridPositionToHex(pos: GridPosition): Hex {
@@ -179,7 +185,7 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: Wor
     }
 
     // 2. Check Line of Sight
-    const losClear = hasLineOfSight(startHex, targetHex, world.terrain, world.actors);
+    const losClear = combatLineOfSight(startHex, targetHex, world.terrain, world.actors); // Use renamed import
     if (!losClear) {
         logger.info(`ATTACK order: Line of sight from ${attacker.id} to ${targetActor.id} is blocked.`);
         return attacker;
@@ -217,16 +223,26 @@ export async function applyRulesToActorOrders(game: Game, world: World, allActor
     return allActorOrders.map((a: ActorOrders) => a.actor);
 }
 
-function turnResultsPerPlayer(game: Game, updatedActors: Array<Actor>): Array<TurnResult> {
+function turnResultsPerPlayer(game: Game, allUpdatedActorsThisTurn: Array<Actor>): Array<TurnResult> {
+    if (!currentTurnWorldTerrain) {
+        logger.error("turnResultsPerPlayer: currentTurnWorldTerrain is not set. Cannot generate player-specific worlds.");
+        // Potentially return empty results or throw, depending on desired error handling
+        return [];
+    }
+    const fullWorldStateForThisTurn: World = {
+        // id: game.worldId, // The world itself doesn't change ID, but its content does.
+        actors: allUpdatedActorsThisTurn.map(a => ({ ...a })), // Use all actors after turn resolution
+        terrain: currentTurnWorldTerrain // Use the terrain from the start of processGameTurn
+    };
+
     return game.players.map((playerId) => {
+        // For each player, filter the full world state to what they can see
+        const visibleWorldForPlayer = getVisibleWorldForPlayer(fullWorldStateForThisTurn, playerId);
         return {
             gameId: game.id,
             playerId: playerId,
             turn: game.turn,
-            // Shallow clone actors to ensure all enumerable properties are on the returned objects
-            updatedActors: updatedActors
-                .filter((a) => a.owner == playerId)
-                .map(a => ({ ...a }))
+            world: visibleWorldForPlayer // Store the player-specific visible world
         };
     });
 }
@@ -252,6 +268,7 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
     try {
         game = await store.read<Game>(store.keys.games, gameId);
         world = await store.read<World>(store.keys.worlds, game.worldId);
+        currentTurnWorldTerrain = world.terrain; // Store terrain for use in turnResultsPerPlayer
 
         gameTurnOrders = await store.readAll<TurnOrders>(store.keys.turnOrders, (o: TurnOrders) => {
             return filterOrdersForGameTurn(o, gameId, game.turn);
@@ -361,50 +378,17 @@ export async function createWorld(): Promise<number> {
     }
 }
 
-export async function filterWorldForPlayer(world: World, playerId: number): Promise<World> {
-    const playerActors = world.actors.filter(actor => actor.owner === playerId);
-
-    // if there are no player actors, return an empty world
-    if (playerActors.length === 0) {
-        const emptyTerrain = world.terrain.map(col => col.map(() => Terrain.UNEXPLORED));
-        return Promise.resolve({ ...world, actors: [], terrain: emptyTerrain });
-    }
-
-    const playerVisibility = playerActors.map(actor => visibility(actor.pos, world.terrain));
-
-    // Combine visibility data from all player-owned actors
-    const combinedVisibility: boolean[][] = world.terrain.map(
-        (col, x) => col.map((_, y) => playerVisibility.some(vis => vis[x][y]))
-    );
-
-    const filteredActors = world.actors.filter(actor => {
-        // Include all actors owned by the current player
-        if (actor.owner === playerId) {
-            return true;
-        }
-        // Include enemy actors only if they are on a visible tile
-        return combinedVisibility[actor.pos.x][actor.pos.y];
-    });
-
-    const filteredTerrain = world.terrain.map((col, x) =>
-        col.map((terrainTile, y) => {
-            if (combinedVisibility[x][y]) {
-                return terrainTile;
-            } else {
-                // TODO: Implement "shroud" feature (previously seen terrain remains visible)
-                return Terrain.UNEXPLORED;
-            }
-        })
-    );
-
-    return Promise.resolve({ ...world, actors: filteredActors, terrain: filteredTerrain });
-}
+// filterWorldForPlayer is removed as its functionality is now in Visibility.getVisibleWorldForPlayer
 
 export async function filterGameForPlayer(gameId: number, playerId: number): Promise<JoinGameResponse> {
     try {
         const game = await store.read<Game>(store.keys.games, gameId);
         const world = await store.read<World>(store.keys.worlds, game.worldId);
-        const filteredWorld = await filterWorldForPlayer(world, playerId);
+        // Use the new getVisibleWorldForPlayer from Visibility service
+        const filteredWorldPayload = getVisibleWorldForPlayer(world, playerId);
+        const filteredWorld: World = { ...world, actors: filteredWorldPayload.actors, terrain: filteredWorldPayload.terrain };
+
+
         const playerCount = game.players ? game.players.length : 0;
         return Promise.resolve({ 
             gameId: game.id, 

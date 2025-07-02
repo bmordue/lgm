@@ -3,10 +3,11 @@ import {
   findNextStep,
   findPath,
   within,
-  hasLineOfSight
+  hasLineOfSight,
+  getVisibleWorldForPlayer // Added new function
 } from "../service/Visibility";
-import { generateTerrain } from "../service/Rules";
-import { Terrain, GridPosition, Actor, ActorState } from "../service/Models";
+import { generateTerrain } from "../service/Rules"; // Used for old visibility tests
+import { Terrain, GridPosition, Actor, ActorState, World, Weapon } from "../service/Models"; // Added World, Weapon
 import { Hex } from "../Hex";
 import { readFileSync } from "fs";
 import assert = require("assert");
@@ -357,6 +358,195 @@ describe("findPath through empty terrain", () => {
 
     assert.deepEqual(findPath(start, goal, terrain), expectedPath);
   });
+});
+
+// Helper for getVisibleWorldForPlayer tests
+// Converts GridPosition {x: row, y: col} to Hex for odd-q system
+// This should ideally be imported from a shared utility or the service itself if exposed
+function testGridPositionToHex(pos: GridPosition): Hex {
+    const q = pos.y; // col
+    const r = pos.x - (pos.y - (pos.y & 1)) / 2; // row - (col - (col & 1)) / 2 for odd-q
+    return new Hex(q, r, -q - r);
+}
+
+
+describe('getVisibleWorldForPlayer tests', () => {
+    const createSimpleTerrain = (rows: number, cols: number, blockedCells: GridPosition[] = []): Terrain[][] => {
+        const terrain: Terrain[][] = Array(rows).fill(null).map(() => Array(cols).fill(Terrain.EMPTY));
+        for (const cell of blockedCells) {
+            if (cell.x >= 0 && cell.x < rows && cell.y >= 0 && cell.y < cols) {
+                terrain[cell.x][cell.y] = Terrain.BLOCKED;
+            }
+        }
+        return terrain;
+    };
+
+    const defaultWeapon: Weapon = { name: "Rifle", range: 3, damage: 10 };
+    const longRangeWeapon: Weapon = { name: "Sniper", range: 5, damage: 20 };
+    const noRangeWeapon: Weapon = { name: "Fists", range: 0, damage: 1 };
+
+
+    it('No Player Actors: should return all terrain unexplored and no actors', () => {
+        const terrain = createSimpleTerrain(5, 5);
+        const initialWorld: World = {
+            actors: [
+                { id: 100, owner: 2, pos: { x: 1, y: 1 }, state: ActorState.ALIVE, weapon: defaultWeapon },
+            ],
+            terrain: terrain
+        };
+        const playerId = 1; // This player has no actors
+
+        const visibleWorld = getVisibleWorldForPlayer(initialWorld, playerId);
+
+        assert.strictEqual(visibleWorld.actors.length, 0, "Should have no actors visible");
+        visibleWorld.terrain.forEach(row => {
+            row.forEach(tile => {
+                assert.strictEqual(tile, Terrain.UNEXPLORED, "All terrain should be unexplored");
+            });
+        });
+    });
+
+    it('Single Player Actor, Clear View: terrain and self visible', () => {
+        const R = 5, C = 5;
+        const terrain = createSimpleTerrain(R, C);
+        const playerActor: Actor = { id: 1, owner: 1, pos: { x: 2, y: 2 }, state: ActorState.ALIVE, weapon: { name: "pistol", range: 2, damage: 5 } };
+        const initialWorld: World = {
+            actors: [playerActor],
+            terrain: terrain
+        };
+        const playerId = 1;
+
+        const visibleWorld = getVisibleWorldForPlayer(initialWorld, playerId);
+
+        assert.strictEqual(visibleWorld.actors.length, 1, "Player's own actor should be visible");
+        assert.deepStrictEqual(visibleWorld.actors[0], playerActor, "Player's own actor data should be correct");
+
+        // Check terrain visibility based on sight range 2 from (2,2)
+        // Using simple Manhattan distance for hexes for this check as an approximation for this small grid
+        // A more precise check would involve hasLineOfSight or iterating hexes.
+        const sourceHex = testGridPositionToHex(playerActor.pos);
+        for (let r = 0; r < R; r++) {
+            for (let c = 0; c < C; c++) {
+                const targetHex = testGridPositionToHex({ x: r, y: c });
+                const distance = sourceHex.distance(targetHex);
+                if (distance <= playerActor.weapon.range) {
+                    assert.strictEqual(visibleWorld.terrain[r][c], Terrain.EMPTY, `Tile (${r},${c}) at dist ${distance} should be EMPTY`);
+                } else {
+                    assert.strictEqual(visibleWorld.terrain[r][c], Terrain.UNEXPLORED, `Tile (${r},${c}) at dist ${distance} should be UNEXPLORED`);
+                }
+            }
+        }
+    });
+
+    it('Single Player Actor, Blocked View (Terrain): respects terrain blocking LoS', () => {
+        const R = 5, C = 5;
+        // Wall at column 1 (y=1)
+        const blocked: GridPosition[] = [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }];
+        const terrain = createSimpleTerrain(R, C, blocked);
+        const playerActor: Actor = { id: 1, owner: 1, pos: { x: 2, y: 0 }, state: ActorState.ALIVE, weapon: { name: "pistol", range: 3, damage: 5 } };
+        const initialWorld: World = {
+            actors: [playerActor],
+            terrain: terrain
+        };
+        const playerId = 1;
+        const visibleWorld = getVisibleWorldForPlayer(initialWorld, playerId);
+
+        assert.ok(visibleWorld.actors.find(a => a.id === playerActor.id), "Player actor should be visible");
+        // Tiles at y=0 should be EMPTY
+        for (let r = 0; r < R; r++) {
+             assert.strictEqual(visibleWorld.terrain[r][0], Terrain.EMPTY, `Tile (${r},0) should be EMPTY`);
+        }
+        // Tiles at y=1 (the wall) should be BLOCKED (as they are visible)
+        for (let r = 0; r < R; r++) {
+            if (Math.abs(r - playerActor.pos.x) <= playerActor.weapon.range +1) { // Check within reasonable vertical range of actor
+                 assert.strictEqual(visibleWorld.terrain[r][1], Terrain.BLOCKED, `Tile (${r},1) should be BLOCKED and visible`);
+            }
+        }
+        // Tiles at y=2 should be UNEXPLORED
+        for (let r = 0; r < R; r++) {
+             assert.strictEqual(visibleWorld.terrain[r][2], Terrain.UNEXPLORED, `Tile (${r},2) should be UNEXPLORED`);
+        }
+    });
+
+    it('Single Player Actor, Enemy Actors (Visible and Hidden)', () => {
+        const R = 7, C = 7;
+        const terrain = createSimpleTerrain(R, C);
+        const p1 = 1, e1 = 2, e2 = 3;
+        const playerActor: Actor = { id: 1, owner: p1, pos: { x: 1, y: 1 }, state: ActorState.ALIVE, weapon: { name: "Rifle", range: 3, damage: 10 } };
+        const enemyActorVisible: Actor = { id: 10, owner: e1, pos: { x: 1, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Distance 2
+        const enemyActorHidden: Actor = { id: 20, owner: e2, pos: { x: 5, y: 5 }, state: ActorState.ALIVE, weapon: defaultWeapon };    // Distance > 3 from (1,1)
+
+        const initialWorld: World = {
+            actors: [playerActor, enemyActorVisible, enemyActorHidden],
+            terrain: terrain
+        };
+        const visibleWorld = getVisibleWorldForPlayer(initialWorld, p1);
+
+        assert.strictEqual(visibleWorld.actors.length, 2, "Should see player's own actor and one enemy");
+        assert.ok(visibleWorld.actors.find(a => a.id === playerActor.id), "Player's actor missing");
+        assert.ok(visibleWorld.actors.find(a => a.id === enemyActorVisible.id), "Visible enemy actor missing");
+        assert.ok(!visibleWorld.actors.find(a => a.id === enemyActorHidden.id), "Hidden enemy actor should not be visible");
+
+        // Check terrain around hidden enemy is unexplored
+        const hiddenEnemyPos = enemyActorHidden.pos;
+        assert.strictEqual(visibleWorld.terrain[hiddenEnemyPos.x][hiddenEnemyPos.y], Terrain.UNEXPLORED, "Terrain at hidden enemy location should be UNEXPLORED");
+    });
+
+    it('Multiple Player Actors, Combined Visibility', () => {
+        const R = 7, C = 7;
+        const terrain = createSimpleTerrain(R, C);
+        const p1 = 1;
+        const p1Actor1: Actor = { id: 1, owner: p1, pos: { x: 0, y: 0 }, state: ActorState.ALIVE, weapon: { name: "Rifle", range: 2, damage: 10 } };
+        const p1Actor2: Actor = { id: 2, owner: p1, pos: { x: 0, y: 6 }, state: ActorState.ALIVE, weapon: { name: "Rifle", range: 2, damage: 10 } };
+        const enemyInMiddle: Actor = { id: 10, owner: 2, pos: { x: 0, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Visible to both
+        const enemyFar: Actor = { id: 20, owner: 3, pos: { x: 4, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Hidden from both
+
+        const initialWorld: World = {
+            actors: [p1Actor1, p1Actor2, enemyInMiddle, enemyFar],
+            terrain: terrain
+        };
+        const visibleWorld = getVisibleWorldForPlayer(initialWorld, p1);
+
+        assert.strictEqual(visibleWorld.actors.length, 3, "Should see 2 own actors and 1 enemy");
+        assert.ok(visibleWorld.actors.find(a => a.id === p1Actor1.id));
+        assert.ok(visibleWorld.actors.find(a => a.id === p1Actor2.id));
+        assert.ok(visibleWorld.actors.find(a => a.id === enemyInMiddle.id));
+        assert.ok(!visibleWorld.actors.find(a => a.id === enemyFar.id));
+
+        // Check terrain at enemyInMiddle is EMPTY (visible)
+        assert.strictEqual(visibleWorld.terrain[enemyInMiddle.pos.x][enemyInMiddle.pos.y], Terrain.EMPTY);
+        // Check terrain at enemyFar is UNEXPLORED
+        assert.strictEqual(visibleWorld.terrain[enemyFar.pos.x][enemyFar.pos.y], Terrain.UNEXPLORED);
+    });
+
+    it('Actor (friendly/neutral) blocking LoS to another Enemy Actor', () => {
+        const R = 5, C = 5;
+        const terrain = createSimpleTerrain(R,C);
+        const p1 = 1, neutralOwner = 2, enemyOwner = 3;
+
+        const playerActor: Actor =    { id: 1, owner: p1, pos: { x: 2, y: 0 }, state: ActorState.ALIVE, weapon: {name: "Sniper", range: 4, damage: 0}}; // Range 4
+        const blockingActor: Actor =  { id: 2, owner: neutralOwner, pos: { x: 2, y: 2 }, state: ActorState.ALIVE, weapon: defaultWeapon };
+        const hiddenEnemyActor: Actor = { id: 3, owner: enemyOwner, pos: { x: 2, y: 4 }, state: ActorState.ALIVE, weapon: defaultWeapon };
+        // All on row 2. Player at y=0, blocker at y=2, enemy at y=4. LoS should be blocked by actor at y=2.
+
+        const initialWorld: World = {
+            actors: [playerActor, blockingActor, hiddenEnemyActor],
+            terrain: terrain
+        };
+        const visibleWorld = getVisibleWorldForPlayer(initialWorld, p1);
+
+        assert.strictEqual(visibleWorld.actors.length, 2, "Should see own actor and blocking actor, but not hidden enemy");
+        assert.ok(visibleWorld.actors.find(a => a.id === playerActor.id), "Player actor missing");
+        assert.ok(visibleWorld.actors.find(a => a.id === blockingActor.id), "Blocking (neutral/friendly) actor missing");
+        assert.ok(!visibleWorld.actors.find(a => a.id === hiddenEnemyActor.id), "Enemy actor behind LoS blocker should be hidden");
+
+        // Terrain at hidden enemy's spot should be UNEXPLORED
+        assert.strictEqual(visibleWorld.terrain[hiddenEnemyActor.pos.x][hiddenEnemyActor.pos.y], Terrain.UNEXPLORED);
+        // Terrain at blocking actor's spot should be EMPTY
+        assert.strictEqual(visibleWorld.terrain[blockingActor.pos.x][blockingActor.pos.y], Terrain.EMPTY);
+
+    });
+
 });
 
 describe("within function tests", () => {

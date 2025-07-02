@@ -15,11 +15,11 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, computed, ref, Ref } from 'vue'; // Added ref
-import { World, Terrain, Actor as ServiceActor } from '../../../lib/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not. Renamed Actor to ServiceActor to avoid conflict.
+import { defineComponent, PropType, computed, ref } from 'vue';
+// Terrain enum is needed from backend models if not defined locally
+import { Terrain } from '../../../lib/service/Models'; // Assuming this is where Terrain enum is
 import { Hex, Point, Layout, OffsetCoord } from '../../../lib/Hex';
-import { Actor, PlannedMove, Coord } from '../../../stores/Games.store'; // Added imports
-import { hasLineOfSight } from '../../../lib/service/Visibility';
+import { type World, type Actor, useGamesStore } from '../../../stores/Games.store'; // Using store's World and Actor types + useGamesStore
 
 interface HexStyle {
   fill?: string;
@@ -44,42 +44,25 @@ export default defineComponent({
     },
   },
   emits: ['move-planned'], // Declare emitted events
-  setup(props, { emit }) { // Added emit to setup context
-    const offsetType = OffsetCoord.ODD;
-    const selectedHexRef = ref<Hex | null>(null); // Will keep for hex selection visualization if needed, or remove if superseded by actor selection
-    // const selectedActorId = ref<number | null>(null); // For selected actor ID - Commented out for visibility checker
-    // const plannedMoves = ref<PlannedMove[]>([]); // For storing planned moves - Commented out for visibility checker
+  setup(props, { emit }) {
+    const gamesStore = useGamesStore(); // Get store instance
+    const offsetType = OffsetCoord.ODD; // Using ODD as per existing qoffset/roffset logic
+    const selectedHexRef = ref<Hex | null>(null); // For actor selection / move planning start
 
-    const hexToString = (hex: Hex) => `${hex.q},${hex.r},${hex.s}`;
-
-    const visibilitySourceHex: Ref<Hex | null> = ref(null);
-    const visibleHexes: Ref<Set<string>> = ref(new Set());
-    const localTerrain: Ref<Terrain[][]> = ref([]);
-
-    const initializeLocalTerrain = (rows: number, cols: number) => {
-      const terrain: Terrain[][] = [];
-      for (let i = 0; i < rows; i++) {
-        terrain[i] = [];
-        for (let j = 0; j < cols; j++) {
-          terrain[i][j] = Terrain.EMPTY;
-        }
-      }
-      localTerrain.value = terrain;
-    };
-
-    initializeLocalTerrain(10, 10);
-
+    // hexes are now generated based on props.world.terrain
     const hexes = computed(() => {
       const h: Hex[] = [];
-      if (!localTerrain.value || localTerrain.value.length === 0) return h;
-      // Assuming localTerrain is [row][col] and we want to use 'odd-r' for cube conversion consistent with existing code.
-      // r_offset (row index) will be the outer loop for terrain access.
+      if (!props.world || !props.world.terrain || props.world.terrain.length === 0) {
+        return h;
+      }
+      // props.world.terrain is [row][col]
+      // Assuming 'odd-r' offset system for converting grid indices to hex coordinates
+      // r_offset (row index) will be the outer loop.
       // q_offset (col index) will be the inner loop.
-      for (let r_offset = 0; r_offset < localTerrain.value.length; r_offset++) {
-        const rowTerrain = localTerrain.value[r_offset];
+      for (let r_offset = 0; r_offset < props.world.terrain.length; r_offset++) {
+        const rowTerrain = props.world.terrain[r_offset];
         for (let q_offset = 0; q_offset < rowTerrain.length; q_offset++) {
-          // Using OffsetCoord.ODD and roffsetToCube as before.
-          // new OffsetCoord(col, row) -> new OffsetCoord(q_offset, r_offset)
+          // OffsetCoord(col, row) -> OffsetCoord(q_offset, r_offset)
           h.push(OffsetCoord.roffsetToCube(offsetType, new OffsetCoord(q_offset, r_offset)));
         }
       }
@@ -87,10 +70,10 @@ export default defineComponent({
     });
 
     const viewBox = computed(() => {
-      if (hexes.value.length === 0) return "0 0 100 100";
+      if (hexes.value.length === 0) return "0 0 100 100"; // Default for empty grid
       const allPoints: Point[] = [];
       hexes.value.forEach(hex => {
-        layout.polygonCorners(hex).forEach(p => allPoints.push(p)); // Changed Layout. to layout.
+        layout.polygonCorners(hex).forEach(p => allPoints.push(p));
       });
       if (allPoints.length === 0) return "0 0 100 100";
       const minX = Math.min(...allPoints.map(p => p.x));
@@ -102,112 +85,140 @@ export default defineComponent({
     });
 
     const getHexPoints = (hex: Hex): string => {
-      return layout.polygonCorners(hex).map(p => `${p.x},${p.y}`).join(' '); // Changed Layout. to layout.
+      return layout.polygonCorners(hex).map(p => `${p.x},${p.y}`).join(' ');
     };
 
     const getHexTransform = (hex: Hex): string => ''; // Points are absolute
 
     const getTerrainTypeForHex = (hex: Hex): Terrain | null => {
       const offsetCoord = OffsetCoord.roffsetFromCube(offsetType, hex);
-      const col = offsetCoord.col;
-      const row = offsetCoord.row;
-      if (localTerrain.value && row >= 0 && row < localTerrain.value.length && col >= 0 && col < localTerrain.value[row].length) {
-        return localTerrain.value[row][col];
+      const col = offsetCoord.col; // q_offset
+      const row = offsetCoord.row; // r_offset
+
+      if (props.world && props.world.terrain &&
+          row >= 0 && row < props.world.terrain.length &&
+          col >= 0 && col < props.world.terrain[row].length) {
+        return props.world.terrain[row][col] as Terrain; // Cast to Terrain enum
       }
       return null;
     };
 
     const getHexStyle = (hex: Hex): HexStyle => {
-      // Fill is now handled by CSS classes based on terrain, visibility, etc.
-      // This function can be used for other dynamic styles if needed in the future.
-      // For now, return a base style or an empty object if covered by CSS.
-      // Let's ensure a default stroke is applied if not specified by other classes.
-      return {
-        // stroke: '#34495E', // This is already in .hex-polygon CSS
-        // strokeWidth: 1,    // This is already in .hex-polygon CSS
-      };
+      // Base style, specific fills will be by CSS class
+      return {};
     };
 
     const getHexClass = (hex: Hex): string[] => {
         const classes = ['hex-polygon'];
-        const terrainType = getTerrainTypeForHex(hex); // This now uses localTerrain
+        const terrainType = getTerrainTypeForHex(hex);
 
-        // Add class for terrain type
         if (terrainType === Terrain.EMPTY) classes.push('terrain-empty');
-        if (terrainType === Terrain.BLOCKED) classes.push('terrain-blocked');
+        else if (terrainType === Terrain.BLOCKED) classes.push('terrain-blocked');
+        else if (terrainType === Terrain.UNEXPLORED) classes.push('terrain-unexplored'); // New class for unexplored
+        else classes.push('terrain-unknown'); // Fallback for unexpected terrain values
 
-        const sHex = hexToString(hex); // Use the helper
-        if (visibilitySourceHex.value &&
-            visibilitySourceHex.value.q === hex.q &&
-            visibilitySourceHex.value.r === hex.r &&
-            visibilitySourceHex.value.s === hex.s) {
-            classes.push('visibility-source');
-        } else if (visibleHexes.value.has(sHex)) {
-            classes.push('visible');
+        // Logic for 'selected' class (e.g., if planning a move from this hex)
+        if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r) {
+            classes.push('selected');
+        }
+        // TODO: Add class if an actor (props.actors) is on this hex ('has-actor', 'player-actor', 'enemy-actor')
+        const actorOnHex = props.actors.find(actor => {
+            const actorOffset = OffsetCoord.roffsetFromCube(offsetType, OffsetCoord.qoffsetToCube(offsetType, new OffsetCoord(actor.pos.y, actor.pos.x))); // convert actor pos to match hex
+            const hexOffset = OffsetCoord.roffsetFromCube(offsetType, hex);
+            return actorOffset.col === hexOffset.col && actorOffset.row === hexOffset.row;
+        });
+        if (actorOnHex) {
+            classes.push('has-actor');
+            // Further classify if it's player's own actor vs enemy, if needed for styling
         }
 
-        // Previous selection logic based on selectedHexRef (can be removed or adapted)
-        if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r && selectedHexRef.value.s === hex.s) {
-            classes.push('selected'); // This might be redundant if selected-actor is more specific
-        }
         return classes;
     };
 
     const getHexText = (hex: Hex): string => {
+      // Display Q,R coordinates. Could also show actor info if one is present.
+      const actorOnHex = props.actors.find(actor => {
+        // Actor positions are {x,y} which are grid row,col. Convert to hex for comparison or compare grid positions.
+        // Assuming actor.pos.x is row (r_offset) and actor.pos.y is col (q_offset)
+        const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex); // { col: q_offset, row: r_offset }
+        return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col;
+      });
+      if (actorOnHex) {
+        return `A:${actorOnHex.id}`; // Show "A" for Actor
+      }
       return `${hex.q},${hex.r}`;
-    }
+    };
+
     const getHexFontSize = (): number => layout.size.x / 3.8;
 
     const handleHexClick = (clickedHex: Hex) => {
-      visibilitySourceHex.value = clickedHex;
-      visibleHexes.value.clear();
+      // This handler is now primarily for move planning or selecting actors.
+      // The local visibility testing logic has been removed.
+      const currentPlayerId = gamesStore.getCurrentPlayerId();
+      const actorOnClickedHex = props.actors.find(actor => {
+        const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, clickedHex);
+        return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col && actor.owner === currentPlayerId;
+      });
 
-      const hexToLocalGrid = (h: Hex) => {
-        const offset = OffsetCoord.roffsetFromCube(offsetType, h);
-        return { x: offset.row, y: offset.col };
-      };
+      if (selectedHexRef.value && actorOnClickedHex && actorOnClickedHex.owner === currentPlayerId) {
+        // Cannot select another actor if one is already selected for a move.
+        // Or, this could be logic for targeting if implementing attacks.
+        console.log("An actor is already selected for move. Click the destination or deselect.");
+        return;
+      }
 
-      if (visibilitySourceHex.value) {
-        const sourceHex = visibilitySourceHex.value;
-        hexes.value.forEach(targetHex => {
-          if (sourceHex.q === targetHex.q && sourceHex.r === targetHex.r && sourceHex.s === targetHex.s) {
-            return;
-          }
-          if (hasLineOfSight(sourceHex, targetHex, localTerrain.value, [], hexToLocalGrid)) {
-            visibleHexes.value.add(hexToString(targetHex));
-          }
+      if (actorOnClickedHex) { // If clicked on one of the current player's actors
+        selectedHexRef.value = clickedHex; // Select this actor's hex as start of a move
+        console.log("Selected actor on hex:", clickedHex, "Actor ID:", actorOnClickedHex.id);
+      } else if (selectedHexRef.value) { // If an actor was previously selected, and now an empty hex is clicked
+        const startHexGridPos = OffsetCoord.roffsetFromCube(offsetType, selectedHexRef.value);
+        const endHexGridPos = OffsetCoord.roffsetFromCube(offsetType, clickedHex);
+
+        const movingActor = props.actors.find(actor => {
+            const actorStartOffset = OffsetCoord.roffsetFromCube(offsetType, selectedHexRef.value);
+            return actor.pos.x === actorStartOffset.row && actor.pos.y === actorStartOffset.col;
         });
-      }
-    };
 
-    const handleHexRightClick = (hex: Hex) => {
-      const offsetCoord = OffsetCoord.roffsetFromCube(offsetType, hex);
-      const r = offsetCoord.row;
-      const c = offsetCoord.col;
-
-      if (localTerrain.value && r >= 0 && r < localTerrain.value.length && c >= 0 && c < localTerrain.value[r].length) {
-        const currentTerrain = localTerrain.value[r][c];
-        localTerrain.value[r][c] = currentTerrain === Terrain.BLOCKED ? Terrain.EMPTY : Terrain.BLOCKED;
-
-        if (visibilitySourceHex.value) {
-          handleHexClick(visibilitySourceHex.value);
+        if (movingActor) {
+            const move: PlannedMove = {
+                actorId: movingActor.id,
+                startPos: { x: startHexGridPos.row, y: startHexGridPos.col }, // These are grid coords
+                endPos: { x: endHexGridPos.row, y: endHexGridPos.col } // These are grid coords
+            };
+            emit('move-planned', move);
+            console.log('Move planned:', move);
         }
+        selectedHexRef.value = null; // Deselect after planning the move
+      } else {
+        // Clicked on an empty hex without prior selection, or an enemy actor's hex
+        selectedHexRef.value = null; // Deselect any previously selected hex
+        console.log("Clicked on hex:", clickedHex, ". No player actor selected or on this hex.");
       }
     };
+
+    // handleHexRightClick is removed as local terrain editing is gone.
+    // It could be repurposed for other actions like deselecting or cancelling a move.
+    const handleHexRightClick = (hex: Hex) => {
+        if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r) {
+            selectedHexRef.value = null; // Deselect if right-clicked on the selected hex
+            console.log("Deselected hex:", hex);
+        } else {
+            selectedHexRef.value = null; // General deselect on any right click for now
+             console.log("Deselected via right click.");
+        }
+    };
+
 
     const handleSvgClick = (event: MouseEvent) => {
-        if (event.target === event.currentTarget) {
+        if (event.target === event.currentTarget) { // Click on SVG background
             selectedHexRef.value = null;
-            // selectedActorId.value = null; // Also deselect actor on background click
-            console.log('Clicked SVG background, deselected hex and actor.');
+            console.log('Clicked SVG background, deselected hex.');
         }
     };
 
     return {
       hexes,
       selectedHexRef,
-      // selectedActorId, // Expose selectedActorId
-      // plannedMoves,    // Expose plannedMoves
       viewBox,
       getHexPoints,
       getHexTransform,
@@ -217,10 +228,7 @@ export default defineComponent({
       getHexFontSize,
       handleHexClick,
       handleSvgClick,
-      visibilitySourceHex,
-      visibleHexes,
-      localTerrain,
-      handleHexRightClick, // Expose new handler
+      handleHexRightClick,
     };
   },
 });
@@ -266,22 +274,27 @@ svg {
 
 /* Specific terrain styling via classes (alternative to inline styles from getHexStyle) */
 .terrain-empty {
-  fill: #EAECEE;
+  fill: #EAECEE; /* Light grey for empty, visible hexes */
 }
 .terrain-blocked {
-  fill: #5D6D7E;
+  fill: #5D6D7E; /* Darker grey for blocked, visible hexes */
+}
+.terrain-unexplored {
+  fill: #2C3E50; /* Very dark (almost black) for unexplored hexes */
+  stroke: #1A242F; /* Even darker stroke for unexplored */
+}
+.terrain-unknown { /* Fallback style */
+  fill: #ff00ff; /* Magenta for unknown terrain types, indicates an issue */
 }
 
-.hex-polygon.visibility-source {
-  fill: #2980b9; /* Blue for the source hex */
-  stroke: #1a5276;
-  stroke-width: 2.5;
+
+/* Styles for actor presence or selection, can be expanded */
+.hex-polygon.has-actor {
+  /* stroke-width: 1.5; */
+  /* stroke: #f1c40f; */ /* Example: yellow stroke if an actor is on it */
 }
 
-.hex-polygon.visible {
-  fill: #abeade; /* Light teal/cyan for visible hexes */
-  /* fill-opacity: 0.7; */ /* Optional: make them slightly transparent */
-}
+/* .hex-polygon.visibility-source and .hex-polygon.visible are removed as local visibility is gone */
 
 .hex-text {
   pointer-events: none; /* Text should not block clicks on the polygon */
