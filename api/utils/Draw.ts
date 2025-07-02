@@ -93,16 +93,41 @@ export function visibilitySvg(terrain: Terrain[][], visibility: boolean[][], fro
 
 // extend this later to do more than just colours, eg render an icon inside a hex
 // TODO: needs more work to be useful -- needs to be more general
-export function styledHexesSvg(data: object[][], colorize: (o: object) => string) {
+export function styledHexesSvg(
+    data: object[][],
+    getHexStyle: (o: object, pos: GridPosition, sideLength: number) => { fill?: string; innerContent?: string }
+) {
     const sideLength = 10;
+    const k = Math.sqrt(3); // For calculating hex centers if needed for innerContent positioning
 
     let svg = '<svg version="1.1" width="300" height="200" xmlns="http://www.w3.org/2000/svg">';
 
     for (let x = 0; x < data.length; x++) {
-        for (let y = 0; y < data[0].length; y++) {
+        for (let y = 0; y < data[x].length; y++) { // Use data[x].length for non-square grids
             svg += '\n';
-            const colour = colorize(data[x][y]);
-            svg += hexSvg({ x: x, y: y }, sideLength, colour);
+            const style = getHexStyle(data[x][y], { x, y }, sideLength);
+            svg += hexSvg({ x: x, y: y }, sideLength, style.fill || "transparent"); // Default to transparent if no fill
+            if (style.innerContent) {
+                // Basic centering for text, more complex positioning might be needed for icons
+                // These are rough center calculations, assuming innerContent is SVG text or simple shapes
+                const pixelOffsetX = k * sideLength * (x + 0.5 * (y % 2));
+                const pixelOffsetY = k * sideLength * y; // This is top-left of bounding box, not center of hex
+
+                // Approximate center of the hex for text.
+                // Hex center Y is roughly (pixelOffsetY + pixelOffsetY + sideLength * 2) / 2 = pixelOffsetY + sideLength
+                // Hex center X is roughly pixelOffsetX + (k * sideLength / 2)
+                const centerX = pixelOffsetX + (k * sideLength / 2);
+                const centerY = pixelOffsetY + sideLength; // Adjusted for S (sideLength)
+
+                // Example: wrap innerContent in a group and translate, or expect innerContent to be self-positioned
+                // For simplicity, this example doesn't try to perfectly center complex SVG,
+                // but it provides a hook. A common pattern is for innerContent to be pre-positioned
+                // relative to 0,0 and then use a <g transform="translate(cx,cy)"> wrapper.
+                // Or, the getHexStyle function itself could return fully formed SVG for the inner content
+                // including its own positioning.
+                // For now, just append it. It's up to the caller to format innerContent.
+                svg += style.innerContent;
+            }
         }
     }
 
