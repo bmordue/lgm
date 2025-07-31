@@ -46,9 +46,10 @@ export interface JoinGameResponse {
 }
 
 export interface TurnResultsResponse {
-  success: boolean;
-  results?: TurnResult;
-  message?: string;
+  // Conforms to OpenAPI spec: includes world directly.
+  // success and message fields are removed as per direct world response.
+  world?: World; // Optional because results might not be ready
+  message?: string; // For cases where world is not available yet
 }
 
 export interface GameSummary {
@@ -313,15 +314,27 @@ export async function turnResults(
   logger.debug(util.format("turnResults: found %s results", results.length));
 
   if (results.length == 0) {
+    // Updated to match new TurnResultsResponse structure
     return Promise.resolve({
-      success: false,
-      message: "turn results not available",
+      message: "Turn results not yet available or game/turn/player ID is invalid.",
     });
   } else if (results.length == 1) {
-    return Promise.resolve({ success: true, results: results[0] });
+    const turnResult = results[0];
+    if (turnResult.world) {
+      // Updated to match new TurnResultsResponse structure
+      return Promise.resolve({ world: turnResult.world });
+    } else {
+      // This case should ideally not happen if Rules.ts correctly populates world
+      logger.error(`TurnResult for game ${gameId}, turn ${turn}, player ${playerId} is missing world data.`);
+      return Promise.resolve({
+        message: "Turn results are available but world data is missing.",
+      });
+    }
   } else {
+    // This indicates a more serious issue, like duplicate TurnResult entries
+    logger.error(`Found ${results.length} TurnResult entries for game ${gameId}, turn ${turn}, player ${playerId}. Expected 1.`);
     return Promise.reject(
-      new Error("expected a single result for turn results")
+      new Error("Internal server error: Duplicate turn results found.")
     );
   }
 }

@@ -1,8 +1,8 @@
-import { GridPosition, Terrain, Actor } from "./Models"; // Added Actor
+import { GridPosition, Terrain, Actor, ActorState, World } from "./Models"; // Added ActorState and World
 import { Hex, OffsetCoord } from "../Hex"; // Added Hex and OffsetCoord
 import { warn } from "../utils/Logger";
 
-const MAX_RANGE = 10; // Define maximum visibility range
+const MAX_RANGE = 10; // Define maximum visibility range for the old `visibility` function. Not directly used by getVisibleWorldForPlayer.
 
 // Helper to convert Hex to GridPosition for odd-q offset (flat-topped hexes)
 // Assumes GridPosition.x is row index, GridPosition.y is column index
@@ -240,4 +240,71 @@ export function hasLineOfSight(
     }
     // If the loop completes, no obstructions were found along the path.
     return true;
+}
+
+
+// Helper to convert GridPosition to Hex for odd-q offset (flat-topped hexes)
+// Assumes GridPosition.x is row index, GridPosition.y is column index
+// This is duplicative of the one in Rules.ts - should be consolidated
+function gridPositionToHex(pos: GridPosition): Hex {
+    const q = pos.y; // column is q
+    const r = pos.x - (pos.y - (pos.y & 1)) / 2; // row is x, convert to axial r for odd-q
+    return new Hex(q, r, -q - r);
+}
+
+const DEFAULT_SIGHT_RANGE = 7; // Default sight range if actor has no weapon or weapon has no range
+
+export function getVisibleWorldForPlayer(
+    world: { terrain: Terrain[][], actors: Actor[] }, // Simplified World type for input
+    playerId: number
+): { terrain: Terrain[][], actors: Actor[] } {
+    const playerActors = world.actors.filter(actor => actor.owner === playerId && actor.state !== ActorState.DEAD);
+
+    if (playerActors.length === 0) {
+        const unexploredTerrain = world.terrain.map(row => row.map(() => Terrain.UNEXPLORED));
+        return { terrain: unexploredTerrain, actors: [] };
+    }
+
+    // Initialize a 2D boolean array for combined visibility, matching terrain dimensions
+    const visibleMap: boolean[][] = world.terrain.map(row => row.map(() => false));
+
+    // For each of the player's actors, calculate its LoS to all hexes within its sight range
+    for (const actor of playerActors) {
+        const actorHex = gridPositionToHex(actor.pos);
+        const sightRange = (actor.weapon && typeof actor.weapon.range === 'number') ? actor.weapon.range : DEFAULT_SIGHT_RANGE;
+
+        for (let r = 0; r < world.terrain.length; r++) {
+            for (let c = 0; c < world.terrain[r].length; c++) {
+                const targetGridPos: GridPosition = { x: r, y: c };
+                const targetHex = gridPositionToHex(targetGridPos);
+
+                if (actorHex.distance(targetHex) <= sightRange) {
+                    if (hasLineOfSight(actorHex, targetHex, world.terrain, world.actors, hexToGridPosition)) {
+                        visibleMap[r][c] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    // Filter terrain based on the visibleMap
+    const filteredTerrain = world.terrain.map((row, r) =>
+        row.map((tile, c) => (visibleMap[r][c] ? tile : Terrain.UNEXPLORED))
+    );
+
+    // Filter actors: include player's own actors + any other actor on a visible tile
+    const filteredActors = world.actors.filter(actor => {
+        if (actor.owner === playerId) {
+            return true; // Always include player's own actors
+        }
+        // For other actors, check if their position is on the visibleMap
+        if (within(actor.pos.x, actor.pos.y, visibleMap) && visibleMap[actor.pos.x][actor.pos.y]) {
+            // TODO: Potentially redact information for enemy actors if they are not fully identified.
+            // For now, include them fully if visible.
+            return true;
+        }
+        return false;
+    });
+
+    return { terrain: filteredTerrain, actors: filteredActors };
 }
