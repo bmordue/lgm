@@ -18,7 +18,7 @@
 import { defineComponent, PropType, computed, ref, Ref } from 'vue'; // Added ref
 import { World, Terrain, Actor as ServiceActor } from '../../../lib/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not. Renamed Actor to ServiceActor to avoid conflict.
 import { Hex, Point, Layout, OffsetCoord } from '../../../lib/Hex';
-import { Actor, PlannedMove, Coord } from '../../../stores/Games.store'; // Added imports
+import { Actor, PlannedMove, Coord } from '../stores/Games.store'; // Added imports
 import { hasLineOfSight } from '../../../lib/service/Visibility';
 
 interface HexStyle {
