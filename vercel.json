@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd client && npm install && npm run build-only",
+  "buildCommand": "npm install --prefix client && npm run build-only --prefix client",
   "outputDirectory": "client/dist",
   "installCommand": "echo 'Dependencies installed in buildCommand'",
   "framework": null,
