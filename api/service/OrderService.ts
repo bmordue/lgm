@@ -56,7 +56,7 @@ function validateRequestOrders(
     const out :ActorOrders = {
       actor: await store.read<Actor>(store.keys.actors, o.actorId),
       ordersList: fillOrTruncateOrdersList(numbersToDirections(o.ordersList)),
-      orderType: OrderType.MOVE, // Added this line
+      orderType: OrderType.MOVE
     };
     logger.debug(util.format("ActorOrder: %j", out));
 
