@@ -48,7 +48,7 @@ async function createServer() {
     // This creates an exegesis middleware, which can be used with express,
     // connect, or even just by itself.
     const exegesisMiddleware = await exegesisExpress.middleware(
-        path.resolve(__dirname, '../api/api.yml'),
+        path.resolve(__dirname, '../spec/api.yml'),
         options
     );
 
