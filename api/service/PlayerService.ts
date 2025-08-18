@@ -48,7 +48,7 @@ export async function joinGame(gameId: number, username?: string): Promise<JoinG
     if (username && game.players) {
       for (const existingPlayerId of game.players) {
         try {
-          const existingPlayer = await store.read<any>(store.keys.players, existingPlayerId);
+          const existingPlayer = await store.read<Player>(store.keys.players, existingPlayerId);
           if (existingPlayer.username === username) {
             return Promise.reject(new Error("Player already joined this game"));
           }
