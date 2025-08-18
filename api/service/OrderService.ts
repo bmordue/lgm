@@ -53,10 +53,10 @@ function validateRequestOrders(
   requestOrders: Array<RequestActorOrders>
 ): Promise<Array<ActorOrders>> {
   const outs = requestOrders.map(async function (o) {
-    const out = {
+    const out :ActorOrders = {
       actor: await store.read<Actor>(store.keys.actors, o.actorId),
       ordersList: fillOrTruncateOrdersList(numbersToDirections(o.ordersList)),
-      orderType: OrderType.MOVE,
+      orderType: OrderType.MOVE
     };
     logger.debug(util.format("ActorOrder: %j", out));
 
