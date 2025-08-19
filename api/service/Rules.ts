@@ -179,7 +179,6 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, allActorsI
     }
 
     // 2. Check Line of Sight
-    const worldTerrain = (await store.read<World>(store.keys.worlds, game.worldId)).terrain;
     const losClear = hasLineOfSight(startHex, targetHex, worldTerrain, allActorsInWorld);
     if (!losClear) {
         logger.info(`ATTACK order: Line of sight from ${attacker.id} to ${targetActor.id} is blocked.`);
