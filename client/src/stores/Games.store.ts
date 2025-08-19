@@ -83,3 +83,15 @@ export interface GameTurn {
   turn: number,
   world: World;
 }
+
+export interface PlannedMove {
+  actorId: number;
+  startPos: Coord;
+  endPos: Coord;
+}
+
+export interface Order {
+  actorId: number;
+  toQ: number;
+  toR: number;
+}
