@@ -1,13 +1,15 @@
 import { ExegesisContext } from "exegesis";
-import GameService = require("../service/GameService");
+import GameService = require("../service/GameLifecycleService");
 
-module.exports.createGame = function createGame() {
-  return GameService.createGame();
+module.exports.createGame = function createGame(context: ExegesisContext) {
+  const maxPlayers = context.requestBody.maxPlayers;
+  return GameService.createGame(maxPlayers);
 };
 
 module.exports.joinGame = function joinGame(context: ExegesisContext) {
   const username = context.user?.username;
-  return GameService.joinGame(context.params.path.id, username);
+  const sessionId = context.user?.sessionId;
+  return GameService.joinGame(context.params.path.id, username, sessionId);
 };
 
 module.exports.postOrders = function postOrders(context: ExegesisContext) {
@@ -30,3 +32,38 @@ module.exports.turnResults = function turnResults(context: ExegesisContext) {
 module.exports.listGames = function listGames() {
   return GameService.listGames();
 };
+
+module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) {
+    const { gameId, playerId } = context.params.path;
+    const requestingPlayerId = context.user.playerId;
+
+    await GameService.kickPlayer(
+        gameId,
+        playerId,
+        requestingPlayerId
+    );
+
+    return { success: true };
+}
+
+module.exports.startGame = async function startGame(context: ExegesisContext) {
+    const { gameId } = context.params.path;
+    const requestingPlayerId = context.user.playerId;
+
+    await GameService.startGame(gameId, requestingPlayerId);
+    return { success: true };
+}
+
+module.exports.transferHost = async function transferHost(context: ExegesisContext) {
+    const { gameId } = context.params.path;
+    const { newHostPlayerId } = context.requestBody;
+    const requestingPlayerId = context.user.playerId;
+
+    await GameService.transferHost(
+        gameId,
+        newHostPlayerId,
+        requestingPlayerId
+    );
+
+    return { success: true };
+}

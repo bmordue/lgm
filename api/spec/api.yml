@@ -17,6 +17,14 @@ paths:
       security:
         - bearerAuth: []
       x-exegesis-controller: GameController
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                maxPlayers:
+                  type: integer
       responses:
         "200":
           description: metadata about newly created game
@@ -64,6 +72,74 @@ paths:
         "403":
           description: join request denied
           content:
+  /games/{gameId}/players/{playerId}:
+    delete:
+      summary: kick a player from a game
+      operationId: kickPlayer
+      security:
+        - bearerAuth: []
+      x-exegesis-controller: GameController
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: playerId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: player kicked
+        "400":
+          description: bad request
+  /games/{gameId}/start:
+    put:
+      summary: start a game
+      operationId: startGame
+      security:
+        - bearerAuth: []
+      x-exegesis-controller: GameController
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: game started
+        "400":
+          description: bad request
+  /games/{gameId}/host:
+    put:
+      summary: transfer host to another player
+      operationId: transferHost
+      security:
+        - bearerAuth: []
+      x-exegesis-controller: GameController
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newHostPlayerId:
+                  type: integer
+      responses:
+        "200":
+          description: host transferred
+        "400":
+          description: bad request
   /users/login:
     post:
       summary: User login
@@ -173,16 +249,12 @@ components:
   schemas:
     GameCreatedResponse:
       required:
-      - id
-      - join_url
+      - gameId
       properties:
-        id:
+        gameId:
           type: integer
-        join_url:
-          type: string
       example:
-        join_url: join_url
-        id: 0
+        gameId: 0
     ErrorMessageResponse:
       required:
       - message

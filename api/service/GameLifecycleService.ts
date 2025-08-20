@@ -8,11 +8,13 @@ import util = require("util");
 import {
   Game,
   World,
+  GameState,
+  Player,
 } from "./Models";
 import { inspect } from "util";
 
 export interface CreateGameResponse {
-  id: number;
+  gameId: number;
 }
 
 export interface JoinGameResponse {
@@ -36,20 +38,26 @@ export interface ListGamesResponse {
   games: Array<GameSummary>;
 }
 
-const MAX_PLAYERS_PER_GAME = 4;
-
 /**
  * create a new game
  *
  * returns GameCreatedResponse
  **/
-export async function createGame(): Promise<CreateGameResponse> {
+export async function createGame(maxPlayers?: number): Promise<CreateGameResponse> {
+  const playerLimit = Math.min(Math.max(maxPlayers || 4, 2), 8); // Clamp 2-8
   const worldId = await rules.createWorld();
-  const gameId = await store.create<Game>(store.keys.games, {
-    turn: 1,
-    worldId: worldId,
-  });
-  return Promise.resolve({ id: gameId });
+
+  const newGame: Game = {
+      turn: 0,
+      worldId: await rules.createWorld(),
+      maxPlayers: playerLimit,
+      gameState: GameState.LOBBY,
+      createdAt: new Date(),
+      players: []
+  };
+
+  const gameId = await store.create<Game>(store.keys.games, newGame);
+  return { gameId };
 }
 
 /**
@@ -58,70 +66,146 @@ export async function createGame(): Promise<CreateGameResponse> {
  * id Integer
  * no response value expected for this operation
  **/
-function joinGameResponseOf(resp: JoinGameResponse): JoinGameResponse {
-  return resp;
-}
-
-export async function joinGame(gameId: number, username?: string): Promise<JoinGameResponse> {
-  logger.debug("joinGame");
-  try {
-    logger.debug(`gameId: ${inspect(gameId)}`);
+export async function joinGame(gameId: number, username?: string, sessionId?: string): Promise<JoinGameResponse> {
     const game = await store.read<Game>(store.keys.games, gameId);
     
-    // Check if game is full
-    const currentPlayerCount = game.players ? game.players.length : 0;
-    if (currentPlayerCount >= MAX_PLAYERS_PER_GAME) {
-      return Promise.reject(new Error("Game is full"));
+    // Validation checks
+    if (game.gameState !== GameState.LOBBY) {
+        throw new Error("Cannot join game: Game already started");
     }
     
-    // Check for duplicate joins by username
-    if (username && game.players) {
-      for (const existingPlayerId of game.players) {
-        try {
-          const existingPlayer = await store.read<any>(store.keys.players, existingPlayerId);
-          if (existingPlayer.username === username) {
-            return Promise.reject(new Error("Player already joined this game"));
-          }
-        } catch (e) {
-          logger.debug(`Could not read player ${existingPlayerId}: ${e.message}`);
-        }
-      }
+    if (game.players.length >= game.maxPlayers) {
+        throw new Error("Cannot join game: Game is full");
+    }
+
+    // Check for duplicate username in this game
+    await validateUniqueUsername(game, username);
+
+    // Check for duplicate session in this game
+    await validateUniqueSession(game, sessionId);
+
+    // Create player
+    const isHost = game.players.length === 0; // First player is host
+    const player: Player = {
+        gameId,
+        username,
+        sessionId,
+        isHost,
+        joinedAt: new Date()
+    };
+
+    const playerId = await store.create(store.keys.players, player);
+
+    // Update game
+    game.players.push(playerId);
+    if (isHost) {
+        game.hostPlayerId = playerId;
     }
     
-    const playerId = await store.create(store.keys.players, { gameId: gameId, username: username });
-    const updatedGame = addPlayerToGame(game, playerId);
-    logger.debug("joinGame update game");
-    await store.replace(store.keys.games, gameId, updatedGame);
-    logger.debug("joinGame: read world object");
+    await store.replace(store.keys.games, gameId, game);
+
+    // Setup actors and return filtered game
     const world = await store.read<World>(store.keys.worlds, game.worldId);
-    logger.debug("joinGame: set up actors for player");
-    const actors = await rules.setupActors(game, playerId); // TODO: should return ids, not objects
-    logger.debug("joinGame: add new actors to world");
-    world.actors = world.actors.concat(actors); // TODO: world.actors should be world.actorIds -- ids, not objects
+    const actors = await rules.setupActors(game, playerId);
+    world.actors = world.actors.concat(actors);
     await store.replace(store.keys.worlds, game.worldId, world);
-    logger.debug("joinGame resolve with filtered game");
-    return Promise.resolve(
-      joinGameResponseOf(await rules.filterGameForPlayer(gameId, playerId))
-    );
-  } catch (e) {
-    logger.error(util.format("failed to join game: %j", e));
-    return Promise.reject(e);
-  }
+
+    return await rules.filterGameForPlayer(gameId, playerId);
 }
 
-function addPlayerToGame(game: Game, playerId: number) {
-  logger.debug("addPlayerToGame");
+async function validateUniqueUsername(game: Game, username: string) {
+    if (!username) return;
+    for (const existingPlayerId of game.players) {
+        const existingPlayer = await store.read<Player>(store.keys.players, existingPlayerId);
+        if (existingPlayer.username === username) {
+            throw new Error("Player with this username has already joined the game");
+        }
+    }
+}
 
-  if (!game) console.log("ruh roh");
+async function validateUniqueSession(game: Game, sessionId: string) {
+    if (!sessionId) return;
+    for (const existingPlayerId of game.players) {
+        const existingPlayer = await store.read<Player>(store.keys.players, existingPlayerId);
+        if (existingPlayer.sessionId === sessionId) {
+            throw new Error("Player with this session has already joined the game");
+        }
+    }
+}
 
-  if (game.players) {
-    logger.debug("addPlayerToGame append to existing");
-    game.players.push(playerId);
-  } else {
-    logger.debug("addPlayerToGame new list");
-    game.players = [playerId];
-  }
-  return game;
+export async function kickPlayer(gameId: number, playerIdToKick: number, requestingPlayerId: number): Promise<void> {
+    const game = await store.read<Game>(store.keys.games, gameId);
+    await validateHostPermissions(game, requestingPlayerId);
+
+    if (game.gameState !== GameState.LOBBY) {
+        throw new Error("Cannot kick players: Game already started");
+    }
+
+    if (playerIdToKick === game.hostPlayerId) {
+        throw new Error("Cannot kick the host player");
+    }
+
+    // Remove player from game
+    game.players = game.players.filter(pid => pid !== playerIdToKick);
+    await store.replace(store.keys.games, gameId, game);
+
+    // Remove player's actors from world
+    await removePlayerActors(game.worldId, playerIdToKick);
+
+    // Delete player record
+    await store.remove(store.keys.players, playerIdToKick);
+}
+
+export async function startGame(gameId: number, requestingPlayerId: number): Promise<void> {
+    const game = await store.read<Game>(store.keys.games, gameId);
+    await validateHostPermissions(game, requestingPlayerId);
+
+    if (game.gameState !== GameState.LOBBY) {
+        throw new Error("Game already started");
+    }
+
+    if (game.players.length < 2) {
+        throw new Error("Need at least 2 players to start game");
+    }
+
+    game.gameState = GameState.IN_PROGRESS;
+    game.startedAt = new Date();
+    await store.replace(store.keys.games, gameId, game);
+}
+
+export async function transferHost(gameId: number, newHostPlayerId: number, requestingPlayerId: number): Promise<void> {
+    const game = await store.read<Game>(store.keys.games, gameId);
+    await validateHostPermissions(game, requestingPlayerId);
+
+    if (!game.players.includes(newHostPlayerId)) {
+        throw new Error("New host must be a player in the game");
+    }
+
+    // Update host in game
+    game.hostPlayerId = newHostPlayerId;
+    await store.replace(store.keys.games, gameId, game);
+
+    // Update player records
+    const oldHost = await store.read<Player>(store.keys.players, requestingPlayerId);
+    const newHost = await store.read<Player>(store.keys.players, newHostPlayerId);
+
+    oldHost.isHost = false;
+    newHost.isHost = true;
+
+    await store.replace(store.keys.players, requestingPlayerId, oldHost);
+    await store.replace(store.keys.players, newHostPlayerId, newHost);
+}
+
+async function validateHostPermissions(game: Game, requestingPlayerId: number) {
+    if (game.hostPlayerId !== requestingPlayerId) {
+        throw new Error("Only the host can perform this action");
+    }
+}
+
+async function removePlayerActors(worldId: number, playerId: number) {
+    const world = await store.read<World>(store.keys.worlds, worldId);
+    world.actors = world.actors.filter(actor => actor.owner !== playerId);
+    await store.replace(store.keys.worlds, worldId, world);
 }
 
 export async function listGames(): Promise<ListGamesResponse> {
@@ -132,8 +216,8 @@ export async function listGames(): Promise<ListGamesResponse> {
     return {
       id: g.id!,
       playerCount,
-      maxPlayers: MAX_PLAYERS_PER_GAME,
-      isFull: playerCount >= MAX_PLAYERS_PER_GAME
+      maxPlayers: g.maxPlayers || 0,
+      isFull: playerCount >= (g.maxPlayers || 0)
     };
   });
   return { gameIds: ids, games: gameSummaries };
