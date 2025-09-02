@@ -55,7 +55,7 @@ export interface ListGamesResponse {
 
 // Delegate to GameLifecycleService
 export async function createGame(): Promise<CreateGameResponse> {
-  return gameLifecycleService.createGame();
+  return {id: (await gameLifecycleService.createGame()).gameId };
 }
 
 export async function joinGame(gameId: number, username?: string): Promise<JoinGameResponse> {

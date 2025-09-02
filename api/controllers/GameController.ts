@@ -1,15 +1,16 @@
 import { ExegesisContext } from "exegesis";
-import GameService = require("../service/GameLifecycleService");
+import GameService = require("../service/GameService");
+import GameLifecycleService = require("../service/GameLifecycleService");
 
 module.exports.createGame = function createGame(context: ExegesisContext) {
   const maxPlayers = context.requestBody.maxPlayers;
-  return GameService.createGame(maxPlayers);
+  return GameLifecycleService.createGame(maxPlayers);
 };
 
 module.exports.joinGame = function joinGame(context: ExegesisContext) {
   const username = context.user?.username;
   const sessionId = context.user?.sessionId;
-  return GameService.joinGame(context.params.path.id, username, sessionId);
+  return GameLifecycleService.joinGame(context.params.path.id, username, sessionId);
 };
 
 module.exports.postOrders = function postOrders(context: ExegesisContext) {
@@ -18,6 +19,8 @@ module.exports.postOrders = function postOrders(context: ExegesisContext) {
   const turn = context.params.path.turn;
   const playerId = context.params.path.playerId;
 
+  // TODO: should not need a GameService and GameLifecycleService!
+  // GameLifecycleService is newer, but lacks the postOrders() method
   return GameService.postOrders(body, gameId, turn, playerId);
 };
 
@@ -37,7 +40,7 @@ module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) 
     const { gameId, playerId } = context.params.path;
     const requestingPlayerId = context.user.playerId;
 
-    await GameService.kickPlayer(
+    await GameLifecycleService.kickPlayer(
         gameId,
         playerId,
         requestingPlayerId
@@ -50,7 +53,7 @@ module.exports.startGame = async function startGame(context: ExegesisContext) {
     const { gameId } = context.params.path;
     const requestingPlayerId = context.user.playerId;
 
-    await GameService.startGame(gameId, requestingPlayerId);
+    await GameLifecycleService.startGame(gameId, requestingPlayerId);
     return { success: true };
 }
 
@@ -59,7 +62,7 @@ module.exports.transferHost = async function transferHost(context: ExegesisConte
     const { newHostPlayerId } = context.requestBody;
     const requestingPlayerId = context.user.playerId;
 
-    await GameService.transferHost(
+    await GameLifecycleService.transferHost(
         gameId,
         newHostPlayerId,
         requestingPlayerId
