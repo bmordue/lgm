@@ -49,7 +49,7 @@ export async function createGame(maxPlayers?: number): Promise<CreateGameRespons
 
   const newGame: Game = {
       turn: 0,
-      worldId: await rules.createWorld(),
+      worldId: worldId,
       maxPlayers: playerLimit,
       gameState: GameState.LOBBY,
       createdAt: new Date(),
@@ -90,7 +90,6 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
         gameId,
         username,
         sessionId,
-        isHost,
         joinedAt: new Date()
     };
 
@@ -184,16 +183,6 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
     // Update host in game
     game.hostPlayerId = newHostPlayerId;
     await store.replace(store.keys.games, gameId, game);
-
-    // Update player records
-    const oldHost = await store.read<Player>(store.keys.players, requestingPlayerId);
-    const newHost = await store.read<Player>(store.keys.players, newHostPlayerId);
-
-    oldHost.isHost = false;
-    newHost.isHost = true;
-
-    await store.replace(store.keys.players, requestingPlayerId, oldHost);
-    await store.replace(store.keys.players, newHostPlayerId, newHost);
 }
 
 async function validateHostPermissions(game: Game, requestingPlayerId: number) {
