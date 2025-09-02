@@ -33,7 +33,7 @@ pkgs.mkShell {
 
   # Environment setup and shell hooks
   shellHook = ''
-    echo "🎮 Welcome to LGM Development Environment"
+    echo "Welcome to LGM Development Environment"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Node.js version: $(node --version)"
     echo "npm version: $(npm --version)"
@@ -42,16 +42,16 @@ pkgs.mkShell {
 
     # Create required symlink if it doesn't exist
     if [ ! -L "./lib" ]; then
-      echo "📁 Creating required symlink: lib -> api"
+      echo "Creating required symlink: lib -> api"
       ln -sf api lib
-      echo "✅ Symlink created successfully"
+      echo "Symlink created successfully"
     else
-      echo "✅ Required symlink already exists: lib -> api"
+      echo "Required symlink already exists: lib -> api"
     fi
 
     # Display project structure
     echo ""
-    echo "📂 Project Structure:"
+    echo "Project Structure:"
     echo "├── api/          # TypeScript backend (Express server)"
     echo "├── client/       # Vue 3 frontend (Vite dev server)"
     echo "└── lib -> api    # Required symlink for frontend builds"
@@ -68,9 +68,9 @@ pkgs.mkShell {
 
     # Function to start both servers
     startup-servers() {
-      echo "🚀 Starting LGM development servers..."
+      echo "Starting LGM development servers..."
       echo ""
-      echo "📋 Setup checklist:"
+      echo "Setup checklist:"
       echo "1. Installing API dependencies..."
       (cd api && npm install)
       echo "2. Installing client dependencies..."
@@ -78,7 +78,7 @@ pkgs.mkShell {
       echo "3. Building API..."
       (cd api && npm run build)
       echo ""
-      echo "🎯 Starting servers:"
+      echo "Starting servers:"
       echo "• API server will start on http://localhost:3000"
       echo "• Frontend will start on http://localhost:5173"
       echo ""
@@ -101,7 +101,7 @@ pkgs.mkShell {
       # Function to cleanup on exit
       cleanup() {
         echo ""
-        echo "🛑 Shutting down servers..."
+        echo "Shutting down servers..."
         kill $API_PID 2>/dev/null || true
         kill $CLIENT_PID 2>/dev/null || true
         exit 0
@@ -118,7 +118,7 @@ pkgs.mkShell {
     # Make the function available
     export -f startup-servers
 
-    echo "🔧 Available commands:"
+    echo "Available commands:"
     echo "• install-deps      # Install all dependencies"
     echo "• build-all         # Build both API and client"
     echo "• test-api          # Run API tests"
@@ -128,12 +128,12 @@ pkgs.mkShell {
     echo "• start-client      # Start client development server"
     echo "• startup-servers   # Start both servers together"
     echo ""
-    echo "📖 Quick start:"
+    echo "Quick start:"
     echo "1. Run 'install-deps' to install all dependencies"
     echo "2. Run 'startup-servers' to start both API and frontend"
     echo "3. Open http://localhost:5173 in your browser"
     echo ""
-    echo "🌟 Ready for development!"
+    echo "Ready for development!"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   '';
 
