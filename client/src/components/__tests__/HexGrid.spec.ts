@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, VueWrapper } from '@vue/test-utils';
 import HexGrid from '../HexGrid.vue';
-import { Terrain } from '../../../../lib/service/Models'; // Path for Terrain
-import type { World, Actor, PlannedMove, Coord } from '../../../stores/Games.store'; // Path for store types
-import { Hex, OffsetCoord } from '../../../../lib/Hex'; // Path for Hex utils
+import { Terrain } from '../../../../api/service/Models'; // Path for Terrain
+import type { World, Actor, PlannedMove, Coord } from '../../stores/Games.store'; // Path for store types
+import { Hex, OffsetCoord } from '../../../../api/Hex'; // Path for Hex utils
 
 // Mock console.log and console.error
 const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
