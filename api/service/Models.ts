@@ -32,7 +32,6 @@ export interface Player {
     id?: number;
     gameId: number;
     username?: string;
-    isHost?: boolean;
     joinedAt?: Date;
     sessionId?: string;
 }
