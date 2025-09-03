@@ -64,6 +64,19 @@ Run `npz stryker run --config-file stryker.conf.js` in the root directory of the
 
 Stryker.js will perform mutation testing and provide a report on the code coverage.
 
+# Architecture & Development
+
+## 📋 Architecture Documentation
+For comprehensive architecture assessment and improvement recommendations, see:
+
+- **[Architecture Assessment](ARCHITECTURE_ASSESSMENT.md)** - Detailed technical analysis and roadmap
+- **[Architecture Checklist](ARCHITECTURE_CHECKLIST.md)** - Systematic review against best practices  
+- **[Improvement Suggestions](IMPROVEMENT_SUGGESTIONS.md)** - Prioritized, actionable improvements
+- **[Architecture Index](docs/ARCHITECTURE_INDEX.md)** - Quick reference and overview
+
+## 🛣️ Development Roadmap
+See [ROADMAP.md](ROADMAP.md) for current development priorities and [PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md](PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md) for detailed feature planning.
+
 # TODO
 
 Joining games
