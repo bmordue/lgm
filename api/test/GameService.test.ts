@@ -28,7 +28,7 @@ describe("DefaultService", function () {
   describe("joinGame", () => {
     let gameId: number;
     before(async () => {
-      gameId = (await lgm.createGame()).id;
+      gameId = (await lgm.createGame()).gameId;
     });
 
     it("first player should be assigned Actors when joining game", async () => {
@@ -63,7 +63,7 @@ describe("DefaultService", function () {
     });
 
     it("should reject duplicate joins with same username", async () => {
-      const gameId = (await lgm.createGame()).id;
+      const gameId = (await lgm.createGame()).gameId;
       await lgm.joinGame(gameId, "testuser");
       
       try {
@@ -75,7 +75,7 @@ describe("DefaultService", function () {
     });
 
     it("should reject joining full game", async () => {
-      const gameId = (await lgm.createGame()).id;
+      const gameId = (await lgm.createGame()).gameId;
       
       // Fill the game to capacity (4 players)
       await lgm.joinGame(gameId, "player1");
@@ -122,25 +122,25 @@ describe("idempotency", () => {
   // joinGame returns a new Player each time it is called.
   it("joinGame should currently not be idempotent", async () => {
     const game = await lgm.createGame();
-    const firstResp = await lgm.joinGame(game.id);
-    const secondResp = await lgm.joinGame(game.id);
+    const firstResp = await lgm.joinGame(game.gameId);
+    const secondResp = await lgm.joinGame(game.gameId);
     assert.notDeepEqual(firstResp, secondResp);
   });
 
   it("postOrders should complete and increment the turn with a single player", async () => {
     const game = await lgm.createGame();
-    const joinResponse = await lgm.joinGame(game.id);
+    const joinResponse = await lgm.joinGame(game.gameId);
 
     const firstResp = await lgm.postOrders(
       { orders: [] },
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
 
     const secondResp = await lgm.postOrders(
       { orders: [] },
-      game.id,
+      game.gameId,
       joinResponse.turn + 1, // next turn
       joinResponse.playerId
     );
@@ -153,12 +153,12 @@ describe("idempotency", () => {
   // Add a second "dummy" player to stop the turn being complete for these tests/
   it("postOrders should fail on duplicate post for the same player and turn (empty orders)", async () => {
     const game = await lgm.createGame();
-    const joinResponse = await lgm.joinGame(game.id);
-    await lgm.joinGame(game.id); // create dummy player
+    const joinResponse = await lgm.joinGame(game.gameId);
+    await lgm.joinGame(game.gameId); // create dummy player
 
     await lgm.postOrders(
       { orders: [] },
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
@@ -166,7 +166,7 @@ describe("idempotency", () => {
     await lgm
       .postOrders(
         { orders: [] },
-        game.id,
+        game.gameId,
         joinResponse.turn,
         joinResponse.playerId
       )
@@ -183,21 +183,21 @@ describe("idempotency", () => {
 
   it("postOrders should fail on duplicate post for the same player and turn (with identical requested orders)", async () => {
     const game = await lgm.createGame();
-    const joinResponse = await lgm.joinGame(game.id);
-    await lgm.joinGame(game.id);
+    const joinResponse = await lgm.joinGame(game.gameId);
+    await lgm.joinGame(game.gameId);
 
     const orders = testMarchOrders(joinResponse.world.actors);
 
     await lgm.postOrders(
       { orders: orders },
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
     lgm
       .postOrders(
         { orders: orders },
-        game.id,
+        game.gameId,
         joinResponse.turn,
         joinResponse.playerId
       )
@@ -214,8 +214,8 @@ describe("idempotency", () => {
 
   it("postOrders should fail on duplicate post for the same player and turn (with different requested orders)", async () => {
     const game = await lgm.createGame();
-    const joinResponse = await lgm.joinGame(game.id);
-    await lgm.joinGame(game.id);
+    const joinResponse = await lgm.joinGame(game.gameId);
+    await lgm.joinGame(game.gameId);
 
     const ordersOne = testMarchOrders(joinResponse.world.actors);
     const ordersTwo = testMarchOrders(
@@ -225,14 +225,14 @@ describe("idempotency", () => {
 
     await lgm.postOrders(
       { orders: ordersOne },
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
     await lgm
       .postOrders(
         { orders: ordersTwo },
-        game.id,
+        game.gameId,
         joinResponse.turn,
         joinResponse.playerId
       )
@@ -249,15 +249,15 @@ describe("idempotency", () => {
 
   it("turnResults should be idempotent (no orders posted)", async () => {
     const game = await lgm.createGame();
-    const joinResponse = await lgm.joinGame(game.id);
+    const joinResponse = await lgm.joinGame(game.gameId);
 
     const resultsOne = await lgm.turnResults(
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
     const resultsTwo = await lgm.turnResults(
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
@@ -267,25 +267,25 @@ describe("idempotency", () => {
 
   it("turnResults should be idempotent (orders posted, turn not finished)", async () => {
     const game = await lgm.createGame();
-    const joinResponse = await lgm.joinGame(game.id);
-    await lgm.joinGame(game.id);
+    const joinResponse = await lgm.joinGame(game.gameId);
+    await lgm.joinGame(game.gameId);
 
     const orders = testMarchOrders(joinResponse.world.actors);
 
     await lgm.postOrders(
       { orders: orders },
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
 
     const resultsOne = await lgm.turnResults(
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
     const resultsTwo = await lgm.turnResults(
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
@@ -295,24 +295,24 @@ describe("idempotency", () => {
 
   it("turnResults should be idempotent (turn complete)", async () => {
     const game = await lgm.createGame();
-    const joinResponse = await lgm.joinGame(game.id);
+    const joinResponse = await lgm.joinGame(game.gameId);
 
     const ordersOne = testMarchOrders(joinResponse.world.actors);
 
     await lgm.postOrders(
       { orders: ordersOne },
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
 
     const resultsOne = await lgm.turnResults(
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
     const resultsTwo = await lgm.turnResults(
-      game.id,
+      game.gameId,
       joinResponse.turn,
       joinResponse.playerId
     );
