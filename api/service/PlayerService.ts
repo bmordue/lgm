@@ -7,13 +7,10 @@ import util = require("util");
 
 import {
   Game,
+  Player,
   World,
 } from "./Models";
 import { inspect } from "util";
-
-export interface CreateGameResponse {
-  id: number;
-}
 
 export interface JoinGameResponse {
   gameId: number;
@@ -24,33 +21,7 @@ export interface JoinGameResponse {
   maxPlayers: number;
 }
 
-export interface GameSummary {
-  id: number;
-  playerCount: number;
-  maxPlayers: number;
-  isFull: boolean;
-}
-
-export interface ListGamesResponse {
-  gameIds: Array<number>;
-  games: Array<GameSummary>;
-}
-
 const MAX_PLAYERS_PER_GAME = 4;
-
-/**
- * create a new game
- *
- * returns GameCreatedResponse
- **/
-export async function createGame(): Promise<CreateGameResponse> {
-  const worldId = await rules.createWorld();
-  const gameId = await store.create<Game>(store.keys.games, {
-    turn: 1,
-    worldId: worldId,
-  });
-  return Promise.resolve({ id: gameId });
-}
 
 /**
  * join a game
@@ -67,18 +38,18 @@ export async function joinGame(gameId: number, username?: string): Promise<JoinG
   try {
     logger.debug(`gameId: ${inspect(gameId)}`);
     const game = await store.read<Game>(store.keys.games, gameId);
-    
+
     // Check if game is full
     const currentPlayerCount = game.players ? game.players.length : 0;
     if (currentPlayerCount >= MAX_PLAYERS_PER_GAME) {
       return Promise.reject(new Error("Game is full"));
     }
-    
+
     // Check for duplicate joins by username
     if (username && game.players) {
       for (const existingPlayerId of game.players) {
         try {
-          const existingPlayer = await store.read<any>(store.keys.players, existingPlayerId);
+          const existingPlayer = await store.read<Player>(store.keys.players, existingPlayerId);
           if (existingPlayer.username === username) {
             return Promise.reject(new Error("Player already joined this game"));
           }
@@ -87,7 +58,7 @@ export async function joinGame(gameId: number, username?: string): Promise<JoinG
         }
       }
     }
-    
+
     const playerId = await store.create(store.keys.players, { gameId: gameId, username: username });
     const updatedGame = addPlayerToGame(game, playerId);
     logger.debug("joinGame update game");
@@ -110,6 +81,7 @@ export async function joinGame(gameId: number, username?: string): Promise<JoinG
 }
 
 function addPlayerToGame(game: Game, playerId: number) {
+  // return new Promise(function (resolve) {
   logger.debug("addPlayerToGame");
 
   if (!game) console.log("ruh roh");
@@ -122,19 +94,4 @@ function addPlayerToGame(game: Game, playerId: number) {
     game.players = [playerId];
   }
   return game;
-}
-
-export async function listGames(): Promise<ListGamesResponse> {
-  const games = await store.readAll<Game>(store.keys.games, () => true);
-  const ids = games.map((g) => g.id);
-  const gameSummaries: GameSummary[] = games.map((g) => {
-    const playerCount = g.players ? g.players.length : 0;
-    return {
-      id: g.id!,
-      playerCount,
-      maxPlayers: MAX_PLAYERS_PER_GAME,
-      isFull: playerCount >= MAX_PLAYERS_PER_GAME
-    };
-  });
-  return { gameIds: ids, games: gameSummaries };
 }

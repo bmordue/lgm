@@ -77,3 +77,9 @@ export interface ActorOrders {
     ordersList?: Array<Direction>; // For MOVE orders
     targetId?: number; // For ATTACK orders, ID of the target Actor
 }
+
+export interface Player {
+    id?: number;
+    gameId: number;
+    username?: string;
+}
