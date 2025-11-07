@@ -49,8 +49,43 @@ export const useGamesStore = defineStore('games', {
     },
     getCurrentPlayerId() {
       return this.currentGamePlayerId;
-    }
+    },
+    async fetchGameDetails(gameId: number) {
+      const userStoreModule = await import('./User.store'); // Dynamically import User.store
+      const userStore = userStoreModule.useUserStore();
+      const token = userStore.getToken();
+      const playerId = this.currentGamePlayerId; // Assuming current player ID is already set
 
+      if (!playerId) {
+        console.error("Player ID not set, cannot fetch game details.");
+        // Potentially redirect to login or show error
+        return;
+      }
+
+      // This endpoint needs to exist and return data similar to JoinGameResponse
+      // It should provide the game state for the given player.
+      // The backend might use something like `rules.filterGameForPlayer(gameId, playerId)`
+      const apiUrlModule = await import('@/main'); // Dynamically import API_URL
+      try {
+        const response = await fetch(`${apiUrlModule.API_URL}/games/${gameId}/players/${playerId}`, { // Adjusted endpoint
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        if (!response.ok) {
+          const error = await response.json().catch(() => ({ message: "Failed to fetch game details and parse error" }));
+          console.error(`Failed to fetch game details for game ${gameId}: ${error.message || response.statusText}`);
+          // Optionally, notify the user through a toast or alert
+          alert(`Error fetching game details: ${error.message || response.statusText}`);
+          return;
+        }
+        const gameData = await response.json() as {gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number};
+        this.updateJoinResponse(gameData); // Reuse existing action to update state
+      } catch (error) {
+        console.error(`Network error fetching game details for game ${gameId}:`, error);
+        alert(`Network error fetching game details. Please try again.`);
+      }
+    }
   }
 }
 );
