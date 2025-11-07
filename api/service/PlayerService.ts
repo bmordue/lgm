@@ -7,6 +7,7 @@ import util = require("util");
 
 import {
   Game,
+  Player,
   World,
 } from "./Models";
 import { inspect } from "util";

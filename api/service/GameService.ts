@@ -4,7 +4,6 @@ import store = require("./Store");
 import logger = require("../utils/Logger");
 
 export * from "./GameLifecycleService";
-export * from "./PlayerService";
 export * from "./OrderService";
 export * from "./TurnResultService";
 
