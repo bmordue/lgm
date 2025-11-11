@@ -10,15 +10,7 @@ module.exports.createGame = async function createGame(context: ExegesisContext) 
     };
   }
   const maxPlayers = context.requestBody.maxPlayers;
-  return GameLifecycleService.createGame(maxPlayers);  // Construct join_url based on how Exegesis routes requests.
-  // This assumes a path like /games/{id}/join, but needs verification
-  // against the actual OpenAPI definition's paths.
-  // For now, let's assume a base path from the incoming request.
-  const serverUrl = `${context.req.protocol}://${context.req.get('host')}`;
-  return {
-    id: game.id,
-    join_url: `${serverUrl}/games/${game.id}/join` // This needs to match the actual join path in OpenAPI spec
-  };
+  return GameLifecycleService.createGame(maxPlayers);
 };
 
 module.exports.joinGame = async function joinGame(context: ExegesisContext) {
@@ -39,7 +31,7 @@ module.exports.joinGame = async function joinGame(context: ExegesisContext) {
   }
 };
 
-module.exports.postOrders = function postOrders(context: ExegesisContext) {
+module.exports.postOrders = async function postOrders(context: ExegesisContext) {
   const body = context.requestBody;
   const gameId = context.params.path.gameId;
   const turn = context.params.path.turn;
