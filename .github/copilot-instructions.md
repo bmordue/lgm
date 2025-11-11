@@ -8,17 +8,27 @@ LGM is a turn-based strategy game with a TypeScript backend API and Vue 3 fronte
 
 ## Required Dependencies and Setup
 
-### Initial Setup Commands
+### Initial Setup Commands - ALWAYS use shell.nix
 ```bash
-# Install dependencies for both frontend and backend
-cd api && npm install  # Takes ~90 seconds, NEVER CANCEL, set timeout to 180+ seconds
-cd ../client && npm install  # Takes ~45 seconds, NEVER CANCEL, set timeout to 120+ seconds
+# Enter the Nix development environment (REQUIRED first step)
+nix-shell
 
-# Create required symlink for frontend to access backend models
-cd .. && ln -s api lib
+# Quick setup: Install dependencies and start both servers
+startup-servers
+
+# Alternative manual setup within nix-shell:
+install-deps        # Install all dependencies (API + client)
+startup-servers     # Start both API and frontend servers
 ```
 
-## Backend Development (./api/)
+**CRITICAL**: Always use `nix-shell` first. The shell.nix environment provides:
+- Node.js 20.x LTS with npm  
+- All development tools (curl, jq, git)
+- Automatic symlink creation (`lib -> api`)
+- Helpful aliases and environment setup
+- Takes ~90 seconds for full dependency installation, NEVER CANCEL
+
+## Backend Development (./api/) - Run within nix-shell
 
 ### Build and Test Commands
 ```bash
@@ -64,7 +74,7 @@ After making backend changes, ALWAYS run these validation steps:
 - **Core services**: GameService, Rules, Store, Models in `service/` directory
 - **Game world**: Hardcoded 20x20 hexagonal grid with predefined terrain
 
-## Frontend Development (./client/)
+## Frontend Development (./client/) - Run within nix-shell
 
 ### Build and Development Commands
 ```bash
@@ -112,12 +122,12 @@ After making frontend changes, ALWAYS run these validation steps:
 ## Critical Configuration Requirements
 
 ### Required Symlink
-**CRITICAL**: The frontend requires a symlink from repository root:
+**AUTOMATIC**: The frontend requires a symlink from repository root which is **automatically created by shell.nix**:
 ```bash
-# From repository root
-ln -s api lib
+# This symlink is created automatically when you run nix-shell
+lib -> api
 ```
-Without this symlink, frontend build will fail with "Could not resolve" errors.
+If you see frontend build errors about "Could not resolve", ensure you're working within the nix-shell environment.
 
 ### Port Configuration
 - **Backend**: Port 3000 (configurable via `LGM_PORT` environment variable)
