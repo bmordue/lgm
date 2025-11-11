@@ -14,7 +14,7 @@ import {
 import { inspect } from "util";
 
 export interface CreateGameResponse {
-  gameId: number;
+  id: number;
 }
 
 export interface JoinGameResponse {
@@ -48,7 +48,7 @@ export async function createGame(maxPlayers?: number): Promise<CreateGameRespons
   const worldId = await rules.createWorld();
 
   const newGame: Game = {
-      turn: 0,
+      turn: 1,
       worldId: worldId,
       maxPlayers: playerLimit,
       gameState: GameState.LOBBY,
@@ -57,7 +57,7 @@ export async function createGame(maxPlayers?: number): Promise<CreateGameRespons
   };
 
   const gameId = await store.create<Game>(store.keys.games, newGame);
-  return { gameId };
+  return { id: gameId };
 }
 
 /**
@@ -75,7 +75,7 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
     }
     
     if (game.players.length >= game.maxPlayers) {
-        throw new Error("Cannot join game: Game is full");
+        throw new Error("Game is full");
     }
 
     // Check for duplicate username in this game
@@ -117,7 +117,7 @@ async function validateUniqueUsername(game: Game, username: string) {
     for (const existingPlayerId of game.players) {
         const existingPlayer = await store.read<Player>(store.keys.players, existingPlayerId);
         if (existingPlayer.username === username) {
-            throw new Error("Player with this username has already joined the game");
+            throw new Error("Player already joined this game");
         }
     }
 }

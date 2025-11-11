@@ -150,7 +150,7 @@ describe("complete first two turns with one player - empty orders", () => {
     let playerId;
     before(async function () {
         const resp: lgm.CreateGameResponse = await lgm.createGame();
-        gameId = resp.gameId;
+        gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
     });
@@ -230,7 +230,7 @@ describe("complete first turn with one player - standing still orders", () => {
 
     before(async function () {
         const resp: lgm.CreateGameResponse = await lgm.createGame();
-        gameId = resp.gameId;
+        gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
         world = invitation.world;
@@ -278,7 +278,7 @@ describe("complete first turn with one player - moving forward orders", () => {
 
     before(async function () {
         const resp: lgm.CreateGameResponse = await lgm.createGame();
-        gameId = resp.gameId;
+        gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
         world = invitation.world;

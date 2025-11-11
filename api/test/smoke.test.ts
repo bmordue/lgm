@@ -6,7 +6,7 @@ import * as store from "../service/Store";
 describe("createGame", () => {
   it("should create a game successfully", async () => {
     const response = await GameService.createGame();
-    assert(response.gameId);
+    assert(response.id);
   });
 });
 
@@ -16,7 +16,7 @@ describe("joinGame", () => {
   });
   it("should join a game successfully", async () => {
     const game = await GameService.createGame();
-    const gameId = game.gameId;
+    const gameId = game.id;
     console.log(`[TEST LOG] Game created with id: ${gameId}`);
     const response = await GameService.joinGame(gameId);
     console.log("[TEST LOG] Response from joinGame:", JSON.stringify(response, null, 2));
@@ -43,7 +43,7 @@ describe("postOrders", () => {
 
   it("should post orders successfully", async () => {
     const game = await GameService.createGame();
-    const gameId = game.gameId;
+    const gameId = game.id;
     const player = await GameService.joinGame(gameId);
     const playerId = player.playerId;
     const turn = 1;
@@ -88,7 +88,7 @@ describe("turnResults", () => {
 
   it("should get turn results successfully", async () => {
     const game = await GameService.createGame();
-    const gameId = game.gameId;
+    const gameId = game.id;
     const player = await GameService.joinGame(gameId);
     const playerId = player.playerId;
     const turn = 1;
