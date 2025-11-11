@@ -10,11 +10,30 @@ export enum ActorState {
     DEAD, ALIVE
 }
 
+export enum GameState {
+    LOBBY = 'LOBBY',
+    IN_PROGRESS = 'IN_PROGRESS',
+    COMPLETED = 'COMPLETED'
+}
+
 export interface Game {
     id?: number;
     players?: Array<number>;
+    hostPlayerId?: number;
+    maxPlayers?: number;
+    gameState?: GameState;
     turn: number;
     worldId: number;
+    createdAt?: Date;
+    startedAt?: Date;
+}
+
+export interface Player {
+    id?: number;
+    gameId: number;
+    username?: string;
+    joinedAt?: Date;
+    sessionId?: string;
 }
 
 export interface World {
