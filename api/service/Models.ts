@@ -38,7 +38,7 @@ export interface Player {
 
 export interface World {
     id?: number;
-    actors: Array<Actor>; // TODO: should be actor IDs instead?
+    actorIds: Array<number>;
     terrain: Array<Array<Terrain>>
 }
 
