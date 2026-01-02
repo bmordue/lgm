@@ -4,13 +4,13 @@ This directory contains comprehensive architecture assessment and improvement do
 
 ## 📋 Assessment Documents
 
-### [Architecture Assessment](ARCHITECTURE_ASSESSMENT.md)
+### [Architecture Assessment](../ARCHITECTURE_ASSESSMENT.md)
 **Comprehensive technical analysis** - Detailed assessment covering all architectural domains including performance, security, testing, and scalability. Includes prioritized recommendations and implementation roadmap.
 
-### [Architecture Checklist](ARCHITECTURE_CHECKLIST.md) 
+### [Architecture Checklist](../ARCHITECTURE_CHECKLIST.md) 
 **Systematic checklist review** - Point-by-point assessment against the original issue requirements, with clear status indicators and action items for each architectural domain.
 
-### [Improvement Suggestions](IMPROVEMENT_SUGGESTIONS.md)
+### [Improvement Suggestions](../IMPROVEMENT_SUGGESTIONS.md)
 **Actionable implementation guide** - Specific, prioritized improvement suggestions with code examples, effort estimates, and success metrics. Aligned with existing roadmap priorities.
 
 ## 🎯 Quick Reference
