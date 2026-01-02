@@ -60,10 +60,10 @@ Enable community contributions and integrations
 
 ## 📖 Related Documentation
 
-- [ROADMAP.md](ROADMAP.md) - Project development roadmap
-- [PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md](PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md) - Specific feature implementation plan
-- [CLAUDE.md](CLAUDE.md) - Development environment and architecture notes
-- [README.md](README.md) - Project setup and basic information
+- [ROADMAP.md](../ROADMAP.md) - Project development roadmap
+- [PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md](../PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md) - Specific feature implementation plan
+- [CLAUDE.md](../CLAUDE.md) - Development environment and architecture notes
+- [README.md](../README.md) - Project setup and basic information
 
 ## 🤝 Contributing
 
