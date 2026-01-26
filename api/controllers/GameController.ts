@@ -47,20 +47,19 @@ module.exports.postOrders = async function postOrders(context: ExegesisContext) 
 };
 
 module.exports.turnResults = async function turnResults(context: ExegesisContext) {
-  //gameId: number, turn: number, playerId: number) {
   const gameId = context.params.path.gameId;
   const turn = context.params.path.turn;
   const playerId = context.params.path.playerId;
   const result = await GameService.turnResults(gameId, turn, playerId);
 
-  if (result.success && result.results) {
-    return { placeholder: JSON.stringify(result.results) };
+  if (result.success && result.world) {
+    return { world: result.world };
   } else if (!result.success && result.message) {
-    return { placeholder: result.message };
+    return { message: result.message };
   } else if (result.success) {
-    return { placeholder: "Turn results processed, but no specific data returned."};
+    return { message: "Turn results processed, but world data not available." };
   } else {
-    return { placeholder: "Failed to process turn results or results not available." };
+    return { message: "Failed to process turn results or results not available." };
   }
 };
 

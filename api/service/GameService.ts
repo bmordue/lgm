@@ -2,6 +2,10 @@
 
 import store = require("./Store");
 import logger = require("../utils/Logger");
+import util = require("util");
+import { World, Direction, TurnResult, Game } from "./Models";
+import * as GameLifecycleService from "./GameLifecycleService";
+import * as OrderService from "./OrderService";
 
 // Export types from services for backward compatibility
 export interface RequestActorOrders {
@@ -33,12 +37,9 @@ export interface JoinGameResponse {
 }
 
 export interface TurnResultsResponse {
-  // Conforms to OpenAPI spec: includes world directly.
-  // success and message fields are removed as per direct world response.
+  success: boolean;
   world?: World; // Optional because results might not be ready
   message?: string; // For cases where world is not available yet
-  success: boolean;
-  results?: any; // Using any for TurnResult type
 }
 
 export interface GameSummary {
@@ -55,20 +56,20 @@ export interface ListGamesResponse {
 
 // Delegate to GameLifecycleService
 export async function createGame(): Promise<CreateGameResponse> {
-  return gameLifecycleService.createGame();
+  return GameLifecycleService.createGame();
 }
 
-export async function joinGame(gameId: number, username?: string): Promise<JoinGameResponse> {
-  return gameLifecycleService.joinGame(gameId, username);
+export async function joinGame(gameId: number, username?: string, sessionId?: string): Promise<JoinGameResponse> {
+  return GameLifecycleService.joinGame(gameId, username, sessionId);
 }
 
 export async function listGames(): Promise<ListGamesResponse> {
-  return gameLifecycleService.listGames();
+  return GameLifecycleService.listGames();
 }
 
 // Delegate to OrderService  
 export function fillOrTruncateOrdersList(ordersList: Array<Direction>) {
-  return orderService.fillOrTruncateOrdersList(ordersList);
+  return OrderService.fillOrTruncateOrdersList(ordersList);
 }
 
 export async function postOrders(
@@ -77,7 +78,7 @@ export async function postOrders(
   turn: number,
   playerId: number
 ): Promise<PostOrdersResponse> {
-  return orderService.postOrders(body, gameId, turn, playerId);
+  return OrderService.postOrders(body, gameId, turn, playerId);
 }
 
 // Delegate to TurnService
@@ -96,19 +97,20 @@ export async function turnResults(
   logger.debug(util.format("turnResults: found %s results", results.length));
 
   if (results.length == 0) {
-    // Updated to match new TurnResultsResponse structure
     return Promise.resolve({
-      message: "Turn results not yet available or game/turn/player ID is invalid.",
+      success: false,
+      message: "turn results not available",
     });
   } else if (results.length == 1) {
     const turnResult = results[0];
     if (turnResult.world) {
       // Updated to match new TurnResultsResponse structure
-      return Promise.resolve({ world: turnResult.world });
+      return Promise.resolve({ success: true, world: turnResult.world });
     } else {
       // This case should ideally not happen if Rules.ts correctly populates world
       logger.error(`TurnResult for game ${gameId}, turn ${turn}, player ${playerId} is missing world data.`);
       return Promise.resolve({
+        success: false,
         message: "Turn results are available but world data is missing.",
       });
     }
@@ -121,20 +123,6 @@ export async function turnResults(
   }
 }
 
-export async function listGames(): Promise<ListGamesResponse> {
-  const games = await store.readAll<Game>(store.keys.games, () => true);
-  const ids = games.map((g) => g.id);
-  const gameSummaries: GameSummary[] = games.map((g) => {
-    const playerCount = g.players ? g.players.length : 0;
-    return {
-      id: g.id!,
-      playerCount,
-      maxPlayers: MAX_PLAYERS_PER_GAME,
-      isFull: playerCount >= MAX_PLAYERS_PER_GAME
-    };
-  });
-  return { gameIds: ids, games: gameSummaries };
-}
 export * from "./GameLifecycleService";
 export * from "./OrderService";
 export * from "./TurnResultService";
