@@ -171,7 +171,7 @@ describe("GameController", function () {
       store.deleteAll();
     });
 
-    it("should return turn results with placeholder", async function () {
+    it("should return turn results with message when no results available", async function () {
       const game = await GameService.createGame();
       const player = await GameService.joinGame(game.id);
 
@@ -191,7 +191,9 @@ describe("GameController", function () {
       };
 
       const result = await GameController.turnResults(mockContext);
-      assert(result.placeholder !== undefined, "Should have placeholder property");
+      // When no turn results are available yet, should return message
+      assert(result.message !== undefined, "Should have message property");
+      assert.equal(result.message, "turn results not available");
     });
   });
 });

@@ -37,11 +37,9 @@ export interface JoinGameResponse {
 }
 
 export interface TurnResultsResponse {
-  // Conforms to OpenAPI spec: includes world directly.
   success: boolean;
   world?: World; // Optional because results might not be ready
   message?: string; // For cases where world is not available yet
-  results?: any; // Using any for TurnResult type
 }
 
 export interface GameSummary {
@@ -99,7 +97,6 @@ export async function turnResults(
   logger.debug(util.format("turnResults: found %s results", results.length));
 
   if (results.length == 0) {
-    // Updated to match new TurnResultsResponse structure
     return Promise.resolve({
       success: false,
       message: "turn results not available",
