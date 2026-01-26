@@ -271,10 +271,13 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
     const actorOrdersLists = gameTurnOrders.map((to: TurnOrders) => {
         // Map actor IDs in orders to actual actor objects
         return to.orders.map(order => {
-            const actorObject = allActorsInWorld.find(a => a.id === (order.actor as any as number)); // Assuming actor field was an ID
+            // The API sends actorId as a field name, but TypeScript model uses 'actor'
+            // Check for actorId first (from API), then fall back to actor field
+            const actorId = (order as any).actorId || (typeof order.actor === 'number' ? order.actor : (order.actor as any)?.id);
+            const actorObject = allActorsInWorld.find(a => a.id === actorId);
             if (!actorObject) {
                 // This case should ideally not happen if data is consistent
-                logger.error(`Could not find actor object for ID ${(order.actor as any as number)} in TurnOrders for player ${to.playerId}`);
+                logger.error(`Could not find actor object for ID ${actorId} in TurnOrders for player ${to.playerId}`);
                 // Potentially filter out this order or handle error appropriately
                 return null;
             }
@@ -311,6 +314,16 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         }));
     } catch (e) {
         logger.error("processGameTurn: failed to store turnResults");
+        return Promise.reject(e.message);
+    }
+
+    // Save updated actors back to the store
+    try {
+        await Promise.all(updatedActors.map((actor: Actor) => {
+            return store.replace(store.keys.actors, actor.id, actor);
+        }));
+    } catch (e) {
+        logger.error("processGameTurn: failed to update actors");
         return Promise.reject(e.message);
     }
 
