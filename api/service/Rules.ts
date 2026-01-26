@@ -134,7 +134,7 @@ export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, 
     return actor;
 }
 
-async function applyFiringRules(actorOrders: ActorOrders, game: Game, allActorsInWorld: Actor[], timestep: number): Promise<Actor> {
+async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: World, allActorsInWorld: Actor[], timestep: number): Promise<Actor> {
     const attacker = actorOrders.actor;
 
     if (actorOrders.orderType !== OrderType.ATTACK) {
@@ -179,7 +179,7 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, allActorsI
     }
 
     // 2. Check Line of Sight
-    const losClear = hasLineOfSight(startHex, targetHex, worldTerrain, allActorsInWorld);
+    const losClear = hasLineOfSight(startHex, targetHex, world.terrain, allActorsInWorld);
     if (!losClear) {
         logger.info(`ATTACK order: Line of sight from ${attacker.id} to ${targetActor.id} is blocked.`);
         return attacker;
@@ -212,7 +212,7 @@ export async function applyRulesToActorOrders(game: Game, world: World, allActor
             // applyMovementOrders might also need allActorsInWorld if it checks for collisions with other actors,
             // or it might just need the terrain from the world object.
             await applyMovementOrders(ao, game, world, ts); // Assuming world object is enough for terrain checks
-            await applyFiringRules(ao, game, allActorsInWorld, ts);
+            await applyFiringRules(ao, game, world, allActorsInWorld, ts);
         }
     }
 
@@ -381,14 +381,14 @@ export async function createWorld(): Promise<number> {
     }
 }
 
-export async function filterWorldForPlayer(world: World, playerId: number): Promise<World> {
-    const allActors = await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
-    const playerActors = allActors.filter(actor => actor.owner === playerId);
+export async function filterWorldForPlayer(world: World, playerId: number, allActors?: Actor[]): Promise<World> {
+    const actors = allActors || await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
+    const playerActors = actors.filter(actor => actor.owner === playerId);
 
     // if there are no player actors, return an empty world
     if (playerActors.length === 0) {
         const emptyTerrain = world.terrain.map(col => col.map(() => Terrain.UNEXPLORED));
-        return Promise.resolve({ ...world, actorIds: [], terrain: emptyTerrain });
+        return Promise.resolve({ ...world, actorIds: [], actors: [], terrain: emptyTerrain });
     }
 
     const playerVisibility = playerActors.map(actor => visibility(actor.pos, world.terrain));
@@ -398,14 +398,16 @@ export async function filterWorldForPlayer(world: World, playerId: number): Prom
         (col, x) => col.map((_, y) => playerVisibility.some(vis => vis[x][y]))
     );
 
-    const filteredActorIds = allActors.filter(actor => {
+    const filteredActors = actors.filter(actor => {
         // Include all actors owned by the current player
         if (actor.owner === playerId) {
             return true;
         }
         // Include enemy actors only if they are on a visible tile
         return combinedVisibility[actor.pos.x][actor.pos.y];
-    }).map(actor => actor.id);
+    });
+
+    const filteredActorIds = filteredActors.map(actor => actor.id);
 
     const filteredTerrain = world.terrain.map((col, x) =>
         col.map((terrainTile, y) => {
@@ -418,7 +420,7 @@ export async function filterWorldForPlayer(world: World, playerId: number): Prom
         })
     );
 
-    return Promise.resolve({ ...world, actorIds: filteredActorIds, terrain: filteredTerrain });
+    return Promise.resolve({ ...world, actorIds: filteredActorIds, actors: filteredActors, terrain: filteredTerrain });
 }
 
 export async function filterGameForPlayer(gameId: number, playerId: number): Promise<JoinGameResponse> {
@@ -488,9 +490,7 @@ export async function setupActors(game: Game, playerId: number) {
     // If done is true but x,y are such that actors would be out of bounds (e.g. MAX_ATTEMPTS hit, then x,y were set too high)
     // This check is a safeguard, primary check is above.
     if (x + 2 >= world.terrain.length || y + 2 >= world.terrain[0].length) {
-      if (actors.length === 0) { // Only log if we haven't already logged the error above and decided not to create actors.
-        logger.warn(`Actor placement: final base position (x:${x}, y:${y}) for player ${playerId} is out of bounds. No actors will be created.`);
-      }
+      logger.warn(`Actor placement: final base position (x:${x}, y:${y}) for player ${playerId} is out of bounds. No actors will be created.`);
       return []; // Return empty list of actors
     }
 

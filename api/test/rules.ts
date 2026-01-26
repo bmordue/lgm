@@ -13,7 +13,7 @@ describe("rules tests", function () {
 
     before(async () => {
         const terrain = await rules.generateTerrain();
-        world = { id: 0, actors: actorsList, terrain: terrain };
+        world = { id: 0, actorIds: actorsList.map(a => a.id), terrain: terrain };
     });
 
     describe("unique()", function () {
@@ -166,7 +166,7 @@ describe("rules tests", function () {
                 orderType: OrderType.MOVE 
             };
             allActorOrders.push(singleActorOrders);
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders);
+            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
             assert.equal(updatedActors.length, allActorOrders.length);
         });
 
@@ -178,7 +178,7 @@ describe("rules tests", function () {
                 orderType: OrderType.MOVE 
             };
             allActorOrders.push(singleActorOrders);
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders);
+            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
             assert.equal(updatedActors.length, allActorOrders.length);
         });
 
@@ -190,7 +190,7 @@ describe("rules tests", function () {
                 orderType: OrderType.MOVE 
             };
             allActorOrders.push(singleActorOrders);
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders);
+            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
             assert.equal(updatedActors.length, allActorOrders.length);
         });
 
@@ -200,12 +200,12 @@ describe("rules tests", function () {
                 { actor: actorTwo, ordersList: [Direction.UP_RIGHT, Direction.DOWN_LEFT], orderType: OrderType.MOVE },
                 { actor: theActor, ordersList: [Direction.UP_RIGHT, Direction.UP_LEFT], orderType: OrderType.MOVE }
             ];
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders);
+            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, [actorTwo, theActor]);
             assert.equal(updatedActors.length, allActorOrders.length);
         });
 
         it("handles empty orders list", async () => {
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, []);
+            const updatedActors = await rules.applyRulesToActorOrders(game, world, [], actorsList);
             assert.equal(updatedActors.length, 0);
         });
     });
@@ -219,6 +219,7 @@ describe("rules tests", function () {
             const terrain = await rules.generateTerrain(); // Using the standard 10x10 terrain
             baseWorld = {
                 id: 1,
+                actorIds: [],
                 actors: [],
                 terrain: terrain
             };
@@ -227,8 +228,9 @@ describe("rules tests", function () {
         it("should show player's own actors", async () => {
             const playerActor: Actor = { id: 1, pos: { x: 1, y: 1 }, state: ActorState.ALIVE, owner: playerId };
             baseWorld.actors.push(playerActor);
+            baseWorld.actorIds.push(playerActor.id);
 
-            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId);
+            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId, baseWorld.actors);
             assert.deepEqual(filteredWorld.actors, [playerActor]);
             // Check a tile known to be visible around the player's actor
             assert.notEqual(filteredWorld.terrain[1][1], Terrain.UNEXPLORED);
@@ -239,8 +241,9 @@ describe("rules tests", function () {
             // Enemy actor far away, guaranteed not to be seen initially with default visibility range
             const enemyActor: Actor = { id: 2, pos: { x: 9, y: 9 }, state: ActorState.ALIVE, owner: enemyPlayerId };
             baseWorld.actors.push(playerActor, enemyActor);
+            baseWorld.actorIds.push(playerActor.id, enemyActor.id);
 
-            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId);
+            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId, baseWorld.actors);
             assert.deepEqual(filteredWorld.actors, [playerActor]);
              // Check enemy's tile is unexplored
             assert.equal(filteredWorld.terrain[9][9], Terrain.UNEXPLORED);
@@ -250,8 +253,9 @@ describe("rules tests", function () {
             const playerActor: Actor = { id: 1, pos: { x: 1, y: 1 }, state: ActorState.ALIVE, owner: playerId };
             const enemyActor: Actor = { id: 2, pos: { x: 1, y: 2 }, state: ActorState.ALIVE, owner: enemyPlayerId }; // Close to playerActor
             baseWorld.actors.push(playerActor, enemyActor);
+            baseWorld.actorIds.push(playerActor.id, enemyActor.id);
 
-            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId);
+            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId, baseWorld.actors);
             assert.equal(filteredWorld.actors.length, 2, "Should see both player and enemy actor");
             assert.ok(filteredWorld.actors.find(a => a.id === playerActor.id), "Player actor missing");
             assert.ok(filteredWorld.actors.find(a => a.id === enemyActor.id), "Enemy actor missing");
@@ -262,8 +266,9 @@ describe("rules tests", function () {
             // Player actor at (0,0). Visibility range is <10. So (9,9) should be UNEXPLORED.
             const playerActor: Actor = { id: 1, pos: { x: 0, y: 0 }, state: ActorState.ALIVE, owner: playerId };
             baseWorld.actors.push(playerActor);
+            baseWorld.actorIds.push(playerActor.id);
 
-            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId);
+            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId, baseWorld.actors);
             assert.equal(filteredWorld.terrain[0][0], baseWorld.terrain[0][0]); // Actor's tile
             assert.equal(filteredWorld.terrain[9][9], Terrain.UNEXPLORED);
         });
@@ -273,11 +278,12 @@ describe("rules tests", function () {
             // Actor 2 is placed such that it sees (0,5), which actor 1 might not if range is small or blocked
             const playerActor2: Actor = { id: 3, pos: { x: 0, y: 4 }, state: ActorState.ALIVE, owner: playerId };
             baseWorld.actors.push(playerActor1, playerActor2);
+            baseWorld.actorIds.push(playerActor1.id, playerActor2.id);
             // Assuming (0,5) is EMPTY and visible from (0,4)
             baseWorld.terrain[0][5] = Terrain.EMPTY;
 
 
-            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId);
+            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId, baseWorld.actors);
             assert.notEqual(filteredWorld.terrain[0][5], Terrain.UNEXPLORED, "Tile (0,5) should be visible due to playerActor2");
         });
 
@@ -285,8 +291,9 @@ describe("rules tests", function () {
             // Add an enemy actor, but no player actors
             const enemyActor: Actor = { id: 2, pos: { x: 5, y: 5 }, state: ActorState.ALIVE, owner: enemyPlayerId };
             baseWorld.actors.push(enemyActor);
+            baseWorld.actorIds.push(enemyActor.id);
 
-            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId);
+            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId, baseWorld.actors);
             assert.equal(filteredWorld.actors.length, 0, "No player actors should be in the filtered world");
             for (let i = 0; i < filteredWorld.terrain.length; i++) {
                 for (let j = 0; j < filteredWorld.terrain[i].length; j++) {
@@ -298,11 +305,12 @@ describe("rules tests", function () {
         it("should handle blocked terrain correctly for visibility", async () => {
             const playerActor: Actor = { id: 1, pos: { x: 0, y: 0 }, state: ActorState.ALIVE, owner: playerId };
             baseWorld.actors.push(playerActor);
+            baseWorld.actorIds.push(playerActor.id);
             // Block tile (0,1), so (0,2) should not be visible if direct line of sight is assumed.
             // The visibility function handles complex occlusion, this is a simplified check.
             baseWorld.terrain[0][1] = Terrain.BLOCKED;
 
-            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId);
+            const filteredWorld = await rules.filterWorldForPlayer(baseWorld, playerId, baseWorld.actors);
             assert.equal(filteredWorld.terrain[0][0], baseWorld.terrain[0][0]); // Actor's tile
             assert.equal(filteredWorld.terrain[0][1], Terrain.BLOCKED); // Visible blocked tile
 
@@ -351,6 +359,7 @@ describe("rules tests", function () {
 
             world = {
                 id: 0,
+                actorIds: [attacker.id, target.id],
                 actors: [attacker, target],
                 terrain: terrain
             };
@@ -363,7 +372,7 @@ describe("rules tests", function () {
             target.pos = { x: 0, y: 1 }; // Distance 1, range 5
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]); // Using applyRulesToActorOrders to invoke applyFiringRules
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]); // Using applyRulesToActorOrders to invoke applyFiringRules
 
             assert.strictEqual(target.health, 0, "Target health should be 0 after 10 timesteps (10 damage * 10 steps)");
         });
@@ -373,7 +382,7 @@ describe("rules tests", function () {
             target.pos = { x: 0, y: 6 }; // Distance 6, range 5
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if out of range");
         });
@@ -383,7 +392,7 @@ describe("rules tests", function () {
             target.pos = { x: 0, y: 5 }; // Distance 5, range 5
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 0, "Target health should be 0 at max range after 10 timesteps (10 damage * 10 steps)");
         });
@@ -395,7 +404,7 @@ describe("rules tests", function () {
             attacker.weapon.damage = 25;
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 0, "Target health should be 0 after 10 timesteps (25 damage * 10 steps)");
         });
@@ -407,7 +416,7 @@ describe("rules tests", function () {
             attacker.weapon.damage = 10;
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 0, "Target health should be 0");
             assert.strictEqual(target.state, ActorState.DEAD, "Target state should be DEAD");
@@ -420,7 +429,7 @@ describe("rules tests", function () {
             attacker.weapon.damage = 100;
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 0, "Target health should be capped at 0");
             assert.strictEqual(target.state, ActorState.DEAD, "Target state should be DEAD");
@@ -433,7 +442,7 @@ describe("rules tests", function () {
             world.terrain[0][1] = Terrain.BLOCKED; // Block LoS between (0,0) and (0,2)
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if LoS blocked by terrain");
         });
@@ -452,7 +461,7 @@ describe("rules tests", function () {
             world.actors.push(blocker);
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if LoS blocked by another actor");
         });
@@ -464,7 +473,7 @@ describe("rules tests", function () {
             world.actors.push(otherActor); // Add another actor far away
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 0, "Target health should be 0 with clear LoS after 10 timesteps (10 damage * 10 steps)");
         });
@@ -475,7 +484,7 @@ describe("rules tests", function () {
             target.pos = { x: 0, y: 1 };
             const order: ActorOrders = { actor: attacker, orderType: OrderType.MOVE, ordersList: [Direction.NONE], targetId: target.id }; // MOVE order
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change for MOVE order");
         });
@@ -484,7 +493,7 @@ describe("rules tests", function () {
             attacker.pos = { x: 0, y: 0 };
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK }; // No targetId
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if targetId is missing");
         });
@@ -495,7 +504,7 @@ describe("rules tests", function () {
             (attacker as any).weapon = undefined; // Remove weapon
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if attacker has no weapon");
         });
@@ -504,7 +513,7 @@ describe("rules tests", function () {
             attacker.pos = { x: 0, y: 0 };
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: 999 }; // Non-existent target
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
             // No direct assertion on health of a non-existent target, but code should not crash.
             // We can check attacker's state or if any error was logged if needed, but for now, just graceful execution.
             assert.ok(true, "Execution should complete without error for non-existent target.");
@@ -517,7 +526,7 @@ describe("rules tests", function () {
             target.health = 0;
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 0, "Dead target's health should remain 0");
         });
@@ -526,7 +535,7 @@ describe("rules tests", function () {
             attacker.pos = { x: 0, y: 0 };
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: attacker.id }; // Target self
 
-            await rules.applyRulesToActorOrders(game, world, [order]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(attacker.health, 100, "Attacker health should not change when targeting self");
         });
