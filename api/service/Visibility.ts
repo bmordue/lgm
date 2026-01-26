@@ -220,10 +220,10 @@ export function hasLineOfSight(
 
         // Check terrain for blockage.
         // terrain[row][col] which is terrain[gridPos.x][gridPos.y]
-        // Only block LoS if this is an intermediate hex, not the target itself.
-        // You can see a blocked tile, you just can't see through it.
+        // Blocked terrain blocks LoS THROUGH it, but you can still see the blocked tile itself
+        // So only return false if this is NOT the final destination
         if (i < pathHexes.length - 1 && terrain[gridPos.x][gridPos.y] === Terrain.BLOCKED) {
-            return false; // LoS blocked by terrain
+            return false; // LoS blocked by intermediate terrain
         }
 
         // Check for blocking units on the current hex,
