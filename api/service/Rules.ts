@@ -202,7 +202,7 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: Wor
 export async function applyRulesToActorOrders(game: Game, world: World, allActorOrders: Array<ActorOrders>, allActorsInWorld: Actor[]): Promise<Array<Actor>> {
     if (!allActorOrders || allActorOrders.length === 0) {
         logger.warn("applyRulesToActorOrders: did not receive any orders");
-        return [];
+        return []; // Return empty array when no orders
     }
 
     // iterate over timesteps!
@@ -216,10 +216,10 @@ export async function applyRulesToActorOrders(game: Game, world: World, allActor
         }
     }
 
-    // Ensure actors in allActorOrders are the updated instances
-    // This map should return the actors that were modified within applyMovementOrders and applyFiringRules
-    // (those functions modify the 'actor' property of 'ao' objects directly)
-    return allActorOrders.map((a: ActorOrders) => a.actor);
+    // Return all actors in the world (modified actors have updated state)
+    // The actors in allActorOrders are references to objects in allActorsInWorld,
+    // so modifications are already applied to allActorsInWorld
+    return allActorsInWorld;
 }
 
 function turnResultsPerPlayer(game: Game, updatedActors: Array<Actor>): Array<TurnResult> {

@@ -167,7 +167,7 @@ describe("rules tests", function () {
             };
             allActorOrders.push(singleActorOrders);
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
-            assert.equal(updatedActors.length, allActorOrders.length);
+            assert.equal(updatedActors.length, actorsList.length); // Returns all actors when orders are provided
         });
 
         it("handles a single updated actor with partial orders list", async () => {
@@ -179,7 +179,7 @@ describe("rules tests", function () {
             };
             allActorOrders.push(singleActorOrders);
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
-            assert.equal(updatedActors.length, allActorOrders.length);
+            assert.equal(updatedActors.length, actorsList.length); // Returns all actors when orders are provided
         });
 
         it("handles a single updated actor with complete orders list", async () => {
@@ -191,7 +191,7 @@ describe("rules tests", function () {
             };
             allActorOrders.push(singleActorOrders);
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
-            assert.equal(updatedActors.length, allActorOrders.length);
+            assert.equal(updatedActors.length, actorsList.length); // Returns all actors when orders are provided
         });
 
         it("handles several updated actors", async () => {
@@ -201,12 +201,12 @@ describe("rules tests", function () {
                 { actor: theActor, ordersList: [Direction.UP_RIGHT, Direction.UP_LEFT], orderType: OrderType.MOVE }
             ];
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, [actorTwo, theActor]);
-            assert.equal(updatedActors.length, allActorOrders.length);
+            assert.equal(updatedActors.length, 2); // Returns all provided actors
         });
 
         it("handles empty orders list", async () => {
             const updatedActors = await rules.applyRulesToActorOrders(game, world, [], actorsList);
-            assert.equal(updatedActors.length, 0);
+            assert.equal(updatedActors.length, 0); // Empty orders means empty results
         });
     });
 
@@ -459,9 +459,10 @@ describe("rules tests", function () {
                 weapon: { ...defaultWeapon }
             };
             world.actors.push(blocker);
+            world.actorIds.push(blocker.id);
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target, blocker]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if LoS blocked by another actor");
         });
@@ -471,9 +472,10 @@ describe("rules tests", function () {
             target.pos = { x: 0, y: 1 };
             const otherActor: Actor = { id: 3, pos: {x: 5, y: 5}, state: ActorState.ALIVE, owner: 3, health: 100, weapon: defaultWeapon};
             world.actors.push(otherActor); // Add another actor far away
+            world.actorIds.push(otherActor.id);
             const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target, otherActor]);
 
             assert.strictEqual(target.health, 0, "Target health should be 0 with clear LoS after 10 timesteps (10 damage * 10 steps)");
         });
