@@ -134,7 +134,7 @@ export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, 
     return actor;
 }
 
-async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: World, timestep: number): Promise<Actor> {
+async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: World, allActorsInWorld: Actor[], timestep: number): Promise<Actor> {
     const attacker = actorOrders.actor;
 
     if (actorOrders.orderType !== OrderType.ATTACK) {
@@ -151,7 +151,7 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: Wor
         return attacker;
     }
 
-    const targetActor = world.actors.find(a => a.id === actorOrders.targetId);
+    const targetActor = allActorsInWorld.find(a => a.id === actorOrders.targetId);
 
     if (!targetActor) {
         logger.warn(`ATTACK order: Target actor with ID ${actorOrders.targetId} not found for attacker ${attacker.id}.`);
@@ -179,7 +179,7 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: Wor
     }
 
     // 2. Check Line of Sight
-    const losClear = hasLineOfSight(startHex, targetHex, world.terrain, world.actors);
+    const losClear = hasLineOfSight(startHex, targetHex, world.terrain, allActorsInWorld);
     if (!losClear) {
         logger.info(`ATTACK order: Line of sight from ${attacker.id} to ${targetActor.id} is blocked.`);
         return attacker;
@@ -199,22 +199,27 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: Wor
 }
 
 // update actors based on turn orders
-export async function applyRulesToActorOrders(game: Game, world: World, allActorOrders: Array<ActorOrders>): Promise<Array<Actor>> {
+export async function applyRulesToActorOrders(game: Game, world: World, allActorOrders: Array<ActorOrders>, allActorsInWorld: Actor[]): Promise<Array<Actor>> {
     if (!allActorOrders || allActorOrders.length === 0) {
         logger.warn("applyRulesToActorOrders: did not receive any orders");
-        return [];
+        return []; // Return empty array when no orders
     }
 
     // iterate over timesteps!
     for (let ts = 0; ts < TIMESTEP_MAX; ts++) {
         for (let i = 0; i < allActorOrders.length; i++) {
             const ao = allActorOrders[i];
-            await applyMovementOrders(ao, game, world, ts);
-            await applyFiringRules(ao, game, world, ts);
+            // applyMovementOrders might also need allActorsInWorld if it checks for collisions with other actors,
+            // or it might just need the terrain from the world object.
+            await applyMovementOrders(ao, game, world, ts); // Assuming world object is enough for terrain checks
+            await applyFiringRules(ao, game, world, allActorsInWorld, ts);
         }
     }
 
-    return allActorOrders.map((a: ActorOrders) => a.actor);
+    // Return all actors in the world (modified actors have updated state)
+    // The actors in allActorOrders are references to objects in allActorsInWorld,
+    // so modifications are already applied to allActorsInWorld
+    return allActorsInWorld;
 }
 
 function turnResultsPerPlayer(game: Game, updatedActors: Array<Actor>): Array<TurnResult> {
@@ -235,6 +240,23 @@ function filterOrdersForGameTurn(o: TurnOrders, gameId: number, turn: number) {
     return o.gameId == gameId && o.turn == turn;
 }
 
+// Helper function to extract actor ID from order, handling both API format (actorId) and internal format (actor)
+function extractActorId(order: ActorOrders): number | undefined {
+    // Check for actorId first (from API)
+    if ((order as any).actorId !== undefined) {
+        return (order as any).actorId;
+    }
+    // Check if actor is a number (ID)
+    if (typeof order.actor === 'number') {
+        return order.actor;
+    }
+    // Check if actor is an object with an id property
+    if ((order.actor as any)?.id !== undefined) {
+        return (order.actor as any).id;
+    }
+    return undefined;
+}
+
 export function flatten<T>(arr: Array<Array<T>>): Array<T> {
     // cf mdn article on Array.flat()
     return arr.reduce((acc: Array<T>, val: Array<T>) => acc.concat(val, [])) as Array<T>;
@@ -249,9 +271,11 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
     let game: Game;
     let world: World;
     let gameTurnOrders: Array<TurnOrders>;
+    let allActorsInWorld: Actor[];
     try {
         game = await store.read<Game>(store.keys.games, gameId);
         world = await store.read<World>(store.keys.worlds, game.worldId);
+        allActorsInWorld = await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
 
         gameTurnOrders = await store.readAll<TurnOrders>(store.keys.turnOrders, (o: TurnOrders) => {
             return filterOrdersForGameTurn(o, gameId, game.turn);
@@ -261,14 +285,28 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         return Promise.reject(e);
     }
 
-    const actorOrdersLists = gameTurnOrders.map((to: TurnOrders) => to.orders);
+    const actorOrdersLists = gameTurnOrders.map((to: TurnOrders) => {
+        // Map actor IDs in orders to actual actor objects
+        return to.orders.map(order => {
+            const actorId = extractActorId(order);
+            const actorObject = allActorsInWorld.find(a => a.id === actorId);
+            if (!actorObject) {
+                // This case should ideally not happen if data is consistent
+                logger.error(`Could not find actor object for ID ${actorId} in TurnOrders for player ${to.playerId}`);
+                // Potentially filter out this order or handle error appropriately
+                return null;
+            }
+            return { ...order, actor: actorObject };
+        }).filter(order => order !== null) as ActorOrders[]; // Filter out nulls and assert type
+    });
     const flattenedActorOrders: Array<ActorOrders> = flatten(actorOrdersLists);
 
     // apply rules
     let updatedActors: Array<Actor>;
     logger.debug("processGameTurn: about to apply rules");
     try {
-        updatedActors = await applyRulesToActorOrders(game, world, flattenedActorOrders);
+        // Pass allActorsInWorld to applyRulesToActorOrders
+        updatedActors = await applyRulesToActorOrders(game, world, flattenedActorOrders, allActorsInWorld);
     } catch (e) {
         logger.error("processGameTurn: exception thrown by applyRulesToActorOrders()");
         return Promise.reject(e.message);
@@ -291,6 +329,16 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         }));
     } catch (e) {
         logger.error("processGameTurn: failed to store turnResults");
+        return Promise.reject(e.message);
+    }
+
+    // Save updated actors back to the store
+    try {
+        await Promise.all(updatedActors.map((actor: Actor) => {
+            return store.replace(store.keys.actors, actor.id, actor);
+        }));
+    } catch (e) {
+        logger.error("processGameTurn: failed to update actors");
         return Promise.reject(e.message);
     }
 
@@ -355,19 +403,20 @@ export async function generateTerrain(): Promise<Array<Array<Terrain>>> {
 export async function createWorld(): Promise<number> {
     try {
         const terrain = await generateTerrain();
-        return Promise.resolve(store.create<World>(store.keys.worlds, { terrain: terrain, actors: [] }));
+        return Promise.resolve(store.create<World>(store.keys.worlds, { terrain: terrain, actorIds: [] }));
     } catch (e) {
         return Promise.reject(e);
     }
 }
 
-export async function filterWorldForPlayer(world: World, playerId: number): Promise<World> {
-    const playerActors = world.actors.filter(actor => actor.owner === playerId);
+export async function filterWorldForPlayer(world: World, playerId: number, allActors?: Actor[]): Promise<World> {
+    const actors = allActors || await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
+    const playerActors = actors.filter(actor => actor.owner === playerId);
 
     // if there are no player actors, return an empty world
     if (playerActors.length === 0) {
         const emptyTerrain = world.terrain.map(col => col.map(() => Terrain.UNEXPLORED));
-        return Promise.resolve({ ...world, actors: [], terrain: emptyTerrain });
+        return Promise.resolve({ ...world, actorIds: [], actors: [], terrain: emptyTerrain });
     }
 
     const playerVisibility = playerActors.map(actor => visibility(actor.pos, world.terrain));
@@ -377,7 +426,7 @@ export async function filterWorldForPlayer(world: World, playerId: number): Prom
         (col, x) => col.map((_, y) => playerVisibility.some(vis => vis[x][y]))
     );
 
-    const filteredActors = world.actors.filter(actor => {
+    const filteredActors = actors.filter(actor => {
         // Include all actors owned by the current player
         if (actor.owner === playerId) {
             return true;
@@ -385,6 +434,8 @@ export async function filterWorldForPlayer(world: World, playerId: number): Prom
         // Include enemy actors only if they are on a visible tile
         return combinedVisibility[actor.pos.x][actor.pos.y];
     });
+
+    const filteredActorIds = filteredActors.map(actor => actor.id);
 
     const filteredTerrain = world.terrain.map((col, x) =>
         col.map((terrainTile, y) => {
@@ -397,7 +448,7 @@ export async function filterWorldForPlayer(world: World, playerId: number): Prom
         })
     );
 
-    return Promise.resolve({ ...world, actors: filteredActors, terrain: filteredTerrain });
+    return Promise.resolve({ ...world, actorIds: filteredActorIds, actors: filteredActors, terrain: filteredTerrain });
 }
 
 export async function filterGameForPlayer(gameId: number, playerId: number): Promise<JoinGameResponse> {
@@ -427,9 +478,9 @@ function inBox(item: Actor, left: number, bottom: number, right: number, top: nu
 }
 
 export async function setupActors(game: Game, playerId: number) {
-    const actors = [];
+    const actorPromises: Promise<Actor>[] = [];
     const world = await store.read<World>(store.keys.worlds, game.worldId);
-    const existingActors = world.actors;
+    const existingActorObjects = await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
     // find an unoccupied spot
     const MAX_ATTEMPTS = 5;
     let done = false;
@@ -437,7 +488,7 @@ export async function setupActors(game: Game, playerId: number) {
     let x = 0;
     let y = 0;
     while (!done) {
-        const empty = existingActors
+        const empty = existingActorObjects
             .filter(actor => inBox(actor, x, y, x + 2, y + 2))
             .length == 0;
 
@@ -467,9 +518,7 @@ export async function setupActors(game: Game, playerId: number) {
     // If done is true but x,y are such that actors would be out of bounds (e.g. MAX_ATTEMPTS hit, then x,y were set too high)
     // This check is a safeguard, primary check is above.
     if (x + 2 >= world.terrain.length || y + 2 >= world.terrain[0].length) {
-      if (actors.length === 0) { // Only log if we haven't already logged the error above and decided not to create actors.
-        logger.warn(`Actor placement: final base position (x:${x}, y:${y}) for player ${playerId} is out of bounds. No actors will be created.`);
-      }
+      logger.warn(`Actor placement: final base position (x:${x}, y:${y}) for player ${playerId} is out of bounds. No actors will be created.`);
       return []; // Return empty list of actors
     }
 
@@ -480,8 +529,9 @@ export async function setupActors(game: Game, playerId: number) {
         // ammo is optional, so not included here
     };
 
+    const newActorsData: Omit<Actor, 'id'>[] = [];
     for (let i = 0; i < 9; i++) {
-        actors.push({
+        newActorsData.push({
             owner: playerId,
             pos: { x: x + Math.floor(i / 3), y: y + i % 3 }, // Use the determined x, y for starting position
             health: 100, // Example starting health
@@ -489,19 +539,16 @@ export async function setupActors(game: Game, playerId: number) {
             weapon: defaultWeapon
         });
     }
-    // Only proceed to create and store actors if placement was successful (i.e., x,y are valid)
-    // The check for x+2, y+2 at the start of this block ensures this.
-    // If actors array remained empty due to placement issues, this loop won't run.
 
-    if (actors.length > 0) { // Should only be > 0 if valid placement was found and defaultWeapon was set.
-        await Promise.all(actors.map((a) => {
-            return store.create<Actor>(store.keys.actors, a as Actor);
-        }));
+    if (newActorsData.length > 0) {
+        const createdActorPromises = newActorsData.map(async (actorData) => {
+            const id = await store.create<Omit<Actor, 'id'>>(store.keys.actors, actorData);
+            return id;
+        });
+        const createdActorIds = await Promise.all(createdActorPromises);
+        return createdActorIds;
     } else {
-        // This case implies placement failed and loop for actor creation was skipped.
-        // Ensure we return an empty array, consistent with the earlier return [] if x,y were bad.
         logger.warn(`Actor placement: No actors were created for player ${playerId} due to placement issues.`);
         return [];
     }
-    return actors; // Returns actors if created, or an empty array if placement failed.
 }

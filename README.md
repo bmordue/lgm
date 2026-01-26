@@ -79,11 +79,15 @@ See [ROADMAP.md](ROADMAP.md) for current development priorities and [PLAYER_MANA
 
 # TODO
 
-Joining games
-  - should limit number of players in a game
-  - owner sets player limit is set when game is created
-  - cannot join twice with the same user session
-  - user session may be joined to many games
+## Joining Games
 
-Game world
-  - API to get state of the world for a given turn
+- **Limit number of players in a game:** Implemented (currently hardcoded to 4 per game).
+- **Owner sets player limit when game is created:** Not implemented. Player limit is global.
+- **Cannot join twice with the same user session/username in the same game:** Implemented.
+- **User session may be joined to many games:** Possible. The system does not restrict a user from joining multiple different games.
+
+## Game World
+
+- **API to get state of the world for a given turn (for a specific player):**
+  - The client application expects an endpoint like `GET /games/{gameId}/players/{playerId}` which would return the current game state (world, turn, etc.) for that player.
+  - The backend service `GameService.turnResults` provides results of a completed turn, but a dedicated endpoint to fetch the full current game state for a player (as if they just joined or are refreshing) would be beneficial for the client.

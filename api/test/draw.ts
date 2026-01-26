@@ -16,7 +16,7 @@ describe('Draw', async () => {
     describe('worldSvg', async () => {
         it('should draw world terrain hexes', async () => {
             const terrain = await rules.generateTerrain();
-            const world = { id: 0, actors: [], terrain: terrain };
+            const world = { id: 0, actorIds: [], terrain: terrain };
 
             const svgStr = worldSvg(world);
             assert.ok(svgStr);

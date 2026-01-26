@@ -38,7 +38,8 @@ export interface Player {
 
 export interface World {
     id?: number;
-    actors: Array<Actor>; // TODO: should be actor IDs instead?
+    actorIds: Array<number>;
+    actors?: Array<Actor>; // Optional, populated for API responses
     terrain: Array<Array<Terrain>>
 }
 
