@@ -379,6 +379,10 @@ export async function createWorld(): Promise<number> {
 }
 
 // filterWorldForPlayer is removed as its functionality is now in Visibility.getVisibleWorldForPlayer
+// Re-export for backward compatibility with tests
+export function filterWorldForPlayer(world: World, playerId: number): { terrain: Terrain[][], actors: Actor[] } {
+    return getVisibleWorldForPlayer(world, playerId);
+}
 
 export async function filterGameForPlayer(gameId: number, playerId: number): Promise<JoinGameResponse> {
     try {
