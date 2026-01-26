@@ -102,7 +102,7 @@ export async function turnResults(
     // Updated to match new TurnResultsResponse structure
     return Promise.resolve({
       success: false,
-      message: "Turn results not yet available or game/turn/player ID is invalid.",
+      message: "turn results not available",
     });
   } else if (results.length == 1) {
     const turnResult = results[0];
