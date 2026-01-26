@@ -14,11 +14,6 @@ import { Hex } from '../Hex';
 
 export const TIMESTEP_MAX = 10;
 
-// Store the original world state that processGameTurn loads.
-// This is a bit of a module-level variable, which isn't ideal, but
-// helps pass the terrain info to turnResultsPerPlayer without major refactoring of processGameTurn.
-let currentTurnWorldTerrain: Terrain[][] | undefined;
-
 // Helper function to convert GridPosition to Hex
 function gridPositionToHex(pos: GridPosition): Hex {
     const q = pos.y; // column is q
@@ -223,26 +218,16 @@ export async function applyRulesToActorOrders(game: Game, world: World, allActor
     return allActorOrders.map((a: ActorOrders) => a.actor);
 }
 
-function turnResultsPerPlayer(game: Game, allUpdatedActorsThisTurn: Array<Actor>): Array<TurnResult> {
-    if (!currentTurnWorldTerrain) {
-        logger.error("turnResultsPerPlayer: currentTurnWorldTerrain is not set. Cannot generate player-specific worlds.");
-        // Potentially return empty results or throw, depending on desired error handling
-        return [];
-    }
-    const fullWorldStateForThisTurn: World = {
-        // id: game.worldId, // The world itself doesn't change ID, but its content does.
-        actors: allUpdatedActorsThisTurn.map(a => ({ ...a })), // Use all actors after turn resolution
-        terrain: currentTurnWorldTerrain // Use the terrain from the start of processGameTurn
-    };
-
+function turnResultsPerPlayer(game: Game, updatedActors: Array<Actor>): Array<TurnResult> {
     return game.players.map((playerId) => {
-        // For each player, filter the full world state to what they can see
-        const visibleWorldForPlayer = getVisibleWorldForPlayer(fullWorldStateForThisTurn, playerId);
         return {
             gameId: game.id,
             playerId: playerId,
             turn: game.turn,
-            world: visibleWorldForPlayer // Store the player-specific visible world
+            // Shallow clone actors to ensure all enumerable properties are on the returned objects
+            updatedActors: updatedActors
+                .filter((a) => a.owner == playerId)
+                .map(a => ({ ...a }))
         };
     });
 }
@@ -268,7 +253,6 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
     try {
         game = await store.read<Game>(store.keys.games, gameId);
         world = await store.read<World>(store.keys.worlds, game.worldId);
-        currentTurnWorldTerrain = world.terrain; // Store terrain for use in turnResultsPerPlayer
 
         gameTurnOrders = await store.readAll<TurnOrders>(store.keys.turnOrders, (o: TurnOrders) => {
             return filterOrdersForGameTurn(o, gameId, game.turn);
@@ -378,7 +362,11 @@ export async function createWorld(): Promise<number> {
     }
 }
 
-// filterWorldForPlayer is removed as its functionality is now in Visibility.getVisibleWorldForPlayer
+// Wrapper for backward compatibility - delegates to Visibility.getVisibleWorldForPlayer
+export async function filterWorldForPlayer(world: World, playerId: number): Promise<World> {
+    const filteredWorldPayload = getVisibleWorldForPlayer(world, playerId);
+    return Promise.resolve({ ...world, actors: filteredWorldPayload.actors, terrain: filteredWorldPayload.terrain });
+}
 
 export async function filterGameForPlayer(gameId: number, playerId: number): Promise<JoinGameResponse> {
     try {

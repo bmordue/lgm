@@ -71,7 +71,7 @@ export interface TurnResult {
     gameId: number,
     turn: number,
     playerId: number,
-    world: World // Changed from updatedActors to world
+    updatedActors: Array<Actor>
 }
 
 export interface TurnStatus {
