@@ -240,6 +240,23 @@ function filterOrdersForGameTurn(o: TurnOrders, gameId: number, turn: number) {
     return o.gameId == gameId && o.turn == turn;
 }
 
+// Helper function to extract actor ID from order, handling both API format (actorId) and internal format (actor)
+function extractActorId(order: ActorOrders): number | undefined {
+    // Check for actorId first (from API)
+    if ((order as any).actorId !== undefined) {
+        return (order as any).actorId;
+    }
+    // Check if actor is a number (ID)
+    if (typeof order.actor === 'number') {
+        return order.actor;
+    }
+    // Check if actor is an object with an id property
+    if ((order.actor as any)?.id !== undefined) {
+        return (order.actor as any).id;
+    }
+    return undefined;
+}
+
 export function flatten<T>(arr: Array<Array<T>>): Array<T> {
     // cf mdn article on Array.flat()
     return arr.reduce((acc: Array<T>, val: Array<T>) => acc.concat(val, [])) as Array<T>;
@@ -271,9 +288,7 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
     const actorOrdersLists = gameTurnOrders.map((to: TurnOrders) => {
         // Map actor IDs in orders to actual actor objects
         return to.orders.map(order => {
-            // The API sends actorId as a field name, but TypeScript model uses 'actor'
-            // Check for actorId first (from API), then fall back to actor field
-            const actorId = (order as any).actorId || (typeof order.actor === 'number' ? order.actor : (order.actor as any)?.id);
+            const actorId = extractActorId(order);
             const actorObject = allActorsInWorld.find(a => a.id === actorId);
             if (!actorObject) {
                 // This case should ideally not happen if data is consistent
