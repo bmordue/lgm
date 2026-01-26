@@ -1,10 +1,7 @@
 "use strict";
 
 import store = require("./Store");
-import * as orderService from "./OrderService";
-import * as gameLifecycleService from "./GameLifecycleService";
-import * as turnService from "./TurnService";
-import { Direction } from "./Models";
+import logger = require("../utils/Logger");
 
 // Export types from services for backward compatibility
 export interface RequestActorOrders {
@@ -138,6 +135,10 @@ export async function listGames(): Promise<ListGamesResponse> {
   });
   return { gameIds: ids, games: gameSummaries };
 }
+export * from "./GameLifecycleService";
+export * from "./OrderService";
+export * from "./TurnResultService";
+
 
 // DANGER - testing only; drop everything in the store
 export function deleteStore() {
