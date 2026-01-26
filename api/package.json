@@ -30,13 +30,13 @@
   "private": true,
   "dependencies": {
     "bcrypt": "^6.0.0",
-    "body-parser2": "^2.2.0",
+    "body-parser": "^2.2.1",
     "connect": "^3.7.0",
     "cookie-parser": "^1.4.6",
     "exegesis-express": "^4.0.0",
-    "express": "^4.19.2",
+    "express": "^5.2.1",
     "express-openid-connect": "^2.18.1",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.1"
   },
   "devDependencies": {
     "@stryker-mutator/core": "^9.0.1",
@@ -45,7 +45,7 @@
     "@types/errorhandler": "^1.5.0",
     "@types/express": "^5.0.3",
     "@types/method-override": "0.0.32",
-    "@types/mocha": "^9.1.1",
+    "@types/mocha": "^10.0.10",
     "@types/morgan": "^1.9.3",
     "@types/node": "^24.0.3",
     "@types/superagent": "^8.1.9",

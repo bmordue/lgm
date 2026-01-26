@@ -109,3 +109,12 @@ export async function update<T>(key: keys, id: number, diffObj: T): Promise<numb
         return Promise.resolve(store[key][id]);
     }
 }
+
+export async function remove<T>(key: keys, id: number): Promise<boolean> {
+    const found = await exists(key, id);
+    if (!found) {
+        return Promise.reject({ message: util.format("Did not find stored object %s[%s] to remove", key, id) });
+    }
+    store[key].splice(id, 1);
+    return Promise.resolve(true);
+}
