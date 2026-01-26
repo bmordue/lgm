@@ -66,9 +66,9 @@ export async function joinGame(gameId: number, username?: string): Promise<JoinG
     logger.debug("joinGame: read world object");
     const world = await store.read<World>(store.keys.worlds, game.worldId);
     logger.debug("joinGame: set up actors for player");
-    const actors = await rules.setupActors(game, playerId); // TODO: should return ids, not objects
+    const actorIds = await rules.setupActors(game, playerId);
     logger.debug("joinGame: add new actors to world");
-    world.actors = world.actors.concat(actors); // TODO: world.actors should be world.actorIds -- ids, not objects
+    world.actorIds = world.actorIds.concat(actorIds);
     await store.replace(store.keys.worlds, game.worldId, world);
     logger.debug("joinGame resolve with filtered game");
     return Promise.resolve(

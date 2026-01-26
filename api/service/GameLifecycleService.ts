@@ -10,6 +10,7 @@ import {
   World,
   GameState,
   Player,
+  Actor,
 } from "./Models";
 import { inspect } from "util";
 
@@ -105,8 +106,8 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
 
     // Setup actors and return filtered game
     const world = await store.read<World>(store.keys.worlds, game.worldId);
-    const actors = await rules.setupActors(game, playerId);
-    world.actors = world.actors.concat(actors);
+    const actorIds = await rules.setupActors(game, playerId);
+    world.actorIds = world.actorIds.concat(actorIds);
     await store.replace(store.keys.worlds, game.worldId, world);
 
     return await rules.filterGameForPlayer(gameId, playerId);
@@ -193,7 +194,11 @@ async function validateHostPermissions(game: Game, requestingPlayerId: number) {
 
 async function removePlayerActors(worldId: number, playerId: number) {
     const world = await store.read<World>(store.keys.worlds, worldId);
-    world.actors = world.actors.filter(actor => actor.owner !== playerId);
+    const actorObjects = await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
+    const remainingActorIds = actorObjects
+        .filter(actor => actor.owner !== playerId)
+        .map(actor => actor.id);
+    world.actorIds = remainingActorIds;
     await store.replace(store.keys.worlds, worldId, world);
 }
 
