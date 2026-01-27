@@ -45,20 +45,20 @@ export interface GameConfiguration {
  * Can be overridden via environment variables
  */
 export const DEFAULT_CONFIG: GameConfiguration = {
-  timestepMax: 10,
+  timestepMax: parseInt(process.env.LGM_TIMESTEP_MAX || '10', 10) || 10,
   
   world: {
-    width: parseInt(process.env.LGM_WORLD_WIDTH || '10', 10),
-    height: parseInt(process.env.LGM_WORLD_HEIGHT || '10', 10),
+    width: parseInt(process.env.LGM_WORLD_WIDTH || '10', 10) || 10,
+    height: parseInt(process.env.LGM_WORLD_HEIGHT || '10', 10) || 10,
   },
   
   players: {
-    maxPlayers: parseInt(process.env.LGM_MAX_PLAYERS || '4', 10),
+    maxPlayers: parseInt(process.env.LGM_MAX_PLAYERS || '4', 10) || 4,
   },
   
   visibility: {
-    maxRange: parseInt(process.env.LGM_VISIBILITY_RANGE || '10', 10),
-    defaultSightRange: parseInt(process.env.LGM_DEFAULT_SIGHT_RANGE || '7', 10),
+    maxRange: parseInt(process.env.LGM_VISIBILITY_RANGE || '10', 10) || 10,
+    defaultSightRange: parseInt(process.env.LGM_DEFAULT_SIGHT_RANGE || '7', 10) || 7,
   },
   
   actors: {
@@ -86,6 +86,6 @@ export function getConfig(): Readonly<GameConfiguration> {
  * Server configuration
  */
 export const SERVER_CONFIG = {
-  port: parseInt(process.env.LGM_PORT || '3000', 10),
+  port: parseInt(process.env.LGM_PORT || '3000', 10) || 3000,
   debug: process.env.LGM_DEBUG === 'true',
 };

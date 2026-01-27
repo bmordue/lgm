@@ -15,6 +15,7 @@ LGM can be configured using the following environment variables:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
+| `LGM_TIMESTEP_MAX` | `10` | Maximum number of timesteps per turn |
 | `LGM_WORLD_WIDTH` | `10` | Width of the game world grid (in hexes) |
 | `LGM_WORLD_HEIGHT` | `10` | Height of the game world grid (in hexes) |
 | `LGM_MAX_PLAYERS` | `4` | Maximum number of players per game |
