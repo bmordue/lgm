@@ -297,6 +297,9 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         world = await store.read<World>(store.keys.worlds, game.worldId);
         allActorsInWorld = await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
 
+        // Store the terrain at the start of the turn for use in turnResultsPerPlayer
+        currentTurnWorldTerrain = world.terrain;
+
         gameTurnOrders = await store.readAll<TurnOrders>(store.keys.turnOrders, (o: TurnOrders) => {
             return filterOrdersForGameTurn(o, gameId, game.turn);
         });

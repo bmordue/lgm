@@ -7,7 +7,7 @@ import {
   getVisibleWorldForPlayer // Added new function
 } from "../service/Visibility";
 import { generateTerrain } from "../service/Rules"; // Used for old visibility tests
-import { Terrain, GridPosition, Actor, ActorState, World, Weapon } from "../service/Models"; // Added World, Weapon
+import { Terrain, GridPosition, Actor, ActorState, Weapon } from "../service/Models";
 import { Hex } from "../Hex";
 import { readFileSync } from "fs";
 import assert = require("assert");
@@ -388,7 +388,7 @@ describe('getVisibleWorldForPlayer tests', () => {
 
     it('No Player Actors: should return all terrain unexplored and no actors', () => {
         const terrain = createSimpleTerrain(5, 5);
-        const initialWorld: World = {
+        const initialWorld: { terrain: Terrain[][], actors: Actor[] } = {
             actors: [
                 { id: 100, owner: 2, pos: { x: 1, y: 1 }, state: ActorState.ALIVE, weapon: defaultWeapon },
             ],
@@ -410,7 +410,7 @@ describe('getVisibleWorldForPlayer tests', () => {
         const R = 5, C = 5;
         const terrain = createSimpleTerrain(R, C);
         const playerActor: Actor = { id: 1, owner: 1, pos: { x: 2, y: 2 }, state: ActorState.ALIVE, weapon: { name: "pistol", range: 2, damage: 5 } };
-        const initialWorld: World = {
+        const initialWorld: { terrain: Terrain[][], actors: Actor[] } = {
             actors: [playerActor],
             terrain: terrain
         };
@@ -444,7 +444,7 @@ describe('getVisibleWorldForPlayer tests', () => {
         const blocked: GridPosition[] = [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }];
         const terrain = createSimpleTerrain(R, C, blocked);
         const playerActor: Actor = { id: 1, owner: 1, pos: { x: 2, y: 0 }, state: ActorState.ALIVE, weapon: { name: "pistol", range: 3, damage: 5 } };
-        const initialWorld: World = {
+        const initialWorld: { terrain: Terrain[][], actors: Actor[] } = {
             actors: [playerActor],
             terrain: terrain
         };
@@ -452,17 +452,20 @@ describe('getVisibleWorldForPlayer tests', () => {
         const visibleWorld = getVisibleWorldForPlayer(initialWorld, playerId);
 
         assert.ok(visibleWorld.actors.find(a => a.id === playerActor.id), "Player actor should be visible");
-        // Tiles at y=0 should be EMPTY
+        // Tiles at y=0 should be EMPTY (within range of player at x:2, y:0)
         for (let r = 0; r < R; r++) {
              assert.strictEqual(visibleWorld.terrain[r][0], Terrain.EMPTY, `Tile (${r},0) should be EMPTY`);
         }
-        // Tiles at y=1 (the wall) should be BLOCKED (as they are visible)
-        for (let r = 0; r < R; r++) {
-            if (Math.abs(r - playerActor.pos.x) <= playerActor.weapon.range +1) { // Check within reasonable vertical range of actor
-                 assert.strictEqual(visibleWorld.terrain[r][1], Terrain.BLOCKED, `Tile (${r},1) should be BLOCKED and visible`);
-            }
-        }
-        // Tiles at y=2 should be UNEXPLORED
+        // Wall tiles at y=1 that have direct LoS from player at (2,0) should be BLOCKED (visible)
+        // Due to hex grid LoS, only adjacent wall tiles (1,1), (2,1), (3,1) have direct LoS
+        // Wall tiles (0,1) and (4,1) are blocked by intermediate wall tiles on the LoS path
+        assert.strictEqual(visibleWorld.terrain[1][1], Terrain.BLOCKED, `Tile (1,1) should be BLOCKED and visible`);
+        assert.strictEqual(visibleWorld.terrain[2][1], Terrain.BLOCKED, `Tile (2,1) should be BLOCKED and visible`);
+        assert.strictEqual(visibleWorld.terrain[3][1], Terrain.BLOCKED, `Tile (3,1) should be BLOCKED and visible`);
+        // Edge wall tiles are NOT visible due to intermediate wall blocking LoS
+        assert.strictEqual(visibleWorld.terrain[0][1], Terrain.UNEXPLORED, `Tile (0,1) should be UNEXPLORED (LoS blocked by wall at (1,1))`);
+        assert.strictEqual(visibleWorld.terrain[4][1], Terrain.UNEXPLORED, `Tile (4,1) should be UNEXPLORED (LoS blocked by wall at (3,1))`);
+        // Tiles at y=2 should be UNEXPLORED (blocked by wall)
         for (let r = 0; r < R; r++) {
              assert.strictEqual(visibleWorld.terrain[r][2], Terrain.UNEXPLORED, `Tile (${r},2) should be UNEXPLORED`);
         }
@@ -476,7 +479,7 @@ describe('getVisibleWorldForPlayer tests', () => {
         const enemyActorVisible: Actor = { id: 10, owner: e1, pos: { x: 1, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Distance 2
         const enemyActorHidden: Actor = { id: 20, owner: e2, pos: { x: 5, y: 5 }, state: ActorState.ALIVE, weapon: defaultWeapon };    // Distance > 3 from (1,1)
 
-        const initialWorld: World = {
+        const initialWorld: { terrain: Terrain[][], actors: Actor[] } = {
             actors: [playerActor, enemyActorVisible, enemyActorHidden],
             terrain: terrain
         };
@@ -496,12 +499,13 @@ describe('getVisibleWorldForPlayer tests', () => {
         const R = 7, C = 7;
         const terrain = createSimpleTerrain(R, C);
         const p1 = 1;
-        const p1Actor1: Actor = { id: 1, owner: p1, pos: { x: 0, y: 0 }, state: ActorState.ALIVE, weapon: { name: "Rifle", range: 2, damage: 10 } };
-        const p1Actor2: Actor = { id: 2, owner: p1, pos: { x: 0, y: 6 }, state: ActorState.ALIVE, weapon: { name: "Rifle", range: 2, damage: 10 } };
-        const enemyInMiddle: Actor = { id: 10, owner: 2, pos: { x: 0, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Visible to both
-        const enemyFar: Actor = { id: 20, owner: 3, pos: { x: 4, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Hidden from both
+        // Range 3 allows seeing up to distance 3 - enemy at (0,3) is distance 3 from both actors
+        const p1Actor1: Actor = { id: 1, owner: p1, pos: { x: 0, y: 0 }, state: ActorState.ALIVE, weapon: { name: "Rifle", range: 3, damage: 10 } };
+        const p1Actor2: Actor = { id: 2, owner: p1, pos: { x: 0, y: 6 }, state: ActorState.ALIVE, weapon: { name: "Rifle", range: 3, damage: 10 } };
+        const enemyInMiddle: Actor = { id: 10, owner: 2, pos: { x: 0, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Visible to both (distance 3)
+        const enemyFar: Actor = { id: 20, owner: 3, pos: { x: 4, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Hidden from both (too far)
 
-        const initialWorld: World = {
+        const initialWorld: { terrain: Terrain[][], actors: Actor[] } = {
             actors: [p1Actor1, p1Actor2, enemyInMiddle, enemyFar],
             terrain: terrain
         };
@@ -529,7 +533,7 @@ describe('getVisibleWorldForPlayer tests', () => {
         const hiddenEnemyActor: Actor = { id: 3, owner: enemyOwner, pos: { x: 2, y: 4 }, state: ActorState.ALIVE, weapon: defaultWeapon };
         // All on row 2. Player at y=0, blocker at y=2, enemy at y=4. LoS should be blocked by actor at y=2.
 
-        const initialWorld: World = {
+        const initialWorld: { terrain: Terrain[][], actors: Actor[] } = {
             actors: [playerActor, blockingActor, hiddenEnemyActor],
             terrain: terrain
         };
