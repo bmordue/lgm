@@ -1,6 +1,7 @@
 import lgm = require("../service/GameService");
 import assert = require("assert");
 import { Actor, Direction } from "../service/Models";
+import * as store from "../service/Store";
 
 describe("DefaultService", function () {
   describe("fillOrTruncateOrdersList()", function () {
@@ -94,7 +95,7 @@ describe("DefaultService", function () {
 
   describe("listGames", () => {
     before(() => {
-      lgm.deleteStore();
+      store.deleteAll();
     });
 
     it("should return empty list if no games have been created", async () => {

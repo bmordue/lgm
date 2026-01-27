@@ -3,10 +3,11 @@ import assert = require('assert');
 import { Actor, Direction, World } from '../service/Models';
 import { TIMESTEP_MAX } from '../service/Rules';
 import { readFileSync } from 'fs';
+import * as store from '../service/Store';
 
 describe("smoke - integration", () => {
     before(() => {
-        lgm.deleteStore();
+        store.deleteAll();
     });
 
     it("create a game", (done) => {

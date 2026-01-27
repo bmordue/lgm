@@ -5,6 +5,7 @@ import * as path from 'path';
 import * as http from "http";
 import { userForToken } from './controllers/UsersController';
 import { inspect } from 'util';
+import { SERVER_CONFIG } from './config/GameConfig';
 
 /* 
 // import * as path from 'path';
@@ -78,7 +79,7 @@ async function createServer() {
     return server;
 }
 
-const port = parseInt(process.env.LGM_PORT) | 3000;
+const port = SERVER_CONFIG.port;
 
 createServer()
     .then(server => {

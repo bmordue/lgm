@@ -31,7 +31,7 @@ export interface JoinGameResponse {
   gameId: number;
   playerId: number;
   turn: number;
-  world: any; // Using any for World type to avoid circular imports
+  world: World;
   playerCount: number;
   maxPlayers: number;
 }
@@ -126,9 +126,3 @@ export async function turnResults(
 export * from "./GameLifecycleService";
 export * from "./OrderService";
 export * from "./TurnResultService";
-
-
-// DANGER - testing only; drop everything in the store
-export function deleteStore() {
-  store.deleteAll();
-}

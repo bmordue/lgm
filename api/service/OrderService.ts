@@ -38,7 +38,7 @@ function anyExistingOrders(to: TurnOrders) {
 }
 
 function numbersToDirections(orderNos: Array<number>): Array<Direction> {
-  return orderNos.map((n) => <Direction>n);
+  return orderNos.map((n) => n as Direction);
 }
 
 export function fillOrTruncateOrdersList(ordersList: Array<Direction>) {
@@ -53,14 +53,14 @@ function validateRequestOrders(
   requestOrders: Array<RequestActorOrders>
 ): Promise<Array<ActorOrders>> {
   const outs = requestOrders.map(async function (o) {
-    const out :ActorOrders = {
+    const out: ActorOrders = {
       actor: await store.read<Actor>(store.keys.actors, o.actorId),
       ordersList: fillOrTruncateOrdersList(numbersToDirections(o.ordersList)),
       orderType: OrderType.MOVE
     };
     logger.debug(util.format("ActorOrder: %j", out));
 
-    return <ActorOrders>out;
+    return out;
   });
   return Promise.all(outs);
 }

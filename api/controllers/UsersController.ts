@@ -1,5 +1,6 @@
 import { ExegesisContext } from "exegesis";
 import * as bcrypt from 'bcrypt';
+import logger = require('../utils/Logger');
 
 const userTokens: UserToken[] = []
 
@@ -35,7 +36,7 @@ export function tokenExists(token: string) {
 export function userForToken(token: string) {
   const foundUser = userTokens.find(u => u.token == token);
   if (!foundUser) {
-    console.log(JSON.stringify(userTokens, null, 4));
+    logger.debug({ message: "Token not found" });
   }
   return foundUser;
 }

@@ -11,8 +11,10 @@ import { JoinGameResponse } from './GameService';
 // Removed 'visibility' import, replaced 'hasLineOfSight' with 'getVisibleWorldForPlayer' and specific 'hasLineOfSight as combatLineOfSight'
 import { getVisibleWorldForPlayer, hasLineOfSight  } from '../service/Visibility';
 import { Hex } from '../Hex';
+import { getConfig } from '../config/GameConfig';
 
-export const TIMESTEP_MAX = 10;
+const config = getConfig();
+export const TIMESTEP_MAX = config.timestepMax;
 
 // Store the original world state that processGameTurn loads.
 // This is a bit of a module-level variable, which isn't ideal, but
@@ -262,17 +264,13 @@ function filterOrdersForGameTurn(o: TurnOrders, gameId: number, turn: number) {
 
 // Helper function to extract actor ID from order, handling both API format (actorId) and internal format (actor)
 function extractActorId(order: ActorOrders): number | undefined {
-    // Check for actorId first (from API)
-    if ((order as any).actorId !== undefined) {
-        return (order as any).actorId;
-    }
     // Check if actor is a number (ID)
     if (typeof order.actor === 'number') {
         return order.actor;
     }
-    // Check if actor is an object with an id property
-    if ((order.actor as any)?.id !== undefined) {
-        return (order.actor as any).id;
+    // Check if actor is an Actor object with an id property
+    if (typeof order.actor === 'object' && order.actor !== null && 'id' in order.actor) {
+        return order.actor.id;
     }
     return undefined;
 }

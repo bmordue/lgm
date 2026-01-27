@@ -4,6 +4,10 @@ import store = require("./Store");
 import rules = require("./Rules");
 import logger = require("../utils/Logger");
 import util = require("util");
+import { getConfig } from "../config/GameConfig";
+import { NotFoundError, GameError, PlayerError } from "../utils/Errors";
+
+const config = getConfig();
 
 import {
   Game,
@@ -21,7 +25,7 @@ export interface JoinGameResponse {
   maxPlayers: number;
 }
 
-const MAX_PLAYERS_PER_GAME = 4;
+const MAX_PLAYERS_PER_GAME = config.players.maxPlayers;
 
 /**
  * join a game
@@ -42,7 +46,7 @@ export async function joinGame(gameId: number, username?: string): Promise<JoinG
     // Check if game is full
     const currentPlayerCount = game.players ? game.players.length : 0;
     if (currentPlayerCount >= MAX_PLAYERS_PER_GAME) {
-      return Promise.reject(new Error("Game is full"));
+      throw new GameError("Game is full");
     }
 
     // Check for duplicate joins by username
@@ -51,7 +55,7 @@ export async function joinGame(gameId: number, username?: string): Promise<JoinG
         try {
           const existingPlayer = await store.read<Player>(store.keys.players, existingPlayerId);
           if (existingPlayer.username === username) {
-            return Promise.reject(new Error("Player already joined this game"));
+            throw new PlayerError("Player already joined this game");
           }
         } catch (e) {
           logger.debug(`Could not read player ${existingPlayerId}: ${e.message}`);
@@ -71,12 +75,10 @@ export async function joinGame(gameId: number, username?: string): Promise<JoinG
     world.actorIds = world.actorIds.concat(actorIds);
     await store.replace(store.keys.worlds, game.worldId, world);
     logger.debug("joinGame resolve with filtered game");
-    return Promise.resolve(
-      joinGameResponseOf(await rules.filterGameForPlayer(gameId, playerId))
-    );
+    return joinGameResponseOf(await rules.filterGameForPlayer(gameId, playerId));
   } catch (e) {
     logger.error(util.format("failed to join game: %j", e));
-    return Promise.reject(e);
+    throw e;
   }
 }
 
@@ -84,7 +86,9 @@ function addPlayerToGame(game: Game, playerId: number) {
   // return new Promise(function (resolve) {
   logger.debug("addPlayerToGame");
 
-  if (!game) console.log("ruh roh");
+  if (!game) {
+    throw new NotFoundError("Game");
+  }
 
   if (game.players) {
     logger.debug("addPlayerToGame append to existing");
