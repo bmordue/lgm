@@ -50,6 +50,14 @@ export const useGamesStore = defineStore('games', {
     getCurrentPlayerId() {
       return this.currentGamePlayerId;
     },
+    async fetchTurnResults() {
+      if (this.currentGameId === null || this.currentGamePlayerId === null) {
+        console.error("Cannot fetch turn results: gameId or playerId is not set.");
+        return;
+      }
+      const userStore = useUserStore();
+      const token = userStore.getToken();
+    },
     async fetchGameDetails(gameId: number) {
       const userStoreModule = await import('./User.store'); // Dynamically import User.store
       const userStore = userStoreModule.useUserStore();
@@ -89,6 +97,16 @@ export const useGamesStore = defineStore('games', {
   }
 }
 );
+
+// Make sure API_URL is imported if not already globally available
+import { API_URL } from '@/main';
+import { useUserStore } from './User.store'; // Assuming UserStore provides the token
+
+// Interface for the expected response from the turn results endpoint
+export interface TurnResultsResponse {
+  world?: World; // World is optional as results might not be ready
+  message?: string; // Optional message from the server
+}
 
 
 export interface GameInfo {

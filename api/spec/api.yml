@@ -269,10 +269,76 @@ components:
             $ref: '#/components/schemas/TurnOrders_orders'
     TurnResultsResponse:
       properties:
-        placeholder:
+        world:
+          $ref: '#/components/schemas/World'
+    World:
+      type: object
+      properties:
+        id:
+          type: integer
+        actors:
+          type: array
+          items:
+            $ref: '#/components/schemas/Actor'
+        terrain:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/TerrainTile'
+    Actor:
+      type: object
+      required:
+        - id
+        - pos
+        - state
+        - owner
+      properties:
+        id:
+          type: integer
+        pos:
+          $ref: '#/components/schemas/GridPosition'
+        state:
+          $ref: '#/components/schemas/ActorState'
+        owner:
+          type: integer # playerId
+        health:
+          type: integer
+        weapon:
+          $ref: '#/components/schemas/Weapon'
+    GridPosition:
+      type: object
+      required:
+        - x
+        - y
+      properties:
+        x:
+          type: integer
+        y:
+          type: integer
+    TerrainTile: # Renamed from Terrain to avoid conflict with enum name if generated directly
+      type: integer
+      description: "0: EMPTY, 1: BLOCKED, 2: UNEXPLORED"
+      enum: [0, 1, 2]
+    ActorState:
+      type: integer
+      description: "0: DEAD, 1: ALIVE"
+      enum: [0, 1]
+    Weapon:
+      type: object
+      required:
+        - name
+        - range
+        - damage
+      properties:
+        name:
           type: string
-      example:
-        placeholder: placeholder
+        range:
+          type: integer
+        damage:
+          type: integer
+        ammo:
+          type: integer
     TurnOrders_orders:
       type: object
       required:

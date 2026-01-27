@@ -90,8 +90,39 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     });
 
     if (response.ok) {
-      console.log("Orders submitted successfully!");
+      const responseBody = await response.json(); // Assuming response is JSON: { turnStatus: { complete: boolean, turn?: number } }
+      console.log("Orders submitted successfully!", responseBody);
       plannedMoves.value = []; // Clear planned moves on success
+
+      if (responseBody.turnStatus && responseBody.turnStatus.complete && typeof responseBody.turnStatus.turn === 'number') {
+        const processedTurn = responseBody.turnStatus.turn;
+        // The game advances on the server *after* processing `processedTurn`.
+        // So, the new current turn for submitting orders should be `processedTurn + 1`.
+        // We fetch results for the `processedTurn` to see its outcome.
+        console.log(`Turn ${processedTurn} was processed. Game is now on turn ${processedTurn + 1}. Fetching results for turn ${processedTurn}.`);
+
+        // Set current game turn to the turn that was just processed to fetch its results.
+        // The watcher for game.value should update the UI.
+        // Then, after fetching, we can advance the store's current turn if needed,
+        // or rely on the next join/load to set the latest turn for new orders.
+        // For now, let's fetch results for the turn that was just completed.
+        // The `fetchTurnResults` uses `gamesStore.currentGameTurn`, so update it first.
+        gamesStore.setCurrentGameTurn(processedTurn);
+        await gamesStore.fetchTurnResults(); // Fetches for the just-completed turn
+
+        // After fetching results of the processed turn, set the store's turn to the *next* turn,
+        // so that subsequent actions (like submitting new orders) are for the correct, new turn.
+        gamesStore.setCurrentGameTurn(processedTurn + 1);
+
+      } else if (responseBody.turnStatus && !responseBody.turnStatus.complete) {
+        console.log("Orders accepted, but turn is not yet complete. Waiting for other players.");
+        // Optionally, refresh current turn data if desired, though it might not have changed much.
+        // await gamesStore.fetchTurnResults();
+      } else {
+        // Fallback if turnStatus is not as expected, just refresh current view
+        await gamesStore.fetchTurnResults();
+      }
+
       alert("Orders submitted successfully!"); // Simple notification
 
       // Refresh game state
