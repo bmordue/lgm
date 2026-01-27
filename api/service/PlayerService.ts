@@ -84,7 +84,9 @@ function addPlayerToGame(game: Game, playerId: number) {
   // return new Promise(function (resolve) {
   logger.debug("addPlayerToGame");
 
-  if (!game) console.log("ruh roh");
+  if (!game) {
+    throw new Error("Game not found in addPlayerToGame");
+  }
 
   if (game.players) {
     logger.debug("addPlayerToGame append to existing");
