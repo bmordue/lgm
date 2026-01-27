@@ -2,7 +2,8 @@
 
 import { inspect } from 'util';
 import util = require('util');
-import logger = require('../utils/Logger.js')
+import logger = require('../utils/Logger.js');
+import { NotFoundError } from '../utils/Errors';
 
 const STORE_DEBUG = false;
 
@@ -64,7 +65,7 @@ export async function read<T>(key: keys, id: number): Promise<T> {
         store_debug(`store[key][id]: ${inspect(store[key][id])}`);
         return Promise.resolve(store[key][id]);
     } else {
-        return Promise.reject({ message: util.format("id %s not found for key %s", id, key) });
+        return Promise.reject(new NotFoundError(key, id));
     }
 }
 

@@ -31,7 +31,7 @@ describe("joinGame", () => {
       await GameService.joinGame(gameId);
       assert.fail("Expected joinGame to throw");
     } catch (e) {
-      assert.equal(e.message, `id ${gameId} not found for key games`);
+      assert.equal(e.message, `games with id ${gameId} not found`);
     }
   });
 });
@@ -76,7 +76,7 @@ describe("postOrders", () => {
       await GameService.postOrders(orders, gameId, turn, playerId);
       assert.fail("Expected postOrders to throw");
     } catch (e) {
-      assert.equal(e.message, `id ${gameId} not found for key games`);
+      assert.equal(e.message, `games with id ${gameId} not found`);
     }
   });
 });
