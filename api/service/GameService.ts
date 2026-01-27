@@ -31,7 +31,7 @@ export interface JoinGameResponse {
   gameId: number;
   playerId: number;
   turn: number;
-  world: any; // Using any for World type to avoid circular imports
+  world: World;
   playerCount: number;
   maxPlayers: number;
 }
