@@ -57,42 +57,41 @@ export const useGamesStore = defineStore('games', {
       }
       const userStore = useUserStore();
       const token = userStore.getToken();
+    },
+    async fetchGameDetails(gameId: number) {
+      const userStoreModule = await import('./User.store'); // Dynamically import User.store
+      const userStore = userStoreModule.useUserStore();
+      const token = userStore.getToken();
+      const playerId = this.currentGamePlayerId; // Assuming current player ID is already set
 
-      if (!token) {
-        console.error("Cannot fetch turn results: auth token is not available.");
-        // Potentially redirect to login or show an error
+      if (!playerId) {
+        console.error("Player ID not set, cannot fetch game details.");
+        // Potentially redirect to login or show error
         return;
       }
 
+      // This endpoint needs to exist and return data similar to JoinGameResponse
+      // It should provide the game state for the given player.
+      // The backend might use something like `rules.filterGameForPlayer(gameId, playerId)`
+      const apiUrlModule = await import('@/main'); // Dynamically import API_URL
       try {
-        const response = await fetch(`${API_URL}/games/${this.currentGameId}/turns/${this.currentGameTurn}/players/${this.currentGamePlayerId}`, {
-          method: "GET",
+        const response = await fetch(`${apiUrlModule.API_URL}/games/${gameId}/players/${playerId}`, { // Adjusted endpoint
           headers: {
-            'Authorization': `Bearer ${token}`, // Added Authorization header
-            'Content-Type': 'application/json'
+            'Authorization': `Bearer ${token}`
           }
         });
-
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({ message: "Failed to parse error response" }));
-          console.error("Failed to fetch turn results:", response.status, errorData.message || response.statusText);
-          // Optionally, set an error state in the store
+          const error = await response.json().catch(() => ({ message: "Failed to fetch game details and parse error" }));
+          console.error(`Failed to fetch game details for game ${gameId}: ${error.message || response.statusText}`);
+          // Optionally, notify the user through a toast or alert
+          alert(`Error fetching game details: ${error.message || response.statusText}`);
           return;
         }
-
-        const data: TurnResultsResponse = await response.json();
-
-        if (data.world) {
-          this.setCurrentGameWorld(data.world);
-          console.log("Turn results fetched and world updated for turn:", this.currentGameTurn);
-        } else if (data.message) {
-          console.log("Message from server on fetchTurnResults:", data.message);
-          // Potentially handle messages like "turn results not available yet"
-          // This might mean the world is intentionally not sent.
-        }
+        const gameData = await response.json() as {gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number};
+        this.updateJoinResponse(gameData); // Reuse existing action to update state
       } catch (error) {
-        console.error("Error fetching turn results:", error);
-        // Optionally, set an error state in the store
+        console.error(`Network error fetching game details for game ${gameId}:`, error);
+        alert(`Network error fetching game details. Please try again.`);
       }
     }
   }
