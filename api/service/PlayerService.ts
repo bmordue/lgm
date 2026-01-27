@@ -4,6 +4,9 @@ import store = require("./Store");
 import rules = require("./Rules");
 import logger = require("../utils/Logger");
 import util = require("util");
+import { getConfig } from "../config/GameConfig";
+
+const config = getConfig();
 
 import {
   Game,
@@ -21,7 +24,7 @@ export interface JoinGameResponse {
   maxPlayers: number;
 }
 
-const MAX_PLAYERS_PER_GAME = 4;
+const MAX_PLAYERS_PER_GAME = config.players.maxPlayers;
 
 /**
  * join a game

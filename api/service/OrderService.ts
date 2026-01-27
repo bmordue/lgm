@@ -4,6 +4,9 @@ import store = require("./Store");
 import rules = require("./Rules");
 import logger = require("../utils/Logger");
 import util = require("util");
+import { getConfig } from "../config/GameConfig";
+
+const config = getConfig();
 
 import {
   Game,

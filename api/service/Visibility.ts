@@ -1,8 +1,10 @@
 import { GridPosition, Terrain, Actor, ActorState, World } from "./Models"; // Added ActorState and World
 import { Hex, OffsetCoord } from "../Hex"; // Added Hex and OffsetCoord
 import { warn } from "../utils/Logger";
+import { getConfig } from "../config/GameConfig";
 
-const MAX_RANGE = 10; // Define maximum visibility range for the old `visibility` function. Not directly used by getVisibleWorldForPlayer.
+const config = getConfig();
+const MAX_RANGE = config.visibility.maxRange; // Define maximum visibility range for the old `visibility` function. Not directly used by getVisibleWorldForPlayer.
 
 // Helper to convert Hex to GridPosition for odd-q offset (flat-topped hexes)
 // Assumes GridPosition.x is row index, GridPosition.y is column index
@@ -254,8 +256,6 @@ function gridPositionToHex(pos: GridPosition): Hex {
     return new Hex(q, r, -q - r);
 }
 
-const DEFAULT_SIGHT_RANGE = 7; // Default sight range if actor has no weapon or weapon has no range
-
 export function getVisibleWorldForPlayer(
     world: { terrain: Terrain[][], actors: Actor[] }, // Simplified World type for input
     playerId: number
@@ -273,7 +273,7 @@ export function getVisibleWorldForPlayer(
     // For each of the player's actors, calculate its LoS to all hexes within its sight range
     for (const actor of playerActors) {
         const actorHex = gridPositionToHex(actor.pos);
-        const sightRange = (actor.weapon && typeof actor.weapon.range === 'number') ? actor.weapon.range : DEFAULT_SIGHT_RANGE;
+        const sightRange = (actor.weapon && typeof actor.weapon.range === 'number') ? actor.weapon.range : config.visibility.defaultSightRange;
 
         for (let r = 0; r < world.terrain.length; r++) {
             for (let c = 0; c < world.terrain[r].length; c++) {

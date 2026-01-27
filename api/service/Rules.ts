@@ -11,8 +11,10 @@ import { JoinGameResponse } from './GameService';
 // Removed 'visibility' import, replaced 'hasLineOfSight' with 'getVisibleWorldForPlayer' and specific 'hasLineOfSight as combatLineOfSight'
 import { getVisibleWorldForPlayer, hasLineOfSight  } from '../service/Visibility';
 import { Hex } from '../Hex';
+import { getConfig } from '../config/GameConfig';
 
-export const TIMESTEP_MAX = 10;
+const config = getConfig();
+export const TIMESTEP_MAX = config.timestepMax;
 
 // Store the original world state that processGameTurn loads.
 // This is a bit of a module-level variable, which isn't ideal, but
