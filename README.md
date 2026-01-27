@@ -66,9 +66,10 @@ Stryker.js will perform mutation testing and provide a report on the code covera
 
 # Architecture & Development
 
-## 📋 Architecture Documentation
-For comprehensive architecture assessment and improvement recommendations, see:
+## 📋 Documentation
 
+- **[Configuration Guide](CONFIGURATION.md)** - Environment variables and configuration options
+- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to the project
 - **[Architecture Assessment](ARCHITECTURE_ASSESSMENT.md)** - Detailed technical analysis and roadmap
 - **[Architecture Checklist](ARCHITECTURE_CHECKLIST.md)** - Systematic review against best practices  
 - **[Improvement Suggestions](IMPROVEMENT_SUGGESTIONS.md)** - Prioritized, actionable improvements
