@@ -65,7 +65,7 @@ export async function read<T>(key: keys, id: number): Promise<T> {
         store_debug(`store[key][id]: ${inspect(store[key][id])}`);
         return Promise.resolve(store[key][id]);
     } else {
-        return Promise.reject(new NotFoundError(key, id));
+        throw new NotFoundError(key, id);
     }
 }
 

@@ -69,11 +69,17 @@ export const DEFAULT_CONFIG: GameConfiguration = {
 };
 
 /**
+ * Frozen game configuration instance
+ * Initialized once at module load time for efficiency
+ */
+export const GAME_CONFIG: Readonly<GameConfiguration> = Object.freeze({ ...DEFAULT_CONFIG });
+
+/**
  * Get the current game configuration
  * Returns a frozen copy to prevent accidental modification
  */
 export function getConfig(): Readonly<GameConfiguration> {
-  return Object.freeze({ ...DEFAULT_CONFIG });
+  return GAME_CONFIG;
 }
 
 /**

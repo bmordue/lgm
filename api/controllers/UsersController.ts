@@ -36,7 +36,7 @@ export function tokenExists(token: string) {
 export function userForToken(token: string) {
   const foundUser = userTokens.find(u => u.token == token);
   if (!foundUser) {
-    logger.debug({ message: "Token not found", userTokens });
+    logger.debug({ message: "Token not found", token });
   }
   return foundUser;
 }
