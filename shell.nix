@@ -46,9 +46,12 @@ pkgs.mkShell {
     # Install git beads if not already installed
     if ! command -v bd &> /dev/null; then
       echo "Installing git beads (task management tool)..."
-      curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash 2>&1 | grep -v "^go: downloading" || true
-      export PATH="$PATH:$HOME/go/bin"
-      echo "git beads installed successfully"
+      if curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash 2>&1 | grep -v "^go: downloading" | grep -E "(installed|Installing)"; then
+        export PATH="$PATH:$HOME/go/bin"
+        echo "git beads installed successfully"
+      else
+        echo "Warning: git beads installation may have failed. Please check the output above."
+      fi
     fi
     
     # Verify beads is available

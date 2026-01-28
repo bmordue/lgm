@@ -71,10 +71,9 @@ bd sync
 This repository contains **22 beads** tracking all planned work:
 
 ### By Type
-- **9 features** - New functionality (player management, database, auth, websockets, etc.)
-- **7 tasks** - Combat system implementation, testing, and improvements
+- **6 features** - New functionality (player management, database, auth, websockets, etc.)
+- **11 tasks** - Combat system implementation, testing, and improvements
 - **5 chores** - Technical debt and refactoring
-- **1 epic** - (Can be added for large multi-phase features)
 
 ### By Priority
 - **1 P1 issue** - Player management system (highest priority)
