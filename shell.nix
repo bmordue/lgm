@@ -40,6 +40,25 @@ pkgs.mkShell {
     echo "Current directory: $(pwd)"
     echo ""
 
+    # Add Go bin directory to PATH for beads
+    export PATH="$PATH:$HOME/go/bin"
+
+    # Install git beads if not already installed
+    if ! command -v bd &> /dev/null; then
+      echo "Installing git beads (task management tool)..."
+      curl -fsSL https://raw.githubusercontent.com/steveyegge/beads/main/scripts/install.sh | bash 2>&1 | grep -v "^go: downloading" || true
+      export PATH="$PATH:$HOME/go/bin"
+      echo "git beads installed successfully"
+    fi
+    
+    # Verify beads is available
+    if command -v bd &> /dev/null; then
+      echo "git beads (bd) version: $(bd --version 2>&1 | head -1)"
+    else
+      echo "Warning: git beads installation may have failed"
+    fi
+    echo ""
+
     # Create required symlink if it doesn't exist
     if [ ! -L "./lib" ]; then
       echo "Creating required symlink: lib -> api"
@@ -127,11 +146,13 @@ pkgs.mkShell {
     echo "• dev-api           # Start API server (development with auto-restart)"
     echo "• start-client      # Start client development server"
     echo "• startup-servers   # Start both servers together"
+    echo "• bd                # Task management with git beads (e.g., 'bd ready', 'bd create')"
     echo ""
     echo "Quick start:"
     echo "1. Run 'install-deps' to install all dependencies"
     echo "2. Run 'startup-servers' to start both API and frontend"
     echo "3. Open http://localhost:5173 in your browser"
+    echo "4. Use 'bd ready' to see available tasks"
     echo ""
     echo "Ready for development!"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
