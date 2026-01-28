@@ -103,11 +103,12 @@ bd sync
 
 ### Documentation
 
-- **[ROADMAP.md](ROADMAP.md)** - High-level development priorities (being migrated to beads)
+- **[Task Tracking with Beads](docs/TASK_TRACKING_WITH_BEADS.md)** - Complete guide to using beads for task management
+- **[ROADMAP.md](ROADMAP.md)** - High-level development priorities (historical reference)
 - **[AGENTS.md](AGENTS.md)** - Guide for AI coding agents using beads
 - **[PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md](docs/features/PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md)** - Detailed feature planning
 
-To see all current planned work, run `bd list` or `bd ready` in the development environment.
+To see all current planned work, run `bd list` or `bd ready` in the development environment. See [TASK_TRACKING_WITH_BEADS.md](docs/TASK_TRACKING_WITH_BEADS.md) for detailed information about the 22 beads tracking all planned work.
 
 # TODO
 
