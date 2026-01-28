@@ -22,10 +22,37 @@ The `shell.nix` environment provides:
 - Node.js 20.x LTS with npm
 - All development tools (curl, jq, git)
 - Automatic symlink creation (`lib -> api`)
+- **git beads** (`bd`) - Distributed task tracking system
 - Helpful aliases and functions
 - Environment variables and PATH setup
 
 **Never install Node.js manually or use system Node.js - always use `nix-shell` first.**
+
+## Task Management with git beads
+
+This project uses **git beads** for issue tracking. All planned work is tracked as beads that persist in the repository.
+
+```bash
+# See available work (unblocked tasks)
+bd ready
+
+# View issue details
+bd show <id>
+
+# Update issue status
+bd update <id> --status in_progress
+
+# Complete work
+bd close <id>
+
+# List all issues
+bd list
+
+# Sync with git
+bd sync
+```
+
+Before starting work, run `bd ready` to see what tasks are available and not blocked by dependencies.
 
 ## Commands
 
