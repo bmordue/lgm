@@ -75,8 +75,40 @@ Stryker.js will perform mutation testing and provide a report on the code covera
 - **[Improvement Suggestions](IMPROVEMENT_SUGGESTIONS.md)** - Prioritized, actionable improvements
 - **[Architecture Index](docs/ARCHITECTURE_INDEX.md)** - Quick reference and overview
 
-## 🛣️ Development Roadmap
-See [ROADMAP.md](ROADMAP.md) for current development priorities and [PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md](PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md) for detailed feature planning.
+## 🛣️ Development Roadmap & Task Tracking
+
+This project uses **git beads** (`bd`) for distributed task management. All planned work is tracked as beads (issues) that persist across sessions and travel with the codebase.
+
+### Task Management Commands
+
+```bash
+# Enter the Nix development environment (bd is auto-installed)
+nix-shell
+
+# See available work (unblocked tasks)
+bd ready
+
+# View issue details
+bd show <id>
+
+# Claim work
+bd update <id> --status in_progress
+
+# Complete work
+bd close <id>
+
+# Sync with git
+bd sync
+```
+
+### Documentation
+
+- **[Task Tracking with Beads](docs/TASK_TRACKING_WITH_BEADS.md)** - Complete guide to using beads for task management
+- **[ROADMAP.md](ROADMAP.md)** - High-level development priorities (historical reference)
+- **[AGENTS.md](AGENTS.md)** - Guide for AI coding agents using beads
+- **[PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md](docs/features/PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md)** - Detailed feature planning
+
+To see all current planned work, run `bd list` or `bd ready` in the development environment. See [TASK_TRACKING_WITH_BEADS.md](docs/TASK_TRACKING_WITH_BEADS.md) for detailed information about the 22 beads tracking all planned work.
 
 # TODO
 
