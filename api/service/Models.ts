@@ -32,6 +32,7 @@ export interface Player {
     id?: number;
     gameId: number;
     username?: string;
+    isHost?: boolean;
     joinedAt?: Date;
     sessionId?: string;
 }
@@ -94,12 +95,7 @@ export enum OrderType {
 export interface ActorOrders {
     actor: Actor; // Or actorId: number; depending on current usage
     orderType: OrderType;
-    ordersList?: Array<Direction>; // For MOVE orders
-    targetId?: number; // For ATTACK orders, ID of the target Actor
-}
-
-export interface Player {
-    id?: number;
-    gameId: number;
-    username?: string;
-}
+        ordersList?: Array<Direction>; // For MOVE orders
+        targetId?: number; // For ATTACK orders, ID of the target Actor
+    }
+    
