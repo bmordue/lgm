@@ -14,6 +14,37 @@
 #
 { pkgs ? import <nixpkgs> {} }:
 
+let
+  beads_viewer = pkgs.stdenv.mkDerivation rec {
+    pname = "bv";
+    version = "0.13.0";
+
+    src = pkgs.fetchurl {
+      url = "https://github.com/Dicklesworthstone/beads_viewer/releases/download/v${version}/bv_${version}_linux_amd64.tar.gz";
+      sha256 = "0k4f8cvd8ng7fdyfkc5capijf82w078y7hb4iqjvzfznnw37sk7i";
+    };
+
+    nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+    
+    buildInputs = [ pkgs.stdenv.cc.cc.lib ];
+
+    sourceRoot = ".";
+
+    installPhase = ''
+      mkdir -p $out/bin
+      tar -xzf $src
+      install -m755 bv $out/bin/bv
+    '';
+
+    meta = with pkgs.lib; {
+      description = "Terminal UI for viewing beads (task management for coding agents)";
+      homepage = "https://github.com/Dicklesworthstone/beads_viewer";
+      license = licenses.mit;
+      platforms = [ "x86_64-linux" ];
+    };
+  };
+in
+
 pkgs.mkShell {
   name = "lgm-dev-environment";
 
@@ -29,6 +60,9 @@ pkgs.mkShell {
     jq              # JSON parsing for API responses
     tree            # Directory structure visualization
     which           # Debugging PATH issues
+    
+    # Beads viewer
+    beads_viewer
   ];
 
   # Environment setup and shell hooks
@@ -37,6 +71,7 @@ pkgs.mkShell {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Node.js version: $(node --version)"
     echo "npm version: $(npm --version)"
+    echo "bv version: $(bv --version 2>/dev/null || echo 'available')"
     echo "Current directory: $(pwd)"
     echo ""
 
