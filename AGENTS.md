@@ -38,3 +38,32 @@ bd sync               # Sync with git
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
 
+
+<!-- bv-agent-instructions-v1 -->
+
+---
+
+## Beads Workflow Integration
+
+This project uses [beads_viewer](https://github.com/Dicklesworthstone/beads_viewer) for issue tracking. Issues are stored in `.beads/` and tracked in git.
+
+### Additional Commands
+
+```bash
+# View issues (launches TUI - avoid in automated sessions)
+bv
+
+# Additional CLI commands for agents
+bd list --status=open # All open issues
+bd create --title="..." --type=task --priority=2
+bd close <id1> <id2>  # Close multiple issues at once
+bd dep add <issue> <depends-on>  # Add dependencies
+```
+
+### Key Concepts
+
+- **Dependencies**: Issues can block other issues. `bd ready` shows only unblocked work.
+- **Priority**: P0=critical, P1=high, P2=medium, P3=low, P4=backlog (use numbers, not words)
+- **Types**: task, bug, feature, epic, question, docs
+
+<!-- end-bv-agent-instructions -->
