@@ -276,6 +276,10 @@ components:
       properties:
         id:
           type: integer
+        actorIds:
+          type: array
+          items:
+            type: integer
         actors:
           type: array
           items:

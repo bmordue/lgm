@@ -259,12 +259,12 @@ function gridPositionToHex(pos: GridPosition): Hex {
 export function getVisibleWorldForPlayer(
     world: { terrain: Terrain[][], actors: Actor[] }, // Simplified World type for input
     playerId: number
-): { terrain: Terrain[][], actors: Actor[] } {
+): { terrain: Terrain[][], actorIds: number[], actors: Actor[] } {
     const playerActors = world.actors.filter(actor => actor.owner === playerId && actor.state !== ActorState.DEAD);
 
     if (playerActors.length === 0) {
         const unexploredTerrain = world.terrain.map(row => row.map(() => Terrain.UNEXPLORED));
-        return { terrain: unexploredTerrain, actors: [] };
+        return { terrain: unexploredTerrain, actorIds: [], actors: [] };
     }
 
     // Initialize a 2D boolean array for combined visibility, matching terrain dimensions
@@ -308,5 +308,5 @@ export function getVisibleWorldForPlayer(
         return false;
     });
 
-    return { terrain: filteredTerrain, actors: filteredActors };
+    return { terrain: filteredTerrain, actorIds: filteredActors.map(a => a.id), actors: filteredActors };
 }
