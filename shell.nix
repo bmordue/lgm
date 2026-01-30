@@ -60,9 +60,6 @@ pkgs.mkShell {
     jq              # JSON parsing for API responses
     tree            # Directory structure visualization
     which           # Debugging PATH issues
-    
-    # Beads viewer
-    beads_viewer
   ];
 
   # Environment setup and shell hooks
