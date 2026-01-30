@@ -81,13 +81,14 @@ async function createServer() {
 
 const port = SERVER_CONFIG.port;
 
+// Start server directly (database initialization removed for now)
 createServer()
     .then(server => {
         server.listen(port);
         console.log(`Listening on port ${port}`);
     })
     .catch(err => {
-        console.error(err.stack);
+        console.error('Failed to start server:', err);
         process.exit(1);
     });
 

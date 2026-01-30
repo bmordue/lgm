@@ -1,6 +1,6 @@
 "use strict";
 
-import store = require("./Store");
+import * as store from "./DatabaseStore";
 import rules = require("./Rules");
 import logger = require("../utils/Logger");
 import util = require("util");
@@ -52,15 +52,15 @@ export function fillOrTruncateOrdersList(ordersList: Array<Direction>) {
 function validateRequestOrders(
   requestOrders: Array<RequestActorOrders>
 ): Promise<Array<ActorOrders>> {
-  const outs = requestOrders.map(async function (o) {
+  const outs = requestOrders.map(function (o) {
     const out: ActorOrders = {
-      actor: await store.read<Actor>(store.keys.actors, o.actorId),
+      actorId: o.actorId,
       ordersList: fillOrTruncateOrdersList(numbersToDirections(o.ordersList)),
       orderType: OrderType.MOVE
     };
     logger.debug(util.format("ActorOrder: %j", out));
 
-    return out;
+    return Promise.resolve(out);
   });
   return Promise.all(outs);
 }
