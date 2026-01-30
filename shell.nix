@@ -72,8 +72,8 @@ pkgs.mkShell {
     echo "Current directory: $(pwd)"
     echo ""
 
-    # Add Go bin directory to PATH for beads
-    export PATH="$PATH:$HOME/go/bin"
+    # Add Go bin directory and local bin to PATH for beads
+    export PATH="$PATH:$HOME/go/bin:$HOME/.local/bin"
 
     # Install git beads if not already installed
     if ! command -v bd &> /dev/null; then
