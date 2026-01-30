@@ -186,6 +186,7 @@ describe("complete first two turns with one player - empty orders", () => {
             orders: [
                 {
                     actorId: 1,
+                    orderType: 0, // MOVE
                     ordersList: [1, 1, 1]
 
                 }
@@ -236,7 +237,7 @@ describe("complete first turn with one player - standing still orders", () => {
         const standStillOrders = new Array(TIMESTEP_MAX).fill(Direction.NONE);
 
         myActors.forEach((a) => {
-            actorOrders.push({ actorId: a.id, ordersList: standStillOrders });
+            actorOrders.push({ actorId: a.id, orderType: 0, ordersList: standStillOrders }); // 0 corresponds to MOVE
         });
         const result = await lgm.postOrders({ orders: actorOrders }, gameId, 1, playerId);
 
@@ -294,7 +295,7 @@ describe("complete first turn with one player - moving forward orders", () => {
         const standStillOrders = new Array(TIMESTEP_MAX).fill(Direction.UP_LEFT);
 
         myActors.forEach((a) => {
-            actorOrders.push({ actorId: a.id, ordersList: standStillOrders });
+            actorOrders.push({ actorId: a.id, orderType: 0, ordersList: standStillOrders }); // 0 corresponds to MOVE
         });
         const result = await lgm.postOrders({ orders: actorOrders }, gameId, 1, playerId);
 
