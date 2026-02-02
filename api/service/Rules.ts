@@ -477,45 +477,83 @@ export async function setupActors(game: Game, playerId: number) {
     const actorPromises: Promise<Actor>[] = [];
     const world = await store.read<World>(store.keys.worlds, game.worldId);
     const existingActorObjects = await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
-    // find an unoccupied spot
-    const MAX_ATTEMPTS = 5;
-    let done = false;
+
+    // Find an unoccupied spot using a more intelligent algorithm
+    const ACTOR_GRID_SIZE = 3; // 3x3 grid of actors
+    const MAX_ATTEMPTS = 50; // Increased attempts for better search
+    let placed = false;
     let attempts = 0;
     let x = 0;
     let y = 0;
-    while (!done) {
-        const empty = existingActorObjects
-            .filter(actor => inBox(actor, x, y, x + 2, y + 2))
-            .length == 0;
+
+    // Create a list of all possible positions to try, shuffled for randomness
+    const possiblePositions = [];
+    for (let row = 0; row <= world.terrain.length - ACTOR_GRID_SIZE; row++) {
+        for (let col = 0; col <= world.terrain[0].length - ACTOR_GRID_SIZE; col++) {
+            possiblePositions.push({x: row, y: col});
+        }
+    }
+
+    // Shuffle the positions for random placement
+    for (let i = possiblePositions.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [possiblePositions[i], possiblePositions[j]] = [possiblePositions[j], possiblePositions[i]];
+    }
+
+    // Try each position until we find one that works
+    for (const pos of possiblePositions) {
+        if (attempts >= MAX_ATTEMPTS) break;
+
+        x = pos.x;
+        y = pos.y;
+
+        // Check if this position is suitable (no other actors in the 3x3 area)
+        const empty = !existingActorObjects.some(actor =>
+            actor.pos.x >= x &&
+            actor.pos.x < x + ACTOR_GRID_SIZE &&
+            actor.pos.y >= y &&
+            actor.pos.y < y + ACTOR_GRID_SIZE
+        );
 
         if (empty) {
-            done = true;
-            logger.debug(util.format("Actor placement: found an empty box: (%s, %s), (%s, %s)", x, y, x + 2, y + 2));
-        } else {
-            x += 2; // TODO this is a real poor way to place actors!!
-            y += 2;
+            placed = true;
+            logger.debug(util.format("Actor placement: found an empty box: (%s, %s), (%s, %s)", x, y, x + ACTOR_GRID_SIZE - 1, y + ACTOR_GRID_SIZE - 1));
+            break;
+        }
 
-            // Check if new x,y would place actors out of bounds for a 3x3 grid
-            if (x + 2 >= world.terrain.length || y + 2 >= world.terrain[0].length) {
-                logger.error(`Actor placement: new base (x:${x}, y:${y}) is out of bounds for world (${world.terrain.length}x${world.terrain[0].length}). Cannot place actors for player ${playerId}.`);
-                done = true; // Exit loop, this will result in no actors for this player.
-                // This situation implies the world is too full or placement logic needs improvement.
-            } else {
-                attempts++;
-                if (attempts >= MAX_ATTEMPTS) {
-                    const msg = `Actor placement: failed to place actors for new player ${playerId} after ${MAX_ATTEMPTS} attempts.`;
-                    logger.error(msg);
-                    done = true; // Still mark as done to exit loop, even if placement is not ideal.
+        attempts++;
+    }
+
+    // If we couldn't find a suitable position after many attempts
+    if (!placed) {
+        logger.warn(`Actor placement: failed to find suitable position for player ${playerId} after ${MAX_ATTEMPTS} attempts. Using fallback placement.`);
+
+        // Fallback: try to find any available space by scanning the map systematically
+        placed = false;
+        for (let row = 0; row <= world.terrain.length - ACTOR_GRID_SIZE && !placed; row++) {
+            for (let col = 0; col <= world.terrain[0].length - ACTOR_GRID_SIZE && !placed; col++) {
+                x = row;
+                y = col;
+
+                const empty = !existingActorObjects.some(actor =>
+                    actor.pos.x >= x &&
+                    actor.pos.x < x + ACTOR_GRID_SIZE &&
+                    actor.pos.y >= y &&
+                    actor.pos.y < y + ACTOR_GRID_SIZE
+                );
+
+                if (empty) {
+                    placed = true;
+                    logger.debug(util.format("Actor placement: found fallback position: (%s, %s)", x, y));
                 }
             }
         }
     }
 
-    // If done is true but x,y are such that actors would be out of bounds (e.g. MAX_ATTEMPTS hit, then x,y were set too high)
-    // This check is a safeguard, primary check is above.
-    if (x + 2 >= world.terrain.length || y + 2 >= world.terrain[0].length) {
-      logger.warn(`Actor placement: final base position (x:${x}, y:${y}) for player ${playerId} is out of bounds. No actors will be created.`);
-      return []; // Return empty list of actors
+    // If still couldn't place, return empty array
+    if (!placed) {
+        logger.error(`Actor placement: could not find any suitable position for player ${playerId}. World may be too full.`);
+        return [];
     }
 
     const defaultWeapon: Weapon = {
