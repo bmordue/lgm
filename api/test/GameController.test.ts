@@ -10,7 +10,7 @@ describe("GameController", function () {
       store.deleteAll();
     });
 
-    it("should return error when maxPlayers is missing", async function () {
+    it("should create a game with default maxPlayers when not specified", async function () {
       const mockContext: any = {
         requestBody: {},
         params: { path: {}, query: {} },
@@ -21,8 +21,12 @@ describe("GameController", function () {
       };
 
       const result = await GameController.createGame(mockContext);
-      assert.equal(result.status, 400);
-      assert.equal(result.body.message, "Missing required field: maxPlayers");
+      assert(result.gameId !== undefined, "Game ID should be defined");
+      assert(typeof result.gameId === 'number', "Game ID should be a number");
+
+      // Verify that the game was created with default maxPlayers (4)
+      const createdGame = await store.read<any>(store.keys.games, result.gameId);
+      assert.equal(createdGame.maxPlayers, 4, "Default maxPlayers should be 4");
     });
 
     it("should create a game with valid maxPlayers", async function () {
@@ -36,8 +40,8 @@ describe("GameController", function () {
       };
 
       const result = await GameController.createGame(mockContext);
-      assert(result.id !== undefined, "Game ID should be defined");
-      assert(typeof result.id === 'number', "Game ID should be a number");
+      assert(result.gameId !== undefined, "Game ID should be defined");
+      assert(typeof result.gameId === 'number', "Game ID should be a number");
     });
   });
 
@@ -75,7 +79,7 @@ describe("GameController", function () {
       const game = await GameService.createGame();
       
       const mockContext: any = {
-        params: { path: { id: game.id }, query: {} },
+        params: { path: { id: game.gameId }, query: {} },
         user: { username: "testuser", sessionId: "session123" },
         res: {
           status: function() { return this; },
@@ -84,7 +88,7 @@ describe("GameController", function () {
       };
 
       const result = await GameController.joinGame(mockContext);
-      assert.equal(result.gameId, game.id);
+      assert.equal(result.gameId, game.gameId);
       assert(typeof result.playerId === 'number');
     });
 
@@ -115,18 +119,18 @@ describe("GameController", function () {
 
     it("should post orders successfully", async function () {
       const game = await GameService.createGame();
-      const player = await GameService.joinGame(game.id);
+      const player = await GameService.joinGame(game.gameId);
 
       const mockContext: any = {
         requestBody: { 
-          gameId: game.id,
+          gameId: game.gameId,
           turn: 1,
           playerId: player.playerId,
           orders: []
         },
         params: { 
           path: { 
-            gameId: game.id, 
+            gameId: game.gameId, 
             turn: 1, 
             playerId: player.playerId 
           }, 
@@ -173,12 +177,12 @@ describe("GameController", function () {
 
     it("should return turn results with message when no results available", async function () {
       const game = await GameService.createGame();
-      const player = await GameService.joinGame(game.id);
+      const player = await GameService.joinGame(game.gameId);
 
       const mockContext: any = {
         params: { 
           path: { 
-            gameId: game.id, 
+            gameId: game.gameId, 
             turn: 1, 
             playerId: player.playerId 
           }, 
