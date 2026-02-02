@@ -1,0 +1,78 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Game {
+  id          Int      @id @default(autoincrement())
+  players     Player[]
+  hostPlayerId Int?
+  maxPlayers  Int?
+  gameState   String?  // LOBBY, IN_PROGRESS, COMPLETED
+  turn        Int
+  worldId     Int
+  createdAt   DateTime @default(now())
+  startedAt   DateTime?
+  
+  @@map("games")
+}
+
+model Player {
+  id       Int    @id @default(autoincrement())
+  gameId   Int
+  game     Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  username String?
+  isHost   Boolean? @default(false)
+  joinedAt DateTime? @default(now())
+  sessionId String?
+  
+  @@map("players")
+}
+
+model Actor {
+  id     Int      @id @default(autoincrement())
+  pos    Json     // {x: number, y: number}
+  state  Int      // 0: DEAD, 1: ALIVE
+  owner  Int      // playerId
+  health Int?
+  weapon Json?    // {name: string, range: number, damage: number, ammo?: number}
+  
+  @@map("actors")
+}
+
+model World {
+  id       Int     @id @default(autoincrement())
+  actorIds Json    // Array of actor IDs
+  terrain  Json    // 2D array of terrain values
+  actors   Json?   // Optional, populated for API responses
+  
+  @@map("worlds")
+}
+
+model TurnResult {
+  id       Int      @id @default(autoincrement())
+  gameId   Int
+  game     Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  turn     Int
+  playerId Int
+  player   Player   @relation(fields: [playerId], references: [id])
+  world    Json     // World state at turn completion
+  
+  @@map("turn_results")
+}
+
+model User {
+  id       Int      @id @default(autoincrement())
+  username String   @unique
+  password String   // hashed
+  email    String?  @unique
+  createdAt DateTime @default(now())
+  
+  @@map("users")
+}
