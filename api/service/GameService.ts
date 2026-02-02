@@ -24,7 +24,7 @@ export interface PostOrdersResponse {
 }
 
 export interface CreateGameResponse {
-  id: number;
+  gameId: number;
 }
 
 export interface JoinGameResponse {

@@ -15,7 +15,7 @@ import {
 import { inspect } from "util";
 
 export interface CreateGameResponse {
-  id: number;
+  gameId: number;
 }
 
 export interface JoinGameResponse {
@@ -58,7 +58,7 @@ export async function createGame(maxPlayers?: number): Promise<CreateGameRespons
   };
 
   const gameId = await store.create<Game>(store.keys.games, newGame);
-  return { id: gameId };
+  return { gameId };
 }
 
 /**
@@ -90,6 +90,7 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
     const player: Player = {
         gameId,
         username,
+        isHost,
         sessionId,
         joinedAt: new Date()
     };
@@ -184,6 +185,16 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
     // Update host in game
     game.hostPlayerId = newHostPlayerId;
     await store.replace(store.keys.games, gameId, game);
+
+    // Update player records to reflect host status
+    const oldHostPlayer = await store.read<Player>(store.keys.players, requestingPlayerId);
+    const newHostPlayer = await store.read<Player>(store.keys.players, newHostPlayerId);
+
+    oldHostPlayer.isHost = false;
+    newHostPlayer.isHost = true;
+
+    await store.replace(store.keys.players, requestingPlayerId, oldHostPlayer);
+    await store.replace(store.keys.players, newHostPlayerId, newHostPlayer);
 }
 
 async function validateHostPermissions(game: Game, requestingPlayerId: number) {
@@ -200,6 +211,18 @@ async function removePlayerActors(worldId: number, playerId: number) {
         .map(actor => actor.id);
     world.actorIds = remainingActorIds;
     await store.replace(store.keys.worlds, worldId, world);
+}
+
+export async function getPlayerGameState(gameId: number, playerId: number): Promise<JoinGameResponse> {
+    // Verify that the player belongs to the game
+    const game = await store.read<Game>(store.keys.games, gameId);
+
+    if (!game.players || !game.players.includes(playerId)) {
+        throw new Error("Player does not belong to this game");
+    }
+
+    // Return the filtered game state for this player
+    return await rules.filterGameForPlayer(gameId, playerId);
 }
 
 export async function listGames(): Promise<ListGamesResponse> {
