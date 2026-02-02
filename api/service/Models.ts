@@ -102,4 +102,7 @@ export interface Player {
     id?: number;
     gameId: number;
     username?: string;
+    isHost?: boolean;                // NEW: Host flag
+    joinedAt?: Date;                 // NEW: Join timestamp
+    sessionId?: string;              // NEW: Session tracking
 }
