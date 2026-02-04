@@ -97,7 +97,7 @@ export interface ActorOrders {
     actorId: number; // Using ID instead of object for API requests
     // Remove actor field to enforce ID-based access
     orderType: OrderType;
-        ordersList?: Array<Direction>; // For MOVE orders
-        targetId?: number; // For ATTACK orders, ID of the target Actor
-    }
+    ordersList?: Array<Direction>; // For MOVE orders
+    targetId?: number; // For ATTACK orders, ID of the target Actor
+}
     
