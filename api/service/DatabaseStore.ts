@@ -13,14 +13,27 @@ const store_debug = (obj) => { if (STORE_DEBUG) logger.debug(obj) };
 // Connection pool for database operations
 let dbClient: Client;
 
-async function getDbClient(): Promise<Client> {
-  if (!dbClient) {
-    dbClient = new Client({
-      connectionString: process.env.DATABASE_URL,
-    });
-    await dbClient.connect();
-  }
-  return dbClient;
+// In-memory fallback for when no database is available
+const memoryStore: Record<string, any[]> = {};
+
+function getMemoryStore(key: string): any[] {
+    if (!memoryStore[key]) {
+        memoryStore[key] = [];
+    }
+    return memoryStore[key];
+}
+
+async function getDbClient(): Promise<Client | null> {
+    if (!process.env.DATABASE_URL) {
+        return null;
+    }
+    if (!dbClient) {
+        dbClient = new Client({
+            connectionString: process.env.DATABASE_URL,
+        });
+        await dbClient.connect();
+    }
+    return dbClient;
 }
 
 export enum keys {
@@ -33,9 +46,16 @@ export enum keys {
 }
 
 export async function deleteAll(): Promise<void> {
-  const client = await getDbClient();
-  
-  // Delete all records from all tables
+    const client = await getDbClient();
+
+    if (!client) {
+        Object.keys(memoryStore).forEach(key => {
+            memoryStore[key] = [];
+        });
+        return;
+    }
+
+    // Delete all records from all tables
   await client.query('DELETE FROM turn_results;');
   await client.query('DELETE FROM turn_orders;');
   await client.query('DELETE FROM actors;');
@@ -47,7 +67,15 @@ export async function deleteAll(): Promise<void> {
 export async function create<T>(key: keys, obj: T): Promise<number> {
     store_debug("store.create");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        const id = store.length;
+        const newObj = { ...obj, id };
+        store.push(newObj);
+        return id;
+    }
+
     let query = '';
     let values: any[];
     
@@ -142,7 +170,16 @@ export async function create<T>(key: keys, obj: T): Promise<number> {
 export async function read<T>(key: keys, id: number): Promise<T> {
     store_debug("store.read");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        const item = store.find(i => i.id === id);
+        if (!item) {
+            throw new NotFoundError(key, id);
+        }
+        return item as T;
+    }
+
     let query = '';
     let result;
     
@@ -206,7 +243,12 @@ export async function read<T>(key: keys, id: number): Promise<T> {
 export async function readAll<T>(key: keys, filterFunc: (item: T) => boolean): Promise<Array<T>> {
     store_debug("store.readAll");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        return store.filter(filterFunc) as T[];
+    }
+
     let query = '';
     
     switch (key) {
@@ -266,7 +308,18 @@ export async function readAll<T>(key: keys, filterFunc: (item: T) => boolean): P
 export async function replace<T>(key: keys, id: number, newObj: T): Promise<T> {
     store_debug("store.replace");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        const index = store.findIndex(i => i.id === id);
+        if (index === -1) {
+            throw new NotFoundError(key, id);
+        }
+        const updatedObj = { ...newObj, id };
+        store[index] = updatedObj;
+        return updatedObj as T;
+    }
+
     let query = '';
     let values: any[];
     
@@ -403,7 +456,18 @@ export async function replace<T>(key: keys, id: number, newObj: T): Promise<T> {
 export async function update<T>(key: keys, id: number, diffObj: T): Promise<T> {
     store_debug("store.update");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        const index = store.findIndex(i => i.id === id);
+        if (index === -1) {
+            throw new NotFoundError(key, id);
+        }
+        const updatedObj = { ...store[index], ...diffObj, id };
+        store[index] = updatedObj;
+        return updatedObj as T;
+    }
+
     // First, check if the record exists
     let checkQuery = '';
     switch (key) {
@@ -500,7 +564,17 @@ export async function update<T>(key: keys, id: number, diffObj: T): Promise<T> {
 export async function remove<T>(key: keys, id: number): Promise<boolean> {
     store_debug("store.remove");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        const index = store.findIndex(i => i.id === id);
+        if (index === -1) {
+            throw new NotFoundError(key, id);
+        }
+        store.splice(index, 1);
+        return true;
+    }
+
     let query = '';
     
     switch (key) {
