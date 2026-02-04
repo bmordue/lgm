@@ -148,9 +148,10 @@ describe("smoke - integration", () => {
 });
 
 describe("complete first two turns with one player - empty orders", () => {
-    let gameId;
-    let playerId;
+    let gameId: any;
+    let playerId: any;
     before(async function () {
+        lgm.deleteStore();
         const resp: lgm.CreateGameResponse = await lgm.createGame();
         gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
@@ -216,12 +217,13 @@ describe("complete first two turns with one player - empty orders", () => {
 });
 
 describe("complete first turn with one player - standing still orders", () => {
-    let gameId;
-    let playerId;
+    let gameId: any;
+    let playerId: any;
     let world: World;
     let myActors: Array<Actor>;
 
     before(async function () {
+        lgm.deleteStore();
         const resp: lgm.CreateGameResponse = await lgm.createGame();
         gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
@@ -274,12 +276,13 @@ describe("complete first turn with one player - standing still orders", () => {
 });
 
 describe("complete first turn with one player - moving forward orders", () => {
-    let gameId;
-    let playerId;
+    let gameId: any;
+    let playerId: any;
     let world: World;
     let myActors: Array<Actor>;
 
     before(async function () {
+        lgm.deleteStore();
         const resp: lgm.CreateGameResponse = await lgm.createGame();
         gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);

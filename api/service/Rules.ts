@@ -369,7 +369,7 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         return Promise.reject(e.message);
     }
     logger.debug("rules.processGameTurn: resolve with turn status");
-    return Promise.resolve(<TurnStatus>{ complete: true, msg: "Turn complete", turn: game.turn });
+    return Promise.resolve(<TurnStatus>{ complete: true, msg: "Turn complete", turn: game.turn + 1 });
 }
 
 export async function process(ordersId: number): Promise<TurnStatus> {
