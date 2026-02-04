@@ -1,6 +1,6 @@
 'use strict';
 
-import store = require('./Store');
+import * as store from './DatabaseStore';
 import logger = require('../utils/Logger');
 import util = require('util');
 import {
@@ -12,6 +12,7 @@ import { JoinGameResponse } from './GameService';
 import { getVisibleWorldForPlayer, hasLineOfSight  } from '../service/Visibility';
 import { Hex } from '../Hex';
 import { getConfig } from '../config/GameConfig';
+import { getDefaultWeapon } from '../config/WeaponsConfig';
 
 const config = getConfig();
 export const TIMESTEP_MAX = config.timestepMax;
@@ -92,8 +93,11 @@ export function applyDirection(oldPos: GridPosition, direction: Direction): Grid
     return newPos;
 }
 
-export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, world: World, timestep: number,): Promise<Actor> {
-    const actor = actorOrders.actor; // Moved to top
+export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, world: World, timestep: number, allActorsInWorld: Actor[]): Promise<Actor> {
+    const actor = allActorsInWorld.find(a => a.id === actorOrders.actorId);
+    if (!actor) {
+        throw new Error(`Actor with ID ${actorOrders.actorId} not found in world`);
+    }
 
     if (actorOrders.orderType !== OrderType.MOVE || !actorOrders.ordersList || actorOrders.ordersList.length === 0) {
         // If not a move order, or no directions, or empty directions list, return actor unchanged.
@@ -143,7 +147,10 @@ export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, 
 }
 
 async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: World, allActorsInWorld: Actor[], timestep: number): Promise<Actor> {
-    const attacker = actorOrders.actor;
+    const attacker = allActorsInWorld.find(a => a.id === actorOrders.actorId);
+    if (!attacker) {
+        throw new Error(`Attacker actor with ID ${actorOrders.actorId} not found in world`);
+    }
 
     if (actorOrders.orderType !== OrderType.ATTACK) {
         return attacker; // Not an attack order
@@ -181,8 +188,8 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: Wor
 
     // 1. Check Weapon Range
     const distance = startHex.distance(targetHex); // Axial distance
-    if (distance > attacker.weapon.range) {
-        logger.info(`ATTACK order: Target ${targetActor.id} is out of range for ${attacker.id} (range: ${attacker.weapon.range}, distance: ${distance}).`);
+    if (distance < attacker.weapon.minRange || distance > attacker.weapon.maxRange) {
+        logger.info(`ATTACK order: Target ${targetActor.id} is out of range for ${attacker.id} (min: ${attacker.weapon.minRange}, max: ${attacker.weapon.maxRange}, distance: ${distance}).`);
         return attacker;
     }
 
@@ -219,7 +226,7 @@ export async function applyRulesToActorOrders(game: Game, world: World, allActor
             const ao = allActorOrders[i];
             // applyMovementOrders might also need allActorsInWorld if it checks for collisions with other actors,
             // or it might just need the terrain from the world object.
-            await applyMovementOrders(ao, game, world, ts); // Assuming world object is enough for terrain checks
+            await applyMovementOrders(ao, game, world, ts, allActorsInWorld); // Pass allActorsInWorld as well
             await applyFiringRules(ao, game, world, allActorsInWorld, ts);
         }
     }
@@ -262,17 +269,9 @@ function filterOrdersForGameTurn(o: TurnOrders, gameId: number, turn: number) {
     return o.gameId == gameId && o.turn == turn;
 }
 
-// Helper function to extract actor ID from order, handling both API format (actorId) and internal format (actor)
+// Helper function to extract actor ID from order
 function extractActorId(order: ActorOrders): number | undefined {
-    // Check if actor is a number (ID)
-    if (typeof order.actor === 'number') {
-        return order.actor;
-    }
-    // Check if actor is an Actor object with an id property
-    if (typeof order.actor === 'object' && order.actor !== null && 'id' in order.actor) {
-        return order.actor.id;
-    }
-    return undefined;
+    return order.actorId;
 }
 
 export function flatten<T>(arr: Array<Array<T>>): Array<T> {
@@ -370,7 +369,7 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         return Promise.reject(e.message);
     }
     logger.debug("rules.processGameTurn: resolve with turn status");
-    return Promise.resolve(<TurnStatus>{ complete: true, msg: "Turn complete", turn: game.turn });
+    return Promise.resolve(<TurnStatus>{ complete: true, msg: "Turn complete", turn: game.turn + 1 });
 }
 
 export async function process(ordersId: number): Promise<TurnStatus> {
@@ -518,12 +517,7 @@ export async function setupActors(game: Game, playerId: number) {
       return []; // Return empty list of actors
     }
 
-    const defaultWeapon: Weapon = {
-        name: "Standard Issue Blaster",
-        range: 5, // Example range
-        damage: 10 // Example damage
-        // ammo is optional, so not included here
-    };
+    const defaultWeapon: Weapon = getDefaultWeapon();
 
     const newActorsData: Omit<Actor, 'id'>[] = [];
     for (let i = 0; i < 9; i++) {

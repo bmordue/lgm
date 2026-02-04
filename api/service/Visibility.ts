@@ -273,7 +273,7 @@ export function getVisibleWorldForPlayer(
     // For each of the player's actors, calculate its LoS to all hexes within its sight range
     for (const actor of playerActors) {
         const actorHex = gridPositionToHex(actor.pos);
-        const sightRange = (actor.weapon && typeof actor.weapon.range === 'number') ? actor.weapon.range : config.visibility.defaultSightRange;
+        const sightRange = (actor.weapon && typeof actor.weapon.maxRange === 'number') ? actor.weapon.maxRange : config.visibility.defaultSightRange;
 
         for (let r = 0; r < world.terrain.length; r++) {
             for (let c = 0; c < world.terrain[r].length; c++) {

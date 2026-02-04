@@ -32,6 +32,7 @@ export interface Player {
     id?: number;
     gameId: number;
     username?: string;
+    isHost?: boolean;
     joinedAt?: Date;
     sessionId?: string;
 }
@@ -54,7 +55,8 @@ export interface Actor {
 
 export interface Weapon {
     name: string;
-    range: number; // in hexes
+    minRange: number; // minimum range in hexes (0 for melee weapons)
+    maxRange: number; // maximum range in hexes
     damage: number;
     ammo?: number; // optional
 }
@@ -92,14 +94,10 @@ export enum OrderType {
 }
 
 export interface ActorOrders {
-    actor: Actor; // Or actorId: number; depending on current usage
+    actorId?: number; // Using ID instead of object for API requests
+    actor?: Actor;    // Used internally after ID lookup
     orderType: OrderType;
-    ordersList?: Array<Direction>; // For MOVE orders
-    targetId?: number; // For ATTACK orders, ID of the target Actor
-}
-
-export interface Player {
-    id?: number;
-    gameId: number;
-    username?: string;
-}
+        ordersList?: Array<Direction>; // For MOVE orders
+        targetId?: number; // For ATTACK orders, ID of the target Actor
+    }
+    

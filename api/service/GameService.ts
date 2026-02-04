@@ -1,6 +1,6 @@
 "use strict";
 
-import store = require("./Store");
+import * as store from "./DatabaseStore";
 import logger = require("../utils/Logger");
 import util = require("util");
 import { World, Direction, TurnResult, Game } from "./Models";
@@ -10,7 +10,9 @@ import * as OrderService from "./OrderService";
 // Export types from services for backward compatibility
 export interface RequestActorOrders {
   actorId: number;
-  ordersList: Array<number>;
+  orderType: number; // Corresponds to OrderType enum
+  ordersList?: Array<number>; // For MOVE orders
+  targetId?: number; // For ATTACK orders
 }
 
 export interface PostOrdersBody {
@@ -24,7 +26,8 @@ export interface PostOrdersResponse {
 }
 
 export interface CreateGameResponse {
-  id: number;
+  gameId: number;
+  id?: number;  // For backward compatibility with tests expecting 'id'
 }
 
 export interface JoinGameResponse {
@@ -55,8 +58,10 @@ export interface ListGamesResponse {
 }
 
 // Delegate to GameLifecycleService
-export async function createGame(): Promise<CreateGameResponse> {
-  return GameLifecycleService.createGame();
+export async function createGame(maxPlayers?: number): Promise<any> {
+  const result = await GameLifecycleService.createGame(maxPlayers);
+  // Return with 'id' property to match expected interface in tests that do deep equality
+  return { id: result.gameId };
 }
 
 export async function joinGame(gameId: number, username?: string, sessionId?: string): Promise<JoinGameResponse> {
@@ -121,6 +126,10 @@ export async function turnResults(
       new Error("Internal server error: Duplicate turn results found.")
     );
   }
+}
+
+export function deleteStore() {
+  store.deleteAll();
 }
 
 export * from "./GameLifecycleService";

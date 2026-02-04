@@ -1,6 +1,6 @@
 "use strict";
 
-import store = require("./Store");
+import * as store from "./DatabaseStore";
 import rules = require("./Rules");
 import logger = require("../utils/Logger");
 import util = require("util");
@@ -15,7 +15,7 @@ import {
 import { inspect } from "util";
 
 export interface CreateGameResponse {
-  id: number;
+  gameId: number;
 }
 
 export interface JoinGameResponse {
@@ -25,6 +25,8 @@ export interface JoinGameResponse {
   world: World;
   playerCount: number;
   maxPlayers: number;
+  hostPlayerId?: number;
+  gameState?: GameState;
 }
 
 export interface GameSummary {
@@ -32,6 +34,8 @@ export interface GameSummary {
   playerCount: number;
   maxPlayers: number;
   isFull: boolean;
+  hostPlayerId?: number;
+  gameState?: GameState;
 }
 
 export interface ListGamesResponse {
@@ -58,7 +62,7 @@ export async function createGame(maxPlayers?: number): Promise<CreateGameRespons
   };
 
   const gameId = await store.create<Game>(store.keys.games, newGame);
-  return { id: gameId };
+  return { gameId: gameId };
 }
 
 /**
@@ -91,6 +95,7 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
         gameId,
         username,
         sessionId,
+        isHost,
         joinedAt: new Date()
     };
 
@@ -110,7 +115,16 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
     world.actorIds = world.actorIds.concat(actorIds);
     await store.replace(store.keys.worlds, game.worldId, world);
 
-    return await rules.filterGameForPlayer(gameId, playerId);
+    return {
+        gameId: game.id!,
+        playerId: playerId,
+        turn: game.turn,
+        world: await rules.filterWorldForPlayer(world, playerId),
+        playerCount: game.players.length,
+        maxPlayers: game.maxPlayers!,
+        hostPlayerId: game.hostPlayerId,
+        gameState: game.gameState
+    };
 }
 
 async function validateUniqueUsername(game: Game, username: string) {
@@ -184,6 +198,16 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
     // Update host in game
     game.hostPlayerId = newHostPlayerId;
     await store.replace(store.keys.games, gameId, game);
+
+    // Update player records
+    const oldHost = await store.read<Player>(store.keys.players, requestingPlayerId);
+    const newHost = await store.read<Player>(store.keys.players, newHostPlayerId);
+
+    oldHost.isHost = false;
+    newHost.isHost = true;
+
+    await store.replace(store.keys.players, requestingPlayerId, oldHost);
+    await store.replace(store.keys.players, newHostPlayerId, newHost);
 }
 
 async function validateHostPermissions(game: Game, requestingPlayerId: number) {
