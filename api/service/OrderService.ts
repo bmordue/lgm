@@ -60,7 +60,7 @@ function validateRequestOrders(
     };
     logger.debug(util.format("ActorOrder: %j", out));
 
-    return Promise.resolve(out);
+    return out;
   });
   return Promise.all(outs);
 }
