@@ -99,6 +99,12 @@ module.exports.transferHost = async function transferHost(context: ExegesisConte
 
 module.exports.getPlayerGameState = async function getPlayerGameState(context: ExegesisContext) {
     const { gameId, playerId } = context.params.path;
+    const requestingPlayerId = context.user.playerId;
+
+    if (playerId !== requestingPlayerId) {
+        context.res.status(403);
+        return { message: "You can only access your own player state." };
+    }
 
     return await GameLifecycleService.getPlayerGameState(gameId, playerId);
 }
