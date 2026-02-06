@@ -140,33 +140,6 @@ paths:
           description: host transferred
         "400":
           description: bad request
-  /games/{gameId}/players/{playerId}:
-    get:
-      summary: get current game state for a specific player
-      operationId: getPlayerGameState
-      security:
-        - bearerAuth: []
-      x-exegesis-controller: GameController
-      parameters:
-      - name: gameId
-        in: path
-        required: true
-        schema:
-          type: integer
-      - name: playerId
-        in: path
-        required: true
-        schema:
-          type: integer
-      responses:
-        "200":
-          description: current game state for the player
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/JoinGameResponse'
-        "400":
-          description: bad request
   /users/login:
     post:
       summary: User login
@@ -303,6 +276,10 @@ components:
       properties:
         id:
           type: integer
+        actorIds:
+          type: array
+          items:
+            type: integer
         actors:
           type: array
           items:
@@ -355,13 +332,18 @@ components:
       type: object
       required:
         - name
-        - range
+        - minRange
+        - maxRange
         - damage
       properties:
         name:
           type: string
-        range:
+        minRange:
           type: integer
+          description: "Minimum range in hexes (0 for melee weapons)"
+        maxRange:
+          type: integer
+          description: "Maximum range in hexes"
         damage:
           type: integer
         ammo:

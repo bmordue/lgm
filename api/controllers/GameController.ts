@@ -4,7 +4,9 @@ import GameLifecycleService = require("../service/GameLifecycleService");
 
 module.exports.createGame = async function createGame(context: ExegesisContext) {
   const maxPlayers = context.requestBody?.maxPlayers; // Optional parameter
-  return GameLifecycleService.createGame(maxPlayers);
+  const result = await GameLifecycleService.createGame(maxPlayers);
+  // Return with 'id' property to match API expectations
+  return { id: result.gameId };
 };
 
 module.exports.joinGame = async function joinGame(context: ExegesisContext) {
@@ -95,16 +97,4 @@ module.exports.transferHost = async function transferHost(context: ExegesisConte
     );
 
     return { success: true };
-}
-
-module.exports.getPlayerGameState = async function getPlayerGameState(context: ExegesisContext) {
-    const { gameId, playerId } = context.params.path;
-    const requestingPlayerId = context.user.playerId;
-
-    if (playerId !== requestingPlayerId) {
-        context.res.status(403);
-        return { message: "You can only retrieve your own game state." };
-    }
-
-    return await GameLifecycleService.getPlayerGameState(gameId, playerId);
 }
