@@ -70,7 +70,7 @@ DECLARE
 BEGIN
     -- Create a new world first
     INSERT INTO worlds (actor_ids, terrain) 
-    VALUES ('[]', '[[0,0,0],[0,0,0],[0,0,0]]') -- Simple 3x3 empty terrain
+    VALUES ('[]', '[[0,0,0],[0,0,0],[0,0,0]]') -- Simple 3x3 terrain with terrain value 0 (EMPTY from Terrain enum)
     RETURNING id INTO new_world_id;
     
     -- Create the game referencing the world
