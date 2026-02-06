@@ -3,7 +3,7 @@
 ## Core Game Mechanics (Critical)
 - [x] Combat System: Currently stubbed out – needs line-of-sight, weapon ranges, damage calculations (PR https://github.com/bmordue/lgm/pull/97)
 - [x] Fog of War: Infrastructure exists but disabled – implement player-specific world filtering (PR https://github.com/bmordue/lgm/pull/100)
-- [ ] Player Management: Fix game joining limits, prevent duplicate joins, add host permissions
+- [ ] Player Management: Fix game joining limits, prevent duplicate joins, add host permissions (In Progress, see lgm-4w9)
 
 ## Technical Debt (High Priority)
 - [ ] Data Model Fixes: Refactor actors to use IDs instead of objects for better performance

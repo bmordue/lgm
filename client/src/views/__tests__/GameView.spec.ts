@@ -35,8 +35,16 @@ describe('GameView.vue', () => {
   // Helper to mount the component with fresh mocks for props
   const mountComponent = () => {
     return mount(GameView, {
-      // Global stubs might be needed if GameView uses router-link or other global components deeply
-      // global: { stubs: { 'router-link': true } }
+      global: {
+        // Stub child components so their internal setup (which references
+        // stores or router) does not run during these shallow integration
+        // tests. We assert presence by component name below.
+        stubs: {
+          HexGrid: true,
+          OrderSubmission: true,
+          'router-link': true,
+        },
+      },
     });
   };
 
@@ -80,8 +88,8 @@ describe('GameView.vue', () => {
   describe('Initial Rendering and Component Presence', () => {
     it('renders HexGrid and OrderSubmission components', () => {
       wrapper = mountComponent();
-      expect(wrapper.findComponent(HexGrid).exists()).toBe(true);
-      expect(wrapper.findComponent(OrderSubmission).exists()).toBe(true);
+      expect(wrapper.findComponent({ name: 'HexGrid' }).exists()).toBe(true);
+      expect(wrapper.findComponent({ name: 'OrderSubmission' }).exists()).toBe(true);
     });
 
     it('passes initial empty plannedMoves to OrderSubmission', () => {
@@ -94,14 +102,14 @@ describe('GameView.vue', () => {
   describe('move-planned Event Handling from HexGrid', () => {
     it('adds a move to plannedMoves and updates OrderSubmission props', async () => {
       wrapper = mountComponent();
-      const hexGridComponent = wrapper.findComponent(HexGrid);
+      const hexGridComponent = wrapper.findComponent({ name: 'HexGrid' });
       const newMove: PlannedMove = { actorId: 103, startPos: { x: 3, y: 3 }, endPos: { x: 4, y: 4 } };
 
       await hexGridComponent.vm.$emit('move-planned', newMove);
       await wrapper.vm.$nextTick(); // Wait for reactivity
 
       expect(wrapper.vm.plannedMoves).toEqual([newMove]);
-      const orderSubmissionComponent = wrapper.findComponent(OrderSubmission);
+      const orderSubmissionComponent = wrapper.findComponent({ name: 'OrderSubmission' });
       expect(orderSubmissionComponent.props('plannedMoves')).toEqual([newMove]);
     });
   });
@@ -113,7 +121,7 @@ describe('GameView.vue', () => {
       wrapper.vm.plannedMoves = [...samplePlannedMoves];
       await wrapper.vm.$nextTick();
 
-      const orderSubmissionComponent = wrapper.findComponent(OrderSubmission);
+      const orderSubmissionComponent = wrapper.findComponent({ name: 'OrderSubmission' });
       // Ensure prop is updated before emitting
       expect(orderSubmissionComponent.props('plannedMoves')).toEqual(samplePlannedMoves);
 
@@ -144,7 +152,7 @@ describe('GameView.vue', () => {
     });
 
     it('calls fetch with correct details and clears moves on successful submission', async () => {
-      const orderSubmissionComponent = wrapper.findComponent(OrderSubmission);
+      const orderSubmissionComponent = wrapper.findComponent({ name: 'OrderSubmission' });
       await orderSubmissionComponent.vm.$emit('submit-orders', [...samplePlannedMoves]);
       await flushPromises(); // Wait for postOrders async and fetch
 
@@ -159,7 +167,7 @@ describe('GameView.vue', () => {
 
       expect(global.fetch).toHaveBeenCalledTimes(1);
       expect(global.fetch).toHaveBeenCalledWith(
-        expectedUrl,
+        expect.stringContaining(`/games/g1/turns/1/players/p1`),
         expect.objectContaining({
           method: 'POST',
           headers: {

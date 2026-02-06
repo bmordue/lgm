@@ -1,0 +1,111 @@
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Terrain {
+  EMPTY
+  BLOCKED
+  UNEXPLORED
+}
+
+enum Direction {
+  UP_LEFT
+  UP_RIGHT
+  LEFT
+  RIGHT
+  DOWN_LEFT
+  DOWN_RIGHT
+  NONE
+}
+
+enum ActorState {
+  DEAD
+  ALIVE
+}
+
+enum GameState {
+  LOBBY
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum OrderType {
+  MOVE
+  ATTACK
+}
+
+model Game {
+  id           Int       @id @default(autoincrement())
+  players      Player[]
+  hostPlayerId Int?
+  maxPlayers   Int?
+  gameState    GameState @default(LOBBY)
+  turn         Int       @default(0)
+  worldId      Int
+  createdAt    DateTime  @default(now())
+  startedAt    DateTime?
+
+  @@map("games")
+}
+
+model Player {
+  id        Int      @id @default(autoincrement())
+  gameId    Int
+  game      Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  username  String?
+  isHost    Boolean  @default(false)
+  joinedAt  DateTime @default(now())
+  sessionId String?
+
+  @@map("players")
+}
+
+model World {
+  id       Int     @id @default(autoincrement())
+  actorIds Json    @default([]) // Store as JSON array of integers
+  terrain  Json               // Store as JSON array of arrays
+  actors   Actor[]
+
+  @@map("worlds")
+}
+
+model Actor {
+  id      Int        @id @default(autoincrement())
+  pos     Json       // Store as JSON object with x, y coordinates
+  state   ActorState @default(ALIVE)
+  owner   Int        // playerId
+  health  Int?
+  weapon  Json?      // Store weapon as JSON object
+
+  @@map("actors")
+}
+
+model TurnOrders {
+  id       Int          @id @default(autoincrement())
+  gameId   Int
+  game     Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  turn     Int
+  playerId Int
+  player   Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  orders   Json         // Store as JSON array of orders
+
+  @@map("turn_orders")
+}
+
+model TurnResult {
+  id       Int          @id @default(autoincrement())
+  gameId   Int
+  game     Game         @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  turn     Int
+  playerId Int
+  player   Player       @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  world    Json         // Store as JSON object representing the world state
+
+  @@map("turn_results")
+}

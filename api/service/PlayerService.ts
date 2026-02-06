@@ -1,6 +1,6 @@
 "use strict";
 
-import store = require("./Store");
+import * as store from "./DatabaseStore";
 import rules = require("./Rules");
 import logger = require("../utils/Logger");
 import util = require("util");

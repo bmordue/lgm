@@ -259,12 +259,12 @@ function gridPositionToHex(pos: GridPosition): Hex {
 export function getVisibleWorldForPlayer(
     world: { terrain: Terrain[][], actors: Actor[] }, // Simplified World type for input
     playerId: number
-): { terrain: Terrain[][], actors: Actor[] } {
+): { terrain: Terrain[][], actorIds: number[], actors: Actor[] } {
     const playerActors = world.actors.filter(actor => actor.owner === playerId && actor.state !== ActorState.DEAD);
 
     if (playerActors.length === 0) {
         const unexploredTerrain = world.terrain.map(row => row.map(() => Terrain.UNEXPLORED));
-        return { terrain: unexploredTerrain, actors: [] };
+        return { terrain: unexploredTerrain, actorIds: [], actors: [] };
     }
 
     // Initialize a 2D boolean array for combined visibility, matching terrain dimensions
@@ -273,7 +273,7 @@ export function getVisibleWorldForPlayer(
     // For each of the player's actors, calculate its LoS to all hexes within its sight range
     for (const actor of playerActors) {
         const actorHex = gridPositionToHex(actor.pos);
-        const sightRange = (actor.weapon && typeof actor.weapon.range === 'number') ? actor.weapon.range : config.visibility.defaultSightRange;
+        const sightRange = (actor.weapon && typeof actor.weapon.maxRange === 'number') ? actor.weapon.maxRange : config.visibility.defaultSightRange;
 
         for (let r = 0; r < world.terrain.length; r++) {
             for (let c = 0; c < world.terrain[r].length; c++) {
@@ -308,5 +308,5 @@ export function getVisibleWorldForPlayer(
         return false;
     });
 
-    return { terrain: filteredTerrain, actors: filteredActors };
+    return { terrain: filteredTerrain, actorIds: filteredActors.map(a => a.id), actors: filteredActors };
 }
