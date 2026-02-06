@@ -1,6 +1,6 @@
 "use strict";
 
-import * as store from "./DatabaseStore";
+import store = require("./Store");
 import logger = require("../utils/Logger");
 import util = require("util");
 import { World, Direction, TurnResult, Game } from "./Models";
