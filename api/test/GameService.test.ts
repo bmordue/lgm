@@ -1,6 +1,6 @@
 import lgm = require("../service/GameService");
 import assert = require("assert");
-import { Actor, Direction } from "../service/Models";
+import { Actor, Direction, OrderType } from "../service/Models";
 import * as store from "../service/Store";
 
 describe("DefaultService", function () {
@@ -328,6 +328,6 @@ function testMarchOrders(
   moveDir = Direction.UP_RIGHT
 ): lgm.RequestActorOrders[] {
   return actors.map((actor) => {
-    return { actorId: actor.id, ordersList: [moveDir] };
+    return { actorId: actor.id, orderType: OrderType.MOVE, ordersList: [moveDir] };
   });
 }

@@ -12,11 +12,22 @@ import {
   Actor,
   TurnOrders,
   OrderType,
+  GridPosition
 } from "./Models";
+import { Hex } from '../Hex';
+
+// Helper function to convert GridPosition to Hex
+function gridPositionToHex(pos: GridPosition): Hex {
+    const q = pos.y; // column is q
+    const r = pos.x - (pos.y - (pos.y & 1)) / 2; // row is x, convert to axial r for odd-q
+    return new Hex(q, r, -q - r); // s = -q - r
+}
 
 export interface RequestActorOrders {
   actorId: number;
-  ordersList: Array<number>;
+  orderType: number; // Corresponds to OrderType enum
+  ordersList?: Array<number>; // For MOVE orders
+  targetId?: number; // For ATTACK orders
 }
 
 export interface PostOrdersBody {
@@ -37,7 +48,10 @@ function anyExistingOrders(to: TurnOrders) {
   };
 }
 
-function numbersToDirections(orderNos: Array<number>): Array<Direction> {
+function numbersToDirections(orderNos?: Array<number>): Array<Direction> {
+  if (!orderNos) {
+    return [];
+  }
   return orderNos.map((n) => n as Direction);
 }
 
@@ -53,14 +67,30 @@ function validateRequestOrders(
   requestOrders: Array<RequestActorOrders>
 ): Promise<Array<ActorOrders>> {
   const outs = requestOrders.map(function (o) {
+    const orderType = o.orderType as OrderType;
+
     const out: ActorOrders = {
       actorId: o.actorId,
-      ordersList: fillOrTruncateOrdersList(numbersToDirections(o.ordersList)),
-      orderType: OrderType.MOVE
+      orderType: orderType
     };
+
+    if (orderType === OrderType.MOVE) {
+      if (!o.ordersList) {
+        throw new Error(`Move order for actor ${o.actorId} must have ordersList`);
+      }
+      out.ordersList = fillOrTruncateOrdersList(numbersToDirections(o.ordersList));
+    } else if (orderType === OrderType.ATTACK) {
+      if (o.targetId === undefined) {
+        throw new Error(`Attack order for actor ${o.actorId} must have targetId`);
+      }
+      out.targetId = o.targetId;
+    } else {
+      throw new Error(`Unknown order type: ${orderType} for actor ${o.actorId}`);
+    }
+
     logger.debug(util.format("ActorOrder: %j", out));
 
-    return Promise.resolve(out);
+    return out;
   });
   return Promise.all(outs);
 }
@@ -101,6 +131,62 @@ async function validateOrders(
       )
     );
     return Promise.reject(new Error("orders turn does not match game turn"));
+  }
+
+  // Load all actors in the world to validate attack orders
+  const world = await store.read<any>(store.keys.worlds, game.worldId);
+  const allActorsInWorld = await Promise.all(world.actorIds.map(id => store.read<any>(store.keys.actors, id)));
+
+  // Validate each request order
+  for (const requestOrder of requestOrders) {
+    const actorId = requestOrder.actorId;
+    const actor = allActorsInWorld.find((a: any) => a.id === actorId);
+
+    if (!actor) {
+      return Promise.reject(new Error(`Actor with ID ${actorId} not found in game`));
+    }
+
+    if (actor.owner !== playerId) {
+      return Promise.reject(new Error(`Player ${playerId} does not own actor ${actorId}`));
+    }
+
+    // For attack orders, validate that the target exists and has a weapon
+    if (requestOrder.orderType === OrderType.ATTACK) {
+      if (requestOrder.targetId === undefined) {
+        return Promise.reject(new Error(`Attack order for actor ${actorId} must have targetId`));
+      }
+
+      const targetActor = allActorsInWorld.find((a: any) => a.id === requestOrder.targetId);
+      if (!targetActor) {
+        return Promise.reject(new Error(`Target actor with ID ${requestOrder.targetId} not found in game`));
+      }
+
+      // Validate that the attacking actor has a weapon
+      if (!actor.weapon) {
+        return Promise.reject(new Error(`Actor ${actorId} has no weapon and cannot perform attack`));
+      }
+
+      // Validate weapon properties
+      if (actor.weapon.minRange < 0) {
+        return Promise.reject(new Error(`Actor ${actorId}'s weapon has invalid minRange: ${actor.weapon.minRange}`));
+      }
+
+      if (actor.weapon.maxRange < actor.weapon.minRange) {
+        return Promise.reject(new Error(`Actor ${actorId}'s weapon has invalid range: maxRange (${actor.weapon.maxRange}) < minRange (${actor.weapon.minRange})`));
+      }
+
+      // Perform preliminary range check (note: this is only a preliminary check as positions can change)
+      const attackerPos = actor.pos;
+      const targetPos = targetActor.pos;
+
+      const attackerHex = gridPositionToHex(attackerPos);
+      const targetHex = gridPositionToHex(targetPos);
+      const distance = attackerHex.distance(targetHex);
+
+      if (distance < actor.weapon.minRange || distance > actor.weapon.maxRange) {
+        logger.info(`Preliminary range check: Target ${targetActor.id} is out of range for ${actorId} (min: ${actor.weapon.minRange}, max: ${actor.weapon.maxRange}, distance: ${distance}). Note: This is a preliminary check as actor positions may change before execution.`);
+      }
+    }
   }
 
   try {

@@ -10,17 +10,106 @@ const STORE_DEBUG = false;
 
 const store_debug = (obj) => { if (STORE_DEBUG) logger.debug(obj) };
 
+// Helper function to map database snake_case fields to TypeScript camelCase fields
+function mapDbRecordToModel(record: any, key: keys): any {
+    const mappedRecord: any = { ...record };
+    
+    // Map common snake_case fields to camelCase
+    if (record.host_player_id !== undefined) {
+        mappedRecord.hostPlayerId = record.host_player_id;
+        delete mappedRecord.host_player_id;
+    }
+    if (record.max_players !== undefined) {
+        mappedRecord.maxPlayers = record.max_players;
+        delete mappedRecord.max_players;
+    }
+    if (record.game_state !== undefined) {
+        mappedRecord.gameState = record.game_state;
+        delete mappedRecord.game_state;
+    }
+    if (record.world_id !== undefined) {
+        mappedRecord.worldId = record.world_id;
+        delete mappedRecord.world_id;
+    }
+    if (record.created_at !== undefined) {
+        mappedRecord.createdAt = record.created_at;
+        delete mappedRecord.created_at;
+    }
+    if (record.started_at !== undefined) {
+        mappedRecord.startedAt = record.started_at;
+        delete mappedRecord.started_at;
+    }
+    if (record.game_id !== undefined) {
+        mappedRecord.gameId = record.game_id;
+        delete mappedRecord.game_id;
+    }
+    if (record.is_host !== undefined) {
+        mappedRecord.isHost = record.is_host;
+        delete mappedRecord.is_host;
+    }
+    if (record.joined_at !== undefined) {
+        mappedRecord.joinedAt = record.joined_at;
+        delete mappedRecord.joined_at;
+    }
+    if (record.session_id !== undefined) {
+        mappedRecord.sessionId = record.session_id;
+        delete mappedRecord.session_id;
+    }
+    if (record.player_id !== undefined) {
+        mappedRecord.playerId = record.player_id;
+        delete mappedRecord.player_id;
+    }
+    
+    // Parse and map JSON fields based on key type
+    if (key === keys.worlds) {
+        if (record.actor_ids != null) {
+            mappedRecord.actorIds = JSON.parse(record.actor_ids);
+            delete mappedRecord.actor_ids;
+        }
+        if (record.terrain != null) {
+            mappedRecord.terrain = JSON.parse(record.terrain);
+        }
+    } else if (key === keys.actors) {
+        if (record.pos != null) {
+            mappedRecord.pos = JSON.parse(record.pos);
+        }
+        if (record.weapon != null) {
+            mappedRecord.weapon = JSON.parse(record.weapon);
+        }
+    } else if (key === keys.turnOrders && record.orders) {
+        mappedRecord.orders = JSON.parse(record.orders);
+    } else if (key === keys.turnResults && record.world) {
+        mappedRecord.world = JSON.parse(record.world);
+    }
+    
+    return mappedRecord;
+}
+
+
 // Connection pool for database operations
 let dbClient: Client;
 
-async function getDbClient(): Promise<Client> {
-  if (!dbClient) {
-    dbClient = new Client({
-      connectionString: process.env.DATABASE_URL,
-    });
-    await dbClient.connect();
-  }
-  return dbClient;
+// In-memory fallback for when no database is available
+const memoryStore: Record<string, any[]> = {};
+
+function getMemoryStore(key: string): any[] {
+    if (!memoryStore[key]) {
+        memoryStore[key] = [];
+    }
+    return memoryStore[key];
+}
+
+async function getDbClient(): Promise<Client | null> {
+    if (!process.env.DATABASE_URL) {
+        return null;
+    }
+    if (!dbClient) {
+        dbClient = new Client({
+            connectionString: process.env.DATABASE_URL,
+        });
+        await dbClient.connect();
+    }
+    return dbClient;
 }
 
 export enum keys {
@@ -33,9 +122,16 @@ export enum keys {
 }
 
 export async function deleteAll(): Promise<void> {
-  const client = await getDbClient();
-  
-  // Delete all records from all tables
+    const client = await getDbClient();
+
+    if (!client) {
+        Object.keys(memoryStore).forEach(key => {
+            memoryStore[key] = [];
+        });
+        return;
+    }
+
+    // Delete all records from all tables
   await client.query('DELETE FROM turn_results;');
   await client.query('DELETE FROM turn_orders;');
   await client.query('DELETE FROM actors;');
@@ -47,7 +143,15 @@ export async function deleteAll(): Promise<void> {
 export async function create<T>(key: keys, obj: T): Promise<number> {
     store_debug("store.create");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        const id = store.length;
+        const newObj = { ...obj, id };
+        store.push(newObj);
+        return id;
+    }
+
     let query = '';
     let values: any[];
     
@@ -142,7 +246,16 @@ export async function create<T>(key: keys, obj: T): Promise<number> {
 export async function read<T>(key: keys, id: number): Promise<T> {
     store_debug("store.read");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        const item = store.find(i => i.id === id);
+        if (!item) {
+            throw new NotFoundError(key, id);
+        }
+        return item as T;
+    }
+
     let query = '';
     let result;
     
@@ -185,18 +298,8 @@ export async function read<T>(key: keys, id: number): Promise<T> {
         throw new NotFoundError(key, id);
     }
     
-    // Parse JSON fields as needed
-    const record = result.rows[0];
-    if (key === keys.worlds) {
-        record.actor_ids = JSON.parse(record.actor_ids);
-        record.terrain = JSON.parse(record.terrain);
-    } else if (key === keys.actors && record.weapon) {
-        record.weapon = JSON.parse(record.weapon);
-    } else if (key === keys.turnOrders) {
-        record.orders = JSON.parse(record.orders);
-    } else if (key === keys.turnResults) {
-        record.world = JSON.parse(record.world);
-    }
+    // Map database record to model and parse JSON fields
+    const record = mapDbRecordToModel(result.rows[0], key);
     
     // Add the id property to match the original store behavior
     record.id = id;
@@ -206,7 +309,12 @@ export async function read<T>(key: keys, id: number): Promise<T> {
 export async function readAll<T>(key: keys, filterFunc: (item: T) => boolean): Promise<Array<T>> {
     store_debug("store.readAll");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        return store.filter(filterFunc) as T[];
+    }
+
     let query = '';
     
     switch (key) {
@@ -241,22 +349,12 @@ export async function readAll<T>(key: keys, filterFunc: (item: T) => boolean): P
     const result = await client.query(query);
     let records = result.rows;
     
-    // Parse JSON fields as needed
+    // Map database records to models and parse JSON fields
     records = records.map(record => {
-        if (key === keys.worlds) {
-            record.actor_ids = JSON.parse(record.actor_ids);
-            record.terrain = JSON.parse(record.terrain);
-        } else if (key === keys.actors && record.weapon) {
-            record.weapon = JSON.parse(record.weapon);
-        } else if (key === keys.turnOrders) {
-            record.orders = JSON.parse(record.orders);
-        } else if (key === keys.turnResults) {
-            record.world = JSON.parse(record.world);
-        }
-        
+        const mappedRecord = mapDbRecordToModel(record, key);
         // Add id property to match original store behavior
-        record.id = record.id;
-        return record;
+        mappedRecord.id = record.id;
+        return mappedRecord;
     });
     
     // Apply the filter function
@@ -266,7 +364,18 @@ export async function readAll<T>(key: keys, filterFunc: (item: T) => boolean): P
 export async function replace<T>(key: keys, id: number, newObj: T): Promise<T> {
     store_debug("store.replace");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        const index = store.findIndex(i => i.id === id);
+        if (index === -1) {
+            throw new NotFoundError(key, id);
+        }
+        const updatedObj = { ...newObj, id };
+        store[index] = updatedObj;
+        return updatedObj as T;
+    }
+
     let query = '';
     let values: any[];
     
@@ -378,18 +487,8 @@ export async function replace<T>(key: keys, id: number, newObj: T): Promise<T> {
         throw new NotFoundError(key, id);
     }
     
-    // Parse JSON fields as needed
-    let record = result.rows[0];
-    if (key === keys.worlds) {
-        record.actor_ids = JSON.parse(record.actor_ids);
-        record.terrain = JSON.parse(record.terrain);
-    } else if (key === keys.actors && record.weapon) {
-        record.weapon = JSON.parse(record.weapon);
-    } else if (key === keys.turnOrders) {
-        record.orders = JSON.parse(record.orders);
-    } else if (key === keys.turnResults) {
-        record.world = JSON.parse(record.world);
-    }
+    // Map database record to model and parse JSON fields
+    const record = mapDbRecordToModel(result.rows[0], key);
     
     // Add the id property to match the original store behavior
     record.id = id;
@@ -403,7 +502,18 @@ export async function replace<T>(key: keys, id: number, newObj: T): Promise<T> {
 export async function update<T>(key: keys, id: number, diffObj: T): Promise<T> {
     store_debug("store.update");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        const index = store.findIndex(i => i.id === id);
+        if (index === -1) {
+            throw new NotFoundError(key, id);
+        }
+        const updatedObj = { ...store[index], ...diffObj, id };
+        store[index] = updatedObj;
+        return updatedObj as T;
+    }
+
     // First, check if the record exists
     let checkQuery = '';
     switch (key) {
@@ -479,18 +589,8 @@ export async function update<T>(key: keys, id: number, diffObj: T): Promise<T> {
         throw new NotFoundError(key, id);
     }
     
-    // Parse JSON fields as needed
-    let record = result.rows[0];
-    if (key === keys.worlds) {
-        record.actor_ids = JSON.parse(record.actor_ids);
-        record.terrain = JSON.parse(record.terrain);
-    } else if (key === keys.actors && record.weapon) {
-        record.weapon = JSON.parse(record.weapon);
-    } else if (key === keys.turnOrders) {
-        record.orders = JSON.parse(record.orders);
-    } else if (key === keys.turnResults) {
-        record.world = JSON.parse(record.world);
-    }
+    // Map database record to model and parse JSON fields
+    const record = mapDbRecordToModel(result.rows[0], key);
     
     // Add the id property to match the original store behavior
     record.id = id;
@@ -500,7 +600,17 @@ export async function update<T>(key: keys, id: number, diffObj: T): Promise<T> {
 export async function remove<T>(key: keys, id: number): Promise<boolean> {
     store_debug("store.remove");
     const client = await getDbClient();
-    
+
+    if (!client) {
+        const store = getMemoryStore(key);
+        const index = store.findIndex(i => i.id === id);
+        if (index === -1) {
+            throw new NotFoundError(key, id);
+        }
+        store.splice(index, 1);
+        return true;
+    }
+
     let query = '';
     
     switch (key) {

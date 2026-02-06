@@ -10,7 +10,9 @@ import * as OrderService from "./OrderService";
 // Export types from services for backward compatibility
 export interface RequestActorOrders {
   actorId: number;
-  ordersList: Array<number>;
+  orderType: number; // Corresponds to OrderType enum
+  ordersList?: Array<number>; // For MOVE orders
+  targetId?: number; // For ATTACK orders
 }
 
 export interface PostOrdersBody {
