@@ -4,7 +4,9 @@ import GameLifecycleService = require("../service/GameLifecycleService");
 
 module.exports.createGame = async function createGame(context: ExegesisContext) {
   const maxPlayers = context.requestBody?.maxPlayers; // Optional parameter
-  return GameLifecycleService.createGame(maxPlayers);
+  const result = await GameLifecycleService.createGame(maxPlayers);
+  // Return with 'id' property to match API expectations
+  return { id: result.gameId };
 };
 
 module.exports.joinGame = async function joinGame(context: ExegesisContext) {

@@ -1,6 +1,6 @@
 'use strict';
 
-import store = require('./Store');
+import * as store from './DatabaseStore';
 import logger = require('../utils/Logger');
 import util = require('util');
 import {
@@ -12,6 +12,7 @@ import { JoinGameResponse } from './GameService';
 import { getVisibleWorldForPlayer, hasLineOfSight  } from '../service/Visibility';
 import { Hex } from '../Hex';
 import { getConfig } from '../config/GameConfig';
+import { getDefaultWeapon } from '../config/WeaponsConfig';
 
 const config = getConfig();
 export const TIMESTEP_MAX = config.timestepMax;
@@ -92,13 +93,16 @@ export function applyDirection(oldPos: GridPosition, direction: Direction): Grid
     return newPos;
 }
 
-export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, world: World, timestep: number,): Promise<Actor> {
-    const actor = actorOrders.actor; // Moved to top
+export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, world: World, timestep: number, allActorsInWorld: Actor[]): Promise<Actor> {
+    const actorIndex = allActorsInWorld.findIndex(a => a.id === actorOrders.actorId);
+    if (actorIndex === -1) {
+        throw new Error(`Actor with ID ${actorOrders.actorId} not found in world`);
+    }
 
     if (actorOrders.orderType !== OrderType.MOVE || !actorOrders.ordersList || actorOrders.ordersList.length === 0) {
         // If not a move order, or no directions, or empty directions list, return actor unchanged.
         // Explicitly checking ordersList.length === 0 as empty array might pass !actorOrders.ordersList if it's just an empty array vs undefined/null.
-        return actor;
+        return allActorsInWorld[actorIndex];
     }
 
     const moveDirections: Array<Direction> = actorOrders.ordersList;
@@ -106,10 +110,7 @@ export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, 
         ? moveDirections[timestep]
         : Direction.NONE;
 
-    // Removed redundant actor null check, actor is guaranteed by this point.
-    // Removed redundant actor declaration.
-
-    const newGridPos = applyDirection(actor.pos, moveDirection as Direction); // Use actor.pos directly
+    const newGridPos = applyDirection(allActorsInWorld[actorIndex].pos, moveDirection as Direction); // Use actor.pos directly
 
     // check against world.terrain boundaries
     if (newGridPos.x < 0
@@ -118,92 +119,97 @@ export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, 
         || newGridPos.y >= world.terrain[newGridPos.x].length) {
 
         logger.debug(util.format("Actor ID %s attempted to move outside world.terrain to (%s,%s); remained at (%s,%s) instead",
-            actor.id, newGridPos.x, newGridPos.y, actor.pos.x, actor.pos.y));
-        return actor;
+            allActorsInWorld[actorIndex].id, newGridPos.x, newGridPos.y, allActorsInWorld[actorIndex].pos.x, allActorsInWorld[actorIndex].pos.y));
+        return allActorsInWorld[actorIndex];
     }
 
     const newPosTerrain = world.terrain[newGridPos.x][newGridPos.y];
 
     switch (newPosTerrain) {
         case Terrain.EMPTY: {
-            actor.pos = newGridPos;
+            // Update the actor directly in the array
+            allActorsInWorld[actorIndex].pos = newGridPos;
             break;
         }
 
         case Terrain.BLOCKED: {
             logger.debug(util.format("Actor ID %s attempted to move to blocked position at (%s,%s); remained at (%s,%s) instead",
-                actor.id, newGridPos.x, newGridPos.y, actor.pos.x, actor.pos.y));
+                allActorsInWorld[actorIndex].id, newGridPos.x, newGridPos.y, allActorsInWorld[actorIndex].pos.x, allActorsInWorld[actorIndex].pos.y));
             break;
         }
         default: {
             logger.error(util.format("Unrecognised terrain type: %s", newPosTerrain));
         }
     }
-    return actor;
+
+    return allActorsInWorld[actorIndex];
 }
 
 async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: World, allActorsInWorld: Actor[], timestep: number): Promise<Actor> {
-    const attacker = actorOrders.actor;
+    const attackerIndex = allActorsInWorld.findIndex(a => a.id === actorOrders.actorId);
+    if (attackerIndex === -1) {
+        throw new Error(`Attacker actor with ID ${actorOrders.actorId} not found in world`);
+    }
 
     if (actorOrders.orderType !== OrderType.ATTACK) {
-        return attacker; // Not an attack order
+        return allActorsInWorld[attackerIndex]; // Not an attack order
     }
 
     if (typeof actorOrders.targetId === 'undefined') {
-        logger.debug(`Actor ${attacker.id} has ATTACK order but no targetId.`);
-        return attacker; // No target specified
+        logger.debug(`Actor ${allActorsInWorld[attackerIndex].id} has ATTACK order but no targetId.`);
+        return allActorsInWorld[attackerIndex]; // No target specified
     }
 
-    if (!attacker.weapon) {
-        logger.error(`Actor ${attacker.id} has no weapon, cannot execute ATTACK order.`);
-        return attacker;
+    if (!allActorsInWorld[attackerIndex].weapon) {
+        logger.error(`Actor ${allActorsInWorld[attackerIndex].id} has no weapon, cannot execute ATTACK order.`);
+        return allActorsInWorld[attackerIndex];
     }
 
-    const targetActor = allActorsInWorld.find(a => a.id === actorOrders.targetId);
+    const targetIndex = allActorsInWorld.findIndex(a => a.id === actorOrders.targetId);
 
-    if (!targetActor) {
-        logger.warn(`ATTACK order: Target actor with ID ${actorOrders.targetId} not found for attacker ${attacker.id}.`);
-        return attacker;
+    if (targetIndex === -1) {
+        logger.warn(`ATTACK order: Target actor with ID ${actorOrders.targetId} not found for attacker ${allActorsInWorld[attackerIndex].id}.`);
+        return allActorsInWorld[attackerIndex];
     }
 
-    if (targetActor.state === ActorState.DEAD) {
-        logger.info(`ATTACK order: Target actor ${targetActor.id} is already dead.`);
-        return attacker;
+    if (allActorsInWorld[targetIndex].state === ActorState.DEAD) {
+        logger.info(`ATTACK order: Target actor ${allActorsInWorld[targetIndex].id} is already dead.`);
+        return allActorsInWorld[attackerIndex];
     }
 
-    if (attacker.id === targetActor.id) {
-        logger.info(`ATTACK order: Actor ${attacker.id} cannot target itself.`);
-        return attacker;
+    if (allActorsInWorld[attackerIndex].id === allActorsInWorld[targetIndex].id) {
+        logger.info(`ATTACK order: Actor ${allActorsInWorld[attackerIndex].id} cannot target itself.`);
+        return allActorsInWorld[attackerIndex];
     }
 
-    const startHex = gridPositionToHex(attacker.pos);
-    const targetHex = gridPositionToHex(targetActor.pos);
+    const startHex = gridPositionToHex(allActorsInWorld[attackerIndex].pos);
+    const targetHex = gridPositionToHex(allActorsInWorld[targetIndex].pos);
 
     // 1. Check Weapon Range
     const distance = startHex.distance(targetHex); // Axial distance
-    if (distance > attacker.weapon.range) {
-        logger.info(`ATTACK order: Target ${targetActor.id} is out of range for ${attacker.id} (range: ${attacker.weapon.range}, distance: ${distance}).`);
-        return attacker;
+    if (distance < allActorsInWorld[attackerIndex].weapon.minRange || distance > allActorsInWorld[attackerIndex].weapon.maxRange) {
+        logger.info(`ATTACK order: Target ${allActorsInWorld[targetIndex].id} is out of range for ${allActorsInWorld[attackerIndex].id} (min: ${allActorsInWorld[attackerIndex].weapon.minRange}, max: ${allActorsInWorld[attackerIndex].weapon.maxRange}, distance: ${distance}).`);
+        return allActorsInWorld[attackerIndex];
     }
 
     // 2. Check Line of Sight
     const losClear = hasLineOfSight(startHex, targetHex, world.terrain, allActorsInWorld);
     if (!losClear) {
-        logger.info(`ATTACK order: Line of sight from ${attacker.id} to ${targetActor.id} is blocked.`);
-        return attacker;
+        logger.info(`ATTACK order: Line of sight from ${allActorsInWorld[attackerIndex].id} to ${allActorsInWorld[targetIndex].id} is blocked.`);
+        return allActorsInWorld[attackerIndex];
     }
 
-    // Apply damage
-    targetActor.health -= attacker.weapon.damage;
-    logger.info(`Actor ${attacker.id} attacked Actor ${targetActor.id} with ${attacker.weapon.name} for ${attacker.weapon.damage} damage. Target health now: ${targetActor.health}`);
+    // Apply damage - modify the actor directly in the array
+    allActorsInWorld[targetIndex].health -= allActorsInWorld[attackerIndex].weapon.damage;
+    logger.info(`Actor ${allActorsInWorld[attackerIndex].id} attacked Actor ${allActorsInWorld[targetIndex].id} with ${allActorsInWorld[attackerIndex].weapon.name} for ${allActorsInWorld[attackerIndex].weapon.damage} damage. Target health now: ${allActorsInWorld[targetIndex].health}`);
 
-    if (targetActor.health <= 0) {
-        targetActor.health = 0; // Ensure health doesn't go negative
-        targetActor.state = ActorState.DEAD;
-        logger.info(`Actor ${targetActor.id} has been defeated.`);
+    if (allActorsInWorld[targetIndex].health <= 0) {
+        allActorsInWorld[targetIndex].health = 0; // Ensure health doesn't go negative
+        allActorsInWorld[targetIndex].state = ActorState.DEAD;
+        logger.info(`Actor ${allActorsInWorld[targetIndex].id} has been defeated.`);
     }
 
-    return attacker;
+    return allActorsInWorld[attackerIndex];
 }
 
 // update actors based on turn orders
@@ -219,7 +225,7 @@ export async function applyRulesToActorOrders(game: Game, world: World, allActor
             const ao = allActorOrders[i];
             // applyMovementOrders might also need allActorsInWorld if it checks for collisions with other actors,
             // or it might just need the terrain from the world object.
-            await applyMovementOrders(ao, game, world, ts); // Assuming world object is enough for terrain checks
+            await applyMovementOrders(ao, game, world, ts, allActorsInWorld); // Pass allActorsInWorld as well
             await applyFiringRules(ao, game, world, allActorsInWorld, ts);
         }
     }
@@ -251,8 +257,8 @@ function turnResultsPerPlayer(game: Game, allUpdatedActorsThisTurn: Array<Actor>
             turn: game.turn,
             world: {
                 terrain: visibleWorld.terrain,
-                actors: visibleWorld.actors,
-                actorIds: visibleWorld.actors.map(a => a.id)
+                actorIds: visibleWorld.actorIds,
+                actors: visibleWorld.actors // Populate actors for API response
             }
         };
     });
@@ -262,17 +268,9 @@ function filterOrdersForGameTurn(o: TurnOrders, gameId: number, turn: number) {
     return o.gameId == gameId && o.turn == turn;
 }
 
-// Helper function to extract actor ID from order, handling both API format (actorId) and internal format (actor)
+// Helper function to extract actor ID from order
 function extractActorId(order: ActorOrders): number | undefined {
-    // Check if actor is a number (ID)
-    if (typeof order.actor === 'number') {
-        return order.actor;
-    }
-    // Check if actor is an Actor object with an id property
-    if (typeof order.actor === 'object' && order.actor !== null && 'id' in order.actor) {
-        return order.actor.id;
-    }
-    return undefined;
+    return order.actorId;
 }
 
 export function flatten<T>(arr: Array<Array<T>>): Array<T> {
@@ -306,19 +304,9 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         return Promise.reject(e);
     }
 
+    // No need to map actor IDs to objects anymore since ActorOrders now only uses IDs
     const actorOrdersLists = gameTurnOrders.map((to: TurnOrders) => {
-        // Map actor IDs in orders to actual actor objects
-        return to.orders.map(order => {
-            const actorId = extractActorId(order);
-            const actorObject = allActorsInWorld.find(a => a.id === actorId);
-            if (!actorObject) {
-                // This case should ideally not happen if data is consistent
-                logger.error(`Could not find actor object for ID ${actorId} in TurnOrders for player ${to.playerId}`);
-                // Potentially filter out this order or handle error appropriately
-                return null;
-            }
-            return { ...order, actor: actorObject };
-        }).filter(order => order !== null) as ActorOrders[]; // Filter out nulls and assert type
+        return to.orders;
     });
     const flattenedActorOrders: Array<ActorOrders> = flatten(actorOrdersLists);
 
@@ -370,7 +358,7 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         return Promise.reject(e.message);
     }
     logger.debug("rules.processGameTurn: resolve with turn status");
-    return Promise.resolve(<TurnStatus>{ complete: true, msg: "Turn complete", turn: game.turn });
+    return Promise.resolve(<TurnStatus>{ complete: true, msg: "Turn complete", turn: game.turn + 1 });
 }
 
 export async function process(ordersId: number): Promise<TurnStatus> {
@@ -432,15 +420,15 @@ export async function createWorld(): Promise<number> {
 
 export async function filterWorldForPlayer(world: World, playerId: number, allActors?: Actor[]): Promise<World> {
     const actors = allActors || await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
-    
+
     // Use the new getVisibleWorldForPlayer from Visibility service
     const visibleWorld = getVisibleWorldForPlayer({ terrain: world.terrain, actors }, playerId);
 
-    return Promise.resolve({ 
-        ...world, 
-        actorIds: visibleWorld.actors.map(a => a.id), 
-        actors: visibleWorld.actors, 
-        terrain: visibleWorld.terrain 
+    return Promise.resolve({
+        ...world,
+        actorIds: visibleWorld.actorIds,
+        actors: visibleWorld.actors, // Populate actors for API response
+        terrain: visibleWorld.terrain
     });
 }
 
@@ -494,6 +482,16 @@ export async function setupActors(game: Game, playerId: number) {
     let attempts = 0;
     let x = 0;
     let y = 0;
+
+    // Helper function to check if an area is empty
+    const isAreaEmpty = (x: number, y: number, size: number, actors: Actor[]): boolean => {
+        return !actors.some(actor =>
+            actor.pos.x >= x &&
+            actor.pos.x < x + size &&
+            actor.pos.y >= y &&
+            actor.pos.y < y + size
+        );
+    };
 
     // Create a list of all possible positions to try, shuffled for randomness
     const possiblePositions = [];
@@ -551,12 +549,7 @@ export async function setupActors(game: Game, playerId: number) {
         return [];
     }
 
-    const defaultWeapon: Weapon = {
-        name: "Standard Issue Blaster",
-        range: 5, // Example range
-        damage: 10 // Example damage
-        // ammo is optional, so not included here
-    };
+    const defaultWeapon: Weapon = getDefaultWeapon();
 
     const newActorsData: Omit<Actor, 'id'>[] = [];
     for (let i = 0; i < 9; i++) {

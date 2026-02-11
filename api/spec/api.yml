@@ -303,6 +303,10 @@ components:
       properties:
         id:
           type: integer
+        actorIds:
+          type: array
+          items:
+            type: integer
         actors:
           type: array
           items:
@@ -355,13 +359,18 @@ components:
       type: object
       required:
         - name
-        - range
+        - minRange
+        - maxRange
         - damage
       properties:
         name:
           type: string
-        range:
+        minRange:
           type: integer
+          description: "Minimum range in hexes (0 for melee weapons)"
+        maxRange:
+          type: integer
+          description: "Maximum range in hexes"
         damage:
           type: integer
         ammo:

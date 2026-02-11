@@ -13,7 +13,7 @@ describe("smoke - integration", () => {
     it("create a game", (done) => {
         lgm.createGame()
             .then((res) => {
-                assert.deepEqual(res, { id: 0 });
+                assert.deepEqual(res, { id: 0, gameId: 0 });
                 done();
             })
             .catch(done);
@@ -22,7 +22,7 @@ describe("smoke - integration", () => {
     it("create a second game", (done) => {
         lgm.createGame()
             .then((res) => {
-                assert.deepEqual(res, { id: 1 });
+                assert.deepEqual(res, { id: 1, gameId: 1 });
                 done();
             })
             .catch(done);
@@ -148,10 +148,11 @@ describe("smoke - integration", () => {
 });
 
 describe("complete first two turns with one player - empty orders", () => {
-    let gameId;
-    let playerId;
+    let gameId: any;
+    let playerId: any;
     before(async function () {
-        const resp: lgm.CreateGameResponse = await lgm.createGame();
+        lgm.deleteStore();
+        const resp: any = await lgm.createGame();
         gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
@@ -186,6 +187,7 @@ describe("complete first two turns with one player - empty orders", () => {
             orders: [
                 {
                     actorId: 1,
+                    orderType: 0, // MOVE
                     ordersList: [1, 1, 1]
 
                 }
@@ -215,13 +217,14 @@ describe("complete first two turns with one player - empty orders", () => {
 });
 
 describe("complete first turn with one player - standing still orders", () => {
-    let gameId;
-    let playerId;
+    let gameId: any;
+    let playerId: any;
     let world: World;
     let myActors: Array<Actor>;
 
     before(async function () {
-        const resp: lgm.CreateGameResponse = await lgm.createGame();
+        lgm.deleteStore();
+        const resp: any = await lgm.createGame();
         gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
@@ -236,7 +239,7 @@ describe("complete first turn with one player - standing still orders", () => {
         const standStillOrders = new Array(TIMESTEP_MAX).fill(Direction.NONE);
 
         myActors.forEach((a) => {
-            actorOrders.push({ actorId: a.id, ordersList: standStillOrders });
+            actorOrders.push({ actorId: a.id, orderType: 0, ordersList: standStillOrders }); // 0 corresponds to MOVE
         });
         const result = await lgm.postOrders({ orders: actorOrders }, gameId, 1, playerId);
 
@@ -273,13 +276,14 @@ describe("complete first turn with one player - standing still orders", () => {
 });
 
 describe("complete first turn with one player - moving forward orders", () => {
-    let gameId;
-    let playerId;
+    let gameId: any;
+    let playerId: any;
     let world: World;
     let myActors: Array<Actor>;
 
     before(async function () {
-        const resp: lgm.CreateGameResponse = await lgm.createGame();
+        lgm.deleteStore();
+        const resp: any = await lgm.createGame();
         gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
@@ -294,7 +298,7 @@ describe("complete first turn with one player - moving forward orders", () => {
         const standStillOrders = new Array(TIMESTEP_MAX).fill(Direction.UP_LEFT);
 
         myActors.forEach((a) => {
-            actorOrders.push({ actorId: a.id, ordersList: standStillOrders });
+            actorOrders.push({ actorId: a.id, orderType: 0, ordersList: standStillOrders }); // 0 corresponds to MOVE
         });
         const result = await lgm.postOrders({ orders: actorOrders }, gameId, 1, playerId);
 

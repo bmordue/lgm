@@ -60,9 +60,6 @@ pkgs.mkShell {
     jq              # JSON parsing for API responses
     tree            # Directory structure visualization
     which           # Debugging PATH issues
-    
-    # Beads viewer
-    beads_viewer
   ];
 
   # Environment setup and shell hooks
@@ -75,8 +72,8 @@ pkgs.mkShell {
     echo "Current directory: $(pwd)"
     echo ""
 
-    # Add Go bin directory to PATH for beads
-    export PATH="$PATH:$HOME/go/bin"
+    # Add Go bin directory and local bin to PATH for beads
+    export PATH="$PATH:$HOME/go/bin:$HOME/.local/bin"
 
     # Install git beads if not already installed
     if ! command -v bd &> /dev/null; then

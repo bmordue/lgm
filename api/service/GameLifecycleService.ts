@@ -1,6 +1,6 @@
 "use strict";
 
-import store = require("./Store");
+import * as store from "./DatabaseStore";
 import rules = require("./Rules");
 import logger = require("../utils/Logger");
 import util = require("util");
@@ -25,6 +25,8 @@ export interface JoinGameResponse {
   world: World;
   playerCount: number;
   maxPlayers: number;
+  hostPlayerId?: number;
+  gameState?: GameState;
 }
 
 export interface GameSummary {
@@ -32,6 +34,8 @@ export interface GameSummary {
   playerCount: number;
   maxPlayers: number;
   isFull: boolean;
+  hostPlayerId?: number;
+  gameState?: GameState;
 }
 
 export interface ListGamesResponse {
@@ -58,7 +62,7 @@ export async function createGame(maxPlayers?: number): Promise<CreateGameRespons
   };
 
   const gameId = await store.create<Game>(store.keys.games, newGame);
-  return { gameId };
+  return { gameId: gameId };
 }
 
 /**
@@ -111,7 +115,16 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
     world.actorIds = world.actorIds.concat(actorIds);
     await store.replace(store.keys.worlds, game.worldId, world);
 
-    return await rules.filterGameForPlayer(gameId, playerId);
+    return {
+        gameId: game.id!,
+        playerId: playerId,
+        turn: game.turn,
+        world: await rules.filterWorldForPlayer(world, playerId),
+        playerCount: game.players.length,
+        maxPlayers: game.maxPlayers!,
+        hostPlayerId: game.hostPlayerId,
+        gameState: game.gameState
+    };
 }
 
 async function validateUniqueUsername(game: Game, username: string) {
@@ -182,21 +195,42 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
         throw new Error("New host must be a player in the game");
     }
 
-    // Update host in game
-    game.hostPlayerId = newHostPlayerId;
-    await store.replace(store.keys.games, gameId, game);
+    // Read player records before any modifications for potential rollback
+    const oldHost = await store.read<Player>(store.keys.players, requestingPlayerId);
+    const newHost = await store.read<Player>(store.keys.players, newHostPlayerId);
+    
+    // Save original state for rollback
+    const originalHostPlayerId = game.hostPlayerId;
+    const originalOldHostIsHost = oldHost.isHost;
+    const originalNewHostIsHost = newHost.isHost;
 
-    // Update player records to reflect host status
-    const oldHostPlayer = await store.read<Player>(store.keys.players, requestingPlayerId);
-    const newHostPlayer = await store.read<Player>(store.keys.players, newHostPlayerId);
+    try {
+        // Update host in game
+        game.hostPlayerId = newHostPlayerId;
+        await store.replace(store.keys.games, gameId, game);
 
-    oldHostPlayer.isHost = false;
-    newHostPlayer.isHost = true;
+        // Update player records
+        oldHost.isHost = false;
+        newHost.isHost = true;
 
-    await Promise.all([
-        store.replace(store.keys.players, requestingPlayerId, oldHostPlayer),
-        store.replace(store.keys.players, newHostPlayerId, newHostPlayer)
-    ]);
+        await store.replace(store.keys.players, requestingPlayerId, oldHost);
+        await store.replace(store.keys.players, newHostPlayerId, newHost);
+    } catch (error) {
+        // Rollback all changes on failure
+        try {
+            game.hostPlayerId = originalHostPlayerId;
+            oldHost.isHost = originalOldHostIsHost;
+            newHost.isHost = originalNewHostIsHost;
+            
+            await store.replace(store.keys.games, gameId, game);
+            await store.replace(store.keys.players, requestingPlayerId, oldHost);
+            await store.replace(store.keys.players, newHostPlayerId, newHost);
+        } catch (rollbackError) {
+            // Log rollback failure but throw original error
+            logger.error(`Failed to rollback host transfer for game ${gameId}: ${rollbackError}`);
+        }
+        throw error;
+    }
 }
 
 async function validateHostPermissions(game: Game, requestingPlayerId: number) {
