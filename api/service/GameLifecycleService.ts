@@ -193,8 +193,10 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
     oldHostPlayer.isHost = false;
     newHostPlayer.isHost = true;
 
-    await store.replace(store.keys.players, requestingPlayerId, oldHostPlayer);
-    await store.replace(store.keys.players, newHostPlayerId, newHostPlayer);
+    await Promise.all([
+        store.replace(store.keys.players, requestingPlayerId, oldHostPlayer),
+        store.replace(store.keys.players, newHostPlayerId, newHostPlayer)
+    ]);
 }
 
 async function validateHostPermissions(game: Game, requestingPlayerId: number) {
@@ -222,7 +224,7 @@ export async function getPlayerGameState(gameId: number, playerId: number): Prom
     }
 
     // Return the filtered game state for this player
-    return await rules.filterGameForPlayer(gameId, playerId);
+    return rules.filterGameForPlayer(gameId, playerId);
 }
 
 export async function listGames(): Promise<ListGamesResponse> {
