@@ -3,8 +3,16 @@ import GameService = require("../service/GameService");
 import GameLifecycleService = require("../service/GameLifecycleService");
 
 module.exports.createGame = async function createGame(context: ExegesisContext) {
-  const maxPlayers = context.requestBody?.maxPlayers; // Optional parameter
-  return GameLifecycleService.createGame(maxPlayers);
+  if (!context.requestBody || typeof context.requestBody.maxPlayers === 'undefined') {
+    return {
+      status: 400,
+      body: { message: "Missing required field: maxPlayers" }
+    };
+  }
+  const maxPlayers = context.requestBody.maxPlayers;
+  const result = await GameLifecycleService.createGame(maxPlayers);
+  // Return with 'id' property to match API expectations
+  return { id: result.gameId };
 };
 
 module.exports.joinGame = async function joinGame(context: ExegesisContext) {

@@ -89,20 +89,20 @@ describe("rules tests", function () {
 
         describe("valid orders", () => {
             it("handles timestep with orders present (no movement)", async () => {
-                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.NONE], orderType: OrderType.MOVE };
-                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
+                const ao: ActorOrders = { actorId: theActor.id, ordersList: [Direction.NONE], orderType: OrderType.MOVE };
+                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep, [theActor]);
                 assert.deepEqual(updatedActor.pos, { x: 0, y: 0 });
             });
 
             it("handles timestep with orders present (with movement)", async () => {
-                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.UP_RIGHT], orderType: OrderType.MOVE  };
-                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
+                const ao: ActorOrders = { actorId: theActor.id, ordersList: [Direction.UP_RIGHT], orderType: OrderType.MOVE  };
+                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep, [theActor]);
                 assert.deepEqual(updatedActor.pos, { x: 0, y: 1 });
             });
 
             it("handles timestep with no orders", async () => {
-                const ao: ActorOrders = { actor: theActor, ordersList: [], orderType: OrderType.MOVE  };
-                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
+                const ao: ActorOrders = { actorId: theActor.id, ordersList: [], orderType: OrderType.MOVE  };
+                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep, [theActor]);
                 assert.deepEqual(updatedActor.pos, { x: 0, y: 0 });
             });
         });
@@ -114,9 +114,9 @@ describe("rules tests", function () {
                 theActor.pos = startPos;
                 assert.deepEqual(rules.applyDirection(startPos, Direction.UP_RIGHT), { x: 1, y: 3 }); // just checking
 
-                const ao: ActorOrders = { actor: theActor, ordersList: [Direction.UP_RIGHT], orderType: OrderType.MOVE  };
+                const ao: ActorOrders = { actorId: theActor.id, ordersList: [Direction.UP_RIGHT], orderType: OrderType.MOVE  };
 
-                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
+                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep, [theActor]);
                 assert.deepEqual(updatedActor.pos, startPos);
             });
         });
@@ -125,8 +125,8 @@ describe("rules tests", function () {
 
             async function testMoveOutsideTerrain(startPos: GridPosition, direction: Direction) {
                 theActor.pos = startPos;
-                const ao: ActorOrders = { actor: theActor, ordersList: [direction], orderType: OrderType.MOVE  };
-                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep);
+                const ao: ActorOrders = { actorId: theActor.id, ordersList: [direction], orderType: OrderType.MOVE  };
+                const updatedActor = await rules.applyMovementOrders(ao, game, world, timestep, [theActor]);
                 assert.deepEqual(updatedActor.pos, startPos);
             }
 
@@ -161,9 +161,9 @@ describe("rules tests", function () {
         it("handles a single updated actor with empty orders list", async () => {
             const allActorOrders: Array<ActorOrders> = [];
             const singleActorOrders: ActorOrders = {
-                actor: theActor,
+                actorId: theActor.id,
                 ordersList: [],
-                orderType: OrderType.MOVE 
+                orderType: OrderType.MOVE
             };
             allActorOrders.push(singleActorOrders);
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
@@ -173,9 +173,9 @@ describe("rules tests", function () {
         it("handles a single updated actor with partial orders list", async () => {
             const allActorOrders: Array<ActorOrders> = [];
             const singleActorOrders: ActorOrders = {
-                actor: theActor,
+                actorId: theActor.id,
                 ordersList: [Direction.UP_RIGHT, Direction.UP_RIGHT],
-                orderType: OrderType.MOVE 
+                orderType: OrderType.MOVE
             };
             allActorOrders.push(singleActorOrders);
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
@@ -185,9 +185,9 @@ describe("rules tests", function () {
         it("handles a single updated actor with complete orders list", async () => {
             const allActorOrders: Array<ActorOrders> = [];
             const singleActorOrders: ActorOrders = {
-                actor: theActor,
+                actorId: theActor.id,
                 ordersList: new Array(TIMESTEP_MAX).fill(Direction.UP_RIGHT),
-                orderType: OrderType.MOVE 
+                orderType: OrderType.MOVE
             };
             allActorOrders.push(singleActorOrders);
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
@@ -197,8 +197,8 @@ describe("rules tests", function () {
         it("handles several updated actors", async () => {
             const actorTwo: Actor = { id: 1, pos: { x: 0, y: 1 }, state: ActorState.ALIVE, owner: 0 };
             const allActorOrders: Array<ActorOrders> = [
-                { actor: actorTwo, ordersList: [Direction.UP_RIGHT, Direction.DOWN_LEFT], orderType: OrderType.MOVE },
-                { actor: theActor, ordersList: [Direction.UP_RIGHT, Direction.UP_LEFT], orderType: OrderType.MOVE }
+                { actorId: actorTwo.id, ordersList: [Direction.UP_RIGHT, Direction.DOWN_LEFT], orderType: OrderType.MOVE },
+                { actorId: theActor.id, ordersList: [Direction.UP_RIGHT, Direction.UP_LEFT], orderType: OrderType.MOVE }
             ];
             const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, [actorTwo, theActor]);
             assert.equal(updatedActors.length, 2); // Returns all provided actors
@@ -333,8 +333,8 @@ describe("rules tests", function () {
         let world: World;
         let attacker: Actor;
         let target: Actor;
-        const defaultWeapon: Weapon = { name: "Test Blaster", range: 5, damage: 10 };
-        const longRangeWeapon: Weapon = { name: "Test Sniper", range: 10, damage: 25 };
+        const defaultWeapon: Weapon = { name: "Test Blaster", minRange: 0, maxRange: 5, damage: 10 };
+        const longRangeWeapon: Weapon = { name: "Test Sniper", minRange: 5, maxRange: 10, damage: 25 };
 
         beforeEach(async () => {
             // Initialize a simple 10x10 empty terrain for most tests
@@ -370,7 +370,7 @@ describe("rules tests", function () {
         it("should allow attack if target is within range and LoS is clear", async () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 }; // Distance 1, range 5
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]); // Using applyRulesToActorOrders to invoke applyFiringRules
 
@@ -380,7 +380,7 @@ describe("rules tests", function () {
         it("should not apply damage if target is out of range", async () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 6 }; // Distance 6, range 5
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
@@ -390,7 +390,7 @@ describe("rules tests", function () {
         it("should allow attack at exact maximum range", async () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 5 }; // Distance 5, range 5
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
@@ -402,7 +402,7 @@ describe("rules tests", function () {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 };
             attacker.weapon.damage = 25;
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
@@ -414,7 +414,7 @@ describe("rules tests", function () {
             target.pos = { x: 0, y: 1 };
             target.health = 5;
             attacker.weapon.damage = 10;
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
@@ -427,7 +427,7 @@ describe("rules tests", function () {
             target.pos = { x: 0, y: 1 };
             target.health = 5;
             attacker.weapon.damage = 100;
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
@@ -440,7 +440,7 @@ describe("rules tests", function () {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 2 }; // Distance 2, range 5
             world.terrain[0][1] = Terrain.BLOCKED; // Block LoS between (0,0) and (0,2)
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
@@ -460,7 +460,7 @@ describe("rules tests", function () {
             };
             world.actors.push(blocker);
             world.actorIds.push(blocker.id);
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target, blocker]);
 
@@ -473,7 +473,7 @@ describe("rules tests", function () {
             const otherActor: Actor = { id: 3, pos: {x: 5, y: 5}, state: ActorState.ALIVE, owner: 3, health: 100, weapon: defaultWeapon};
             world.actors.push(otherActor); // Add another actor far away
             world.actorIds.push(otherActor.id);
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target, otherActor]);
 
@@ -484,7 +484,7 @@ describe("rules tests", function () {
         it("should not do anything if orderType is not ATTACK", async () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 };
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.MOVE, ordersList: [Direction.NONE], targetId: target.id }; // MOVE order
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.MOVE, ordersList: [Direction.NONE], targetId: target.id }; // MOVE order
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
@@ -493,7 +493,7 @@ describe("rules tests", function () {
 
         it("should not attack if targetId is missing", async () => {
             attacker.pos = { x: 0, y: 0 };
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK }; // No targetId
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK }; // No targetId
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
@@ -504,7 +504,7 @@ describe("rules tests", function () {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 };
             (attacker as any).weapon = undefined; // Remove weapon
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
@@ -513,7 +513,7 @@ describe("rules tests", function () {
 
         it("should not attack if target actor does not exist", async () => {
             attacker.pos = { x: 0, y: 0 };
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: 999 }; // Non-existent target
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: 999 }; // Non-existent target
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
             // No direct assertion on health of a non-existent target, but code should not crash.
@@ -526,7 +526,7 @@ describe("rules tests", function () {
             target.pos = { x: 0, y: 1 };
             target.state = ActorState.DEAD;
             target.health = 0;
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: target.id };
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
@@ -535,7 +535,7 @@ describe("rules tests", function () {
 
         it("should not allow actor to attack itself", async () => {
             attacker.pos = { x: 0, y: 0 };
-            const order: ActorOrders = { actor: attacker, orderType: OrderType.ATTACK, targetId: attacker.id }; // Target self
+            const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: attacker.id }; // Target self
 
             await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
