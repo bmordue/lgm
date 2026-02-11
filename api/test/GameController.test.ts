@@ -10,7 +10,7 @@ describe("GameController", function () {
       store.deleteAll();
     });
 
-    it("should return error when maxPlayers is missing", async function () {
+    it("should create a game with default maxPlayers when not specified", async function () {
       const mockContext: any = {
         requestBody: {},
         params: { path: {}, query: {} },
@@ -21,8 +21,12 @@ describe("GameController", function () {
       };
 
       const result = await GameController.createGame(mockContext);
-      assert.equal(result.status, 400);
-      assert.equal(result.body.message, "Missing required field: maxPlayers");
+      assert(result.id !== undefined, "Game ID should be defined");
+      assert(typeof result.id === 'number', "Game ID should be a number");
+
+      // Verify that the game was created with default maxPlayers (4)
+      const createdGame = await store.read<any>(store.keys.games, result.id);
+      assert.equal(createdGame.maxPlayers, 4, "Default maxPlayers should be 4");
     });
 
     it("should create a game with valid maxPlayers", async function () {
