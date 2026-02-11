@@ -473,6 +473,15 @@ function inBox(item: Actor, left: number, bottom: number, right: number, top: nu
         && item.pos.y <= top;
 }
 
+function isAreaEmpty(x: number, y: number, size: number, actors: Actor[]): boolean {
+    return !actors.some(actor =>
+        actor.pos.x >= x &&
+        actor.pos.x < x + size &&
+        actor.pos.y >= y &&
+        actor.pos.y < y + size
+    );
+}
+
 export async function setupActors(game: Game, playerId: number) {
     const actorPromises: Promise<Actor>[] = [];
     const world = await store.read<World>(store.keys.worlds, game.worldId);
@@ -508,14 +517,7 @@ export async function setupActors(game: Game, playerId: number) {
         y = pos.y;
 
         // Check if this position is suitable (no other actors in the 3x3 area)
-        const empty = !existingActorObjects.some(actor =>
-            actor.pos.x >= x &&
-            actor.pos.x < x + ACTOR_GRID_SIZE &&
-            actor.pos.y >= y &&
-            actor.pos.y < y + ACTOR_GRID_SIZE
-        );
-
-        if (empty) {
+        if (isAreaEmpty(x, y, ACTOR_GRID_SIZE, existingActorObjects)) {
             placed = true;
             logger.debug(util.format("Actor placement: found an empty box: (%s, %s), (%s, %s)", x, y, x + ACTOR_GRID_SIZE - 1, y + ACTOR_GRID_SIZE - 1));
             break;
@@ -535,14 +537,7 @@ export async function setupActors(game: Game, playerId: number) {
                 x = row;
                 y = col;
 
-                const empty = !existingActorObjects.some(actor =>
-                    actor.pos.x >= x &&
-                    actor.pos.x < x + ACTOR_GRID_SIZE &&
-                    actor.pos.y >= y &&
-                    actor.pos.y < y + ACTOR_GRID_SIZE
-                );
-
-                if (empty) {
+                if (isAreaEmpty(x, y, ACTOR_GRID_SIZE, existingActorObjects)) {
                     placed = true;
                     logger.debug(util.format("Actor placement: found fallback position: (%s, %s)", x, y));
                 }
