@@ -1,6 +1,6 @@
 "use strict";
 
-import store = require("./Store");
+import * as store from "./DatabaseStore";
 import rules = require("./Rules");
 import logger = require("../utils/Logger");
 import util = require("util");
@@ -25,6 +25,8 @@ export interface JoinGameResponse {
   world: World;
   playerCount: number;
   maxPlayers: number;
+  hostPlayerId?: number;
+  gameState?: GameState;
 }
 
 export interface GameSummary {
@@ -32,6 +34,8 @@ export interface GameSummary {
   playerCount: number;
   maxPlayers: number;
   isFull: boolean;
+  hostPlayerId?: number;
+  gameState?: GameState;
 }
 
 export interface ListGamesResponse {
@@ -58,7 +62,7 @@ export async function createGame(maxPlayers?: number): Promise<CreateGameRespons
   };
 
   const gameId = await store.create<Game>(store.keys.games, newGame);
-  return { gameId };
+  return { gameId: gameId };
 }
 
 /**
@@ -90,8 +94,8 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
     const player: Player = {
         gameId,
         username,
-        isHost,
         sessionId,
+        isHost,
         joinedAt: new Date()
     };
 
@@ -111,7 +115,16 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
     world.actorIds = world.actorIds.concat(actorIds);
     await store.replace(store.keys.worlds, game.worldId, world);
 
-    return await rules.filterGameForPlayer(gameId, playerId);
+    return {
+        gameId: game.id!,
+        playerId: playerId,
+        turn: game.turn,
+        world: await rules.filterWorldForPlayer(world, playerId),
+        playerCount: game.players.length,
+        maxPlayers: game.maxPlayers!,
+        hostPlayerId: game.hostPlayerId,
+        gameState: game.gameState
+    };
 }
 
 async function validateUniqueUsername(game: Game, username: string) {
@@ -186,15 +199,15 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
     game.hostPlayerId = newHostPlayerId;
     await store.replace(store.keys.games, gameId, game);
 
-    // Update player records to reflect host status
-    const oldHostPlayer = await store.read<Player>(store.keys.players, requestingPlayerId);
-    const newHostPlayer = await store.read<Player>(store.keys.players, newHostPlayerId);
+    // Update player records
+    const oldHost = await store.read<Player>(store.keys.players, requestingPlayerId);
+    const newHost = await store.read<Player>(store.keys.players, newHostPlayerId);
 
-    oldHostPlayer.isHost = false;
-    newHostPlayer.isHost = true;
+    oldHost.isHost = false;
+    newHost.isHost = true;
 
-    await store.replace(store.keys.players, requestingPlayerId, oldHostPlayer);
-    await store.replace(store.keys.players, newHostPlayerId, newHostPlayer);
+    await store.replace(store.keys.players, requestingPlayerId, oldHost);
+    await store.replace(store.keys.players, newHostPlayerId, newHost);
 }
 
 async function validateHostPermissions(game: Game, requestingPlayerId: number) {
@@ -211,18 +224,6 @@ async function removePlayerActors(worldId: number, playerId: number) {
         .map(actor => actor.id);
     world.actorIds = remainingActorIds;
     await store.replace(store.keys.worlds, worldId, world);
-}
-
-export async function getPlayerGameState(gameId: number, playerId: number): Promise<JoinGameResponse> {
-    // Verify that the player belongs to the game
-    const game = await store.read<Game>(store.keys.games, gameId);
-
-    if (!game.players || !game.players.includes(playerId)) {
-        throw new Error("Player does not belong to this game");
-    }
-
-    // Return the filtered game state for this player
-    return await rules.filterGameForPlayer(gameId, playerId);
 }
 
 export async function listGames(): Promise<ListGamesResponse> {

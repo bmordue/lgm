@@ -6,7 +6,8 @@
   "scripts": {
     "prestart": "tsc",
     "start": "node built/index.js",
-    "test": "tsc && nyc mocha built/test",
+    "test": "env -u RUN_E2E_TESTS tsc && env -u RUN_E2E_TESTS nyc mocha built/test",
+    "test:e2e": "tsc && RUN_E2E_TESTS=1 nyc mocha built/test --exit",
     "build": "tsc",
     "watch": "tsc -w",
     "serve": "node built/index.js",
@@ -36,7 +37,8 @@
     "exegesis-express": "^4.0.0",
     "express": "^5.2.1",
     "express-openid-connect": "^2.18.1",
-    "js-yaml": "^4.1.1"
+    "js-yaml": "^4.1.1",
+    "pg": "^8.17.2"
   },
   "devDependencies": {
     "@stryker-mutator/core": "^9.0.1",
@@ -48,6 +50,7 @@
     "@types/mocha": "^10.0.10",
     "@types/morgan": "^1.9.3",
     "@types/node": "^24.0.3",
+    "@types/pg": "^8.16.0",
     "@types/superagent": "^8.1.9",
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
@@ -55,9 +58,10 @@
     "mocha": "^11.7.0",
     "nodemon": "^3.0.3",
     "nyc": "^17.1.0",
+    "prisma": "^7.3.0",
     "snyk": "^1.1297.3",
     "source-map-support": "^0.5.21",
     "superagent": "^10.2.1",
-    "typescript": "^5.8.3"
+    "typescript": "^5.9.3"
   }
 }

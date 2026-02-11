@@ -32,6 +32,7 @@ export interface Player {
     id?: number;
     gameId: number;
     username?: string;
+    isHost?: boolean;
     joinedAt?: Date;
     sessionId?: string;
 }
@@ -54,7 +55,8 @@ export interface Actor {
 
 export interface Weapon {
     name: string;
-    range: number; // in hexes
+    minRange: number; // minimum range in hexes (0 for melee weapons)
+    maxRange: number; // maximum range in hexes
     damage: number;
     ammo?: number; // optional
 }
@@ -72,7 +74,7 @@ export interface TurnResult {
     gameId: number,
     turn: number,
     playerId: number,
-    world: World // Changed from updatedActors to world
+    world: World
 }
 
 export interface TurnStatus {
@@ -92,17 +94,10 @@ export enum OrderType {
 }
 
 export interface ActorOrders {
-    actor: Actor; // Or actorId: number; depending on current usage
+    actorId: number; // Using ID instead of object for API requests
+    // Remove actor field to enforce ID-based access
     orderType: OrderType;
     ordersList?: Array<Direction>; // For MOVE orders
     targetId?: number; // For ATTACK orders, ID of the target Actor
 }
-
-export interface Player {
-    id?: number;
-    gameId: number;
-    username?: string;
-    isHost?: boolean;                // NEW: Host flag
-    joinedAt?: Date;                 // NEW: Join timestamp
-    sessionId?: string;              // NEW: Session tracking
-}
+    
