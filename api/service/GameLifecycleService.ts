@@ -195,19 +195,34 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
         throw new Error("New host must be a player in the game");
     }
 
-    // Update host in game
-    game.hostPlayerId = newHostPlayerId;
-    await store.replace(store.keys.games, gameId, game);
+    // Save original state for rollback
+    const originalHostPlayerId = game.hostPlayerId;
 
-    // Update player records
-    const oldHost = await store.read<Player>(store.keys.players, requestingPlayerId);
-    const newHost = await store.read<Player>(store.keys.players, newHostPlayerId);
+    try {
+        // Update host in game
+        game.hostPlayerId = newHostPlayerId;
+        await store.replace(store.keys.games, gameId, game);
 
-    oldHost.isHost = false;
-    newHost.isHost = true;
+        // Update player records
+        const oldHost = await store.read<Player>(store.keys.players, requestingPlayerId);
+        const newHost = await store.read<Player>(store.keys.players, newHostPlayerId);
 
-    await store.replace(store.keys.players, requestingPlayerId, oldHost);
-    await store.replace(store.keys.players, newHostPlayerId, newHost);
+        oldHost.isHost = false;
+        newHost.isHost = true;
+
+        await store.replace(store.keys.players, requestingPlayerId, oldHost);
+        await store.replace(store.keys.players, newHostPlayerId, newHost);
+    } catch (error) {
+        // Rollback game host change on failure
+        try {
+            game.hostPlayerId = originalHostPlayerId;
+            await store.replace(store.keys.games, gameId, game);
+        } catch (rollbackError) {
+            // Log rollback failure but throw original error
+            logger.error(`Failed to rollback host transfer for game ${gameId}: ${rollbackError}`);
+        }
+        throw error;
+    }
 }
 
 async function validateHostPermissions(game: Game, requestingPlayerId: number) {

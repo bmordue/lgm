@@ -474,6 +474,16 @@ export async function setupActors(game: Game, playerId: number) {
     let x = 0;
     let y = 0;
 
+    // Helper function to check if an area is empty
+    const isAreaEmpty = (x: number, y: number, size: number, actors: Actor[]): boolean => {
+        return !actors.some(actor =>
+            actor.pos.x >= x &&
+            actor.pos.x < x + size &&
+            actor.pos.y >= y &&
+            actor.pos.y < y + size
+        );
+    };
+
     // Create a list of all possible positions to try, shuffled for randomness
     const possiblePositions = [];
     for (let row = 0; row <= world.terrain.length - ACTOR_GRID_SIZE; row++) {
@@ -496,12 +506,7 @@ export async function setupActors(game: Game, playerId: number) {
         y = pos.y;
 
         // Check if this position is suitable (no other actors in the 3x3 area)
-        const empty = !existingActorObjects.some(actor =>
-            actor.pos.x >= x &&
-            actor.pos.x < x + ACTOR_GRID_SIZE &&
-            actor.pos.y >= y &&
-            actor.pos.y < y + ACTOR_GRID_SIZE
-        );
+        const empty = isAreaEmpty(x, y, ACTOR_GRID_SIZE, existingActorObjects);
 
         if (empty) {
             placed = true;
@@ -523,12 +528,7 @@ export async function setupActors(game: Game, playerId: number) {
                 x = row;
                 y = col;
 
-                const empty = !existingActorObjects.some(actor =>
-                    actor.pos.x >= x &&
-                    actor.pos.x < x + ACTOR_GRID_SIZE &&
-                    actor.pos.y >= y &&
-                    actor.pos.y < y + ACTOR_GRID_SIZE
-                );
+                const empty = isAreaEmpty(x, y, ACTOR_GRID_SIZE, existingActorObjects);
 
                 if (empty) {
                     placed = true;
