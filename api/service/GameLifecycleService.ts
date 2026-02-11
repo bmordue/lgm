@@ -94,8 +94,8 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
     const player: Player = {
         gameId,
         username,
-        sessionId,
         isHost,
+        sessionId,
         joinedAt: new Date()
     };
 
@@ -224,6 +224,18 @@ async function removePlayerActors(worldId: number, playerId: number) {
         .map(actor => actor.id);
     world.actorIds = remainingActorIds;
     await store.replace(store.keys.worlds, worldId, world);
+}
+
+export async function getPlayerGameState(gameId: number, playerId: number): Promise<JoinGameResponse> {
+    // Verify that the player belongs to the game
+    const game = await store.read<Game>(store.keys.games, gameId);
+
+    if (!game.players || !game.players.includes(playerId)) {
+        throw new Error("Player does not belong to this game");
+    }
+
+    // Return the filtered game state for this player
+    return await rules.filterGameForPlayer(gameId, playerId);
 }
 
 export async function listGames(): Promise<ListGamesResponse> {

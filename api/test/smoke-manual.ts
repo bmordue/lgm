@@ -13,7 +13,7 @@ describe("smoke - integration", () => {
     it("create a game", (done) => {
         lgm.createGame()
             .then((res) => {
-                assert.deepEqual(res, { id: 0 });
+                assert.deepEqual(res, { id: 0, gameId: 0 });
                 done();
             })
             .catch(done);
@@ -22,7 +22,7 @@ describe("smoke - integration", () => {
     it("create a second game", (done) => {
         lgm.createGame()
             .then((res) => {
-                assert.deepEqual(res, { id: 1 });
+                assert.deepEqual(res, { id: 1, gameId: 1 });
                 done();
             })
             .catch(done);
@@ -152,7 +152,7 @@ describe("complete first two turns with one player - empty orders", () => {
     let playerId: any;
     before(async function () {
         lgm.deleteStore();
-        const resp: lgm.CreateGameResponse = await lgm.createGame();
+        const resp: any = await lgm.createGame();
         gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
@@ -224,7 +224,7 @@ describe("complete first turn with one player - standing still orders", () => {
 
     before(async function () {
         lgm.deleteStore();
-        const resp: lgm.CreateGameResponse = await lgm.createGame();
+        const resp: any = await lgm.createGame();
         gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
@@ -283,7 +283,7 @@ describe("complete first turn with one player - moving forward orders", () => {
 
     before(async function () {
         lgm.deleteStore();
-        const resp: lgm.CreateGameResponse = await lgm.createGame();
+        const resp: any = await lgm.createGame();
         gameId = resp.id;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;

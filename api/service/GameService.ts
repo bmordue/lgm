@@ -27,7 +27,6 @@ export interface PostOrdersResponse {
 
 export interface CreateGameResponse {
   gameId: number;
-  id?: number;  // For backward compatibility with tests expecting 'id'
 }
 
 export interface JoinGameResponse {
@@ -61,7 +60,8 @@ export interface ListGamesResponse {
 export async function createGame(maxPlayers?: number): Promise<any> {
   const result = await GameLifecycleService.createGame(maxPlayers);
   // Return with 'id' property to match expected interface in tests that do deep equality
-  return { id: result.gameId };
+  // Return both `id` and `gameId` for compatibility with tests and callers
+  return { id: result.gameId, gameId: result.gameId };
 }
 
 export async function joinGame(gameId: number, username?: string, sessionId?: string): Promise<JoinGameResponse> {

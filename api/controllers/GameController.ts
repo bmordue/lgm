@@ -104,3 +104,9 @@ module.exports.transferHost = async function transferHost(context: ExegesisConte
 
     return { success: true };
 }
+
+module.exports.getPlayerGameState = async function getPlayerGameState(context: ExegesisContext) {
+    const { gameId, playerId } = context.params.path;
+
+    return await GameLifecycleService.getPlayerGameState(gameId, playerId);
+}
