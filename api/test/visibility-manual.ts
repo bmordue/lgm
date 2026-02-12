@@ -381,9 +381,9 @@ describe('getVisibleWorldForPlayer tests', () => {
         return terrain;
     };
 
-    const defaultWeapon: Weapon = { name: "Rifle", range: 3, damage: 10 };
-    const longRangeWeapon: Weapon = { name: "Sniper", range: 5, damage: 20 };
-    const noRangeWeapon: Weapon = { name: "Fists", range: 0, damage: 1 };
+    const defaultWeapon: Weapon = { name: "Rifle", minRange: 1, maxRange: 3, damage: 10 };
+    const longRangeWeapon: Weapon = { name: "Sniper", minRange: 3, maxRange: 5, damage: 20 };
+    const noRangeWeapon: Weapon = { name: "Fists", minRange: 0, maxRange: 1, damage: 1 };
 
 
     it('No Player Actors: should return all terrain unexplored and no actors', () => {
@@ -409,7 +409,7 @@ describe('getVisibleWorldForPlayer tests', () => {
     it('Single Player Actor, Clear View: terrain and self visible', () => {
         const R = 5, C = 5;
         const terrain = createSimpleTerrain(R, C);
-        const playerActor: Actor = { id: 1, owner: 1, pos: { x: 2, y: 2 }, state: ActorState.ALIVE, weapon: { name: "pistol", range: 2, damage: 5 } };
+        const playerActor: Actor = { id: 1, owner: 1, pos: { x: 2, y: 2 }, state: ActorState.ALIVE, weapon: { name: "pistol", minRange: 0, maxRange: 2, damage: 5 } };
         const initialWorld: { terrain: Terrain[][], actors: Actor[] } = {
             actors: [playerActor],
             terrain: terrain
@@ -429,7 +429,7 @@ describe('getVisibleWorldForPlayer tests', () => {
             for (let c = 0; c < C; c++) {
                 const targetHex = testGridPositionToHex({ x: r, y: c });
                 const distance = sourceHex.distance(targetHex);
-                if (distance <= playerActor.weapon.range) {
+                if (distance >= playerActor.weapon.minRange && distance <= playerActor.weapon.maxRange) {
                     assert.strictEqual(visibleWorld.terrain[r][c], Terrain.EMPTY, `Tile (${r},${c}) at dist ${distance} should be EMPTY`);
                 } else {
                     assert.strictEqual(visibleWorld.terrain[r][c], Terrain.UNEXPLORED, `Tile (${r},${c}) at dist ${distance} should be UNEXPLORED`);
@@ -443,7 +443,7 @@ describe('getVisibleWorldForPlayer tests', () => {
         // Wall at column 1 (y=1)
         const blocked: GridPosition[] = [{ x: 0, y: 1 }, { x: 1, y: 1 }, { x: 2, y: 1 }, { x: 3, y: 1 }, { x: 4, y: 1 }];
         const terrain = createSimpleTerrain(R, C, blocked);
-        const playerActor: Actor = { id: 1, owner: 1, pos: { x: 2, y: 0 }, state: ActorState.ALIVE, weapon: { name: "pistol", range: 3, damage: 5 } };
+        const playerActor: Actor = { id: 1, owner: 1, pos: { x: 2, y: 0 }, state: ActorState.ALIVE, weapon: { name: "pistol", minRange: 0, maxRange: 3, damage: 5 } };
         const initialWorld: { terrain: Terrain[][], actors: Actor[] } = {
             actors: [playerActor],
             terrain: terrain
@@ -475,7 +475,7 @@ describe('getVisibleWorldForPlayer tests', () => {
         const R = 7, C = 7;
         const terrain = createSimpleTerrain(R, C);
         const p1 = 1, e1 = 2, e2 = 3;
-        const playerActor: Actor = { id: 1, owner: p1, pos: { x: 1, y: 1 }, state: ActorState.ALIVE, weapon: { name: "Rifle", range: 3, damage: 10 } };
+        const playerActor: Actor = { id: 1, owner: p1, pos: { x: 1, y: 1 }, state: ActorState.ALIVE, weapon: { name: "Rifle", minRange: 1, maxRange: 3, damage: 10 } };
         const enemyActorVisible: Actor = { id: 10, owner: e1, pos: { x: 1, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Distance 2
         const enemyActorHidden: Actor = { id: 20, owner: e2, pos: { x: 5, y: 5 }, state: ActorState.ALIVE, weapon: defaultWeapon };    // Distance > 3 from (1,1)
 
@@ -500,8 +500,8 @@ describe('getVisibleWorldForPlayer tests', () => {
         const terrain = createSimpleTerrain(R, C);
         const p1 = 1;
         // Range 3 allows seeing up to distance 3 - enemy at (0,3) is distance 3 from both actors
-        const p1Actor1: Actor = { id: 1, owner: p1, pos: { x: 0, y: 0 }, state: ActorState.ALIVE, weapon: { name: "Rifle", range: 3, damage: 10 } };
-        const p1Actor2: Actor = { id: 2, owner: p1, pos: { x: 0, y: 6 }, state: ActorState.ALIVE, weapon: { name: "Rifle", range: 3, damage: 10 } };
+        const p1Actor1: Actor = { id: 1, owner: p1, pos: { x: 0, y: 0 }, state: ActorState.ALIVE, weapon: { name: "Rifle", minRange: 1, maxRange: 3, damage: 10 } };
+        const p1Actor2: Actor = { id: 2, owner: p1, pos: { x: 0, y: 6 }, state: ActorState.ALIVE, weapon: { name: "Rifle", minRange: 1, maxRange: 3, damage: 10 } };
         const enemyInMiddle: Actor = { id: 10, owner: 2, pos: { x: 0, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Visible to both (distance 3)
         const enemyFar: Actor = { id: 20, owner: 3, pos: { x: 4, y: 3 }, state: ActorState.ALIVE, weapon: defaultWeapon }; // Hidden from both (too far)
 
@@ -528,7 +528,7 @@ describe('getVisibleWorldForPlayer tests', () => {
         const terrain = createSimpleTerrain(R,C);
         const p1 = 1, neutralOwner = 2, enemyOwner = 3;
 
-        const playerActor: Actor =    { id: 1, owner: p1, pos: { x: 2, y: 0 }, state: ActorState.ALIVE, weapon: {name: "Sniper", range: 4, damage: 0}}; // Range 4
+        const playerActor: Actor =    { id: 1, owner: p1, pos: { x: 2, y: 0 }, state: ActorState.ALIVE, weapon: {name: "Sniper", minRange: 2, maxRange: 4, damage: 0}}; // Range 4
         const blockingActor: Actor =  { id: 2, owner: neutralOwner, pos: { x: 2, y: 2 }, state: ActorState.ALIVE, weapon: defaultWeapon };
         const hiddenEnemyActor: Actor = { id: 3, owner: enemyOwner, pos: { x: 2, y: 4 }, state: ActorState.ALIVE, weapon: defaultWeapon };
         // All on row 2. Player at y=0, blocker at y=2, enemy at y=4. LoS should be blocked by actor at y=2.
