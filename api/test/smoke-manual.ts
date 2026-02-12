@@ -156,8 +156,8 @@ describe("complete first two turns with one player - empty orders", () => {
         gameId = resp.gameId;
         const invitation: lgm.JoinGameResponse = await lgm.joinGame(gameId);
         playerId = invitation.playerId;
-        // Capture a valid actor id from the initial join response so subsequent
-        // turns can reference a real actor even if first-turn results omit actors
+        // Capture the actor id from the join response (strict): the server
+        // should return the player's own actors in the join payload.
         const initialActor = invitation.world && invitation.world.actors
             ? invitation.world.actors.find((a: any) => a.owner === playerId)
             : undefined;
@@ -208,8 +208,36 @@ describe("complete first two turns with one player - empty orders", () => {
     });
 
     it("post orders for second turn", async function () {
-        // Post empty orders for the second turn (robust if actor lookup failed)
-        const ordersBody = { orders: [] };
+        // Ensure we have a valid actor id; if not, try to read it from the
+        // first-turn results (visibility may omit actors from the join response)
+        if (typeof actorIdToUse === 'undefined') {
+            try {
+                const firstTurnResult = await lgm.turnResults(gameId, 1, playerId);
+                if (firstTurnResult && firstTurnResult.world && Array.isArray(firstTurnResult.world.actors) && firstTurnResult.world.actors.length > 0) {
+                    const myActor = firstTurnResult.world.actors.find((a: any) => a.owner === playerId) || firstTurnResult.world.actors[0];
+                    actorIdToUse = myActor ? myActor.id : undefined;
+                }
+            } catch (e) {
+                // leave undefined if we cannot determine it
+            }
+        }
+
+        // If we couldn't determine an actor id, post empty orders as a
+        // fallback (keeps the test robust across runs).
+        let ordersBody: any;
+        if (typeof actorIdToUse === 'undefined') {
+            ordersBody = { orders: [] };
+        } else {
+            ordersBody = {
+                orders: [
+                    {
+                        actorId: actorIdToUse,
+                        orderType: 0, // MOVE
+                        ordersList: [1, 1, 1]
+                    }
+                ]
+            };
+        }
         const ordersResponse = await lgm.postOrders(ordersBody, gameId, 2, playerId);
         const expected = {
             turnStatus: {
