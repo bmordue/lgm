@@ -5,7 +5,11 @@ import logger = require("../utils/Logger");
 import util = require("util");
 import { World, Direction, TurnResult, Game } from "./Models";
 import * as GameLifecycleService from "./GameLifecycleService";
+import type { CreateGameResponse, JoinGameResponse, GameSummary, ListGamesResponse } from "./GameLifecycleService";
 import * as OrderService from "./OrderService";
+
+// Re-export types from GameLifecycleService for backward compatibility
+export type { CreateGameResponse, JoinGameResponse, GameSummary, ListGamesResponse };
 
 // Export types from services for backward compatibility
 export interface RequestActorOrders {
@@ -25,35 +29,10 @@ export interface PostOrdersResponse {
   };
 }
 
-export interface CreateGameResponse {
-  gameId: number;
-}
-
-export interface JoinGameResponse {
-  gameId: number;
-  playerId: number;
-  turn: number;
-  world: World;
-  playerCount: number;
-  maxPlayers: number;
-}
-
 export interface TurnResultsResponse {
   success: boolean;
   world?: World; // Optional because results might not be ready
   message?: string; // For cases where world is not available yet
-}
-
-export interface GameSummary {
-  id: number;
-  playerCount: number;
-  maxPlayers: number;
-  isFull: boolean;
-}
-
-export interface ListGamesResponse {
-  gameIds: Array<number>;
-  games: Array<GameSummary>;
 }
 
 // Delegate to GameLifecycleService
