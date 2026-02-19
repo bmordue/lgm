@@ -258,7 +258,7 @@ export async function getPlayerGameState(gameId: number, playerId: number): Prom
     }
 
     // Return the filtered game state for this player
-    return await rules.filterGameForPlayer(gameId, playerId);
+    return rules.filterGameForPlayer(gameId, playerId);
 }
 
 export async function listGames(): Promise<ListGamesResponse> {
