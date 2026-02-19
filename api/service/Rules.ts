@@ -424,6 +424,22 @@ export async function filterWorldForPlayer(world: World, playerId: number, allAc
     // Use the new getVisibleWorldForPlayer from Visibility service
     const visibleWorld = getVisibleWorldForPlayer({ terrain: world.terrain, actors }, playerId);
 
+    // Ensure that the owning player's actors are always included in the filtered
+    // result. In some edge cases the visibility function can return an empty
+    // actor list (e.g. unexplored world). We still want the player to see their
+    // own actors immediately after joining or during turn results.
+    const owningActors = actors.filter(a => a.owner === playerId);
+    if (owningActors.length > 0) {
+        const existingIds = new Set(visibleWorld.actors.map(a => a.id));
+        for (const oa of owningActors) {
+            if (!existingIds.has(oa.id)) {
+                visibleWorld.actors.push(oa);
+                visibleWorld.actorIds.push(oa.id);
+                existingIds.add(oa.id);
+            }
+        }
+    }
+
     return Promise.resolve({
         ...world,
         actorIds: visibleWorld.actorIds,
