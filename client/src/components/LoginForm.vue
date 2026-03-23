@@ -1,9 +1,13 @@
 <template>
     <div id="login">
         <form @submit.prevent="login">
-            <input v-model="username" placeholder="username">
-            <input v-model="password" placeholder="password" type="password">
-            <input type="submit" value="log in">
+            <label for="username">Username</label>
+            <input id="username" v-model="username" placeholder="username">
+            <label for="password">Password</label>
+            <input id="password" v-model="password" placeholder="password" type="password">
+            <button type="submit" :disabled="isLoggingIn">
+                {{ isLoggingIn ? 'logging in...' : 'log in' }}
+            </button>
         </form>
     </div>
 </template>
@@ -15,13 +19,19 @@ export default {
     data() {
         return {
             username: "",
-            password: ""
+            password: "",
+            isLoggingIn: false
         };
     },
     methods: {
         async login() {
-            const userStore = useUserStore();
-            await userStore.login(this.username, this.password);
+            this.isLoggingIn = true;
+            try {
+                const userStore = useUserStore();
+                await userStore.login(this.username, this.password);
+            } finally {
+                this.isLoggingIn = false;
+            }
         }
     }
 };
