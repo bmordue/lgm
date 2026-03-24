@@ -2,10 +2,28 @@
     <div id="login">
         <form @submit.prevent="login">
             <label for="username">Username</label>
-            <input id="username" v-model="username" placeholder="username">
+            <input
+                id="username"
+                v-model="username"
+                placeholder="username"
+                required
+                autocomplete="username"
+            >
             <label for="password">Password</label>
-            <input id="password" v-model="password" placeholder="password" type="password">
-            <button type="submit" :disabled="isLoggingIn">
+            <input
+                id="password"
+                v-model="password"
+                placeholder="password"
+                type="password"
+                required
+                autocomplete="current-password"
+            >
+            <button
+                type="submit"
+                :disabled="isLoggingIn"
+                :aria-busy="isLoggingIn"
+                aria-live="polite"
+            >
                 {{ isLoggingIn ? 'logging in...' : 'log in' }}
             </button>
         </form>
