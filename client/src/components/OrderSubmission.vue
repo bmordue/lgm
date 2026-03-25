@@ -10,7 +10,13 @@
           Move Actor {{ move.actorId }} from ({{ move.startPos.x }}, {{ move.startPos.y }})
           to ({{ move.endPos.x }}, {{ move.endPos.y }})
         </span>
-        <button @click="handleRemoveMove(move)" class="remove-move-btn">Remove</button>
+        <button
+          @click="handleRemoveMove(move)"
+          class="remove-move-btn"
+          :aria-label="`Remove move for Actor ${move.actorId} to (${move.endPos.x}, ${move.endPos.y})`"
+        >
+          Remove
+        </button>
       </li>
     </ul>
     <button
