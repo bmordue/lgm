@@ -13,6 +13,7 @@ interface GameSummary {
 }
 
 const gameList = ref<GameSummary[]>([])
+const isCreating = ref(false)
 
 async function fetchGameList() {
   const response = await fetch(`${API_URL}/games`);
@@ -28,6 +29,7 @@ async function callCreate() {
   const userStore = useUserStore();
   const token = userStore.getToken();
 
+  isCreating.value = true;
   try {
     const response = await fetch(`${API_URL}/games`, {
       method: "post",
@@ -44,6 +46,8 @@ async function callCreate() {
     }
   } catch (error) {
     alert('Network error while creating game. Please try again.');
+  } finally {
+    isCreating.value = false;
   }
 }
 
@@ -101,7 +105,14 @@ async function join(game: GameSummary) {
       No games available
     </div>
   </div>
-  <button @click="callCreate()">Create New Game</button>
+  <button
+    @click="callCreate()"
+    :disabled="isCreating"
+    :aria-busy="isCreating"
+    aria-live="polite"
+  >
+    {{ isCreating ? 'Creating...' : 'Create New Game' }}
+  </button>
 </template>
 
 <style scoped>
