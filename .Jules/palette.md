@@ -5,3 +5,7 @@
 ## 2025-05-15 - Lockfile Management
 **Learning:** Running `pnpm install` in individual directories (`api/`, `client/`) may generate new `pnpm-lock.yaml` files. These should not be committed unless new dependencies were explicitly added, as they can be very large and clutter PRs.
 **Action:** Always check for and discard unintended lockfile changes before submitting.
+
+## 2025-05-15 - SVG Grid Accessibility Pattern
+**Learning:** For interactive SVG grids (like the HexGrid), adding `role="button"` and `tabindex="0"` to the `<g>` element, combined with `g:focus-visible .hex-polygon` CSS, provides a robust keyboard navigation experience without breaking visual mouse interactions.
+**Action:** Apply this pattern to any future SVG-based interactive components to ensure they are screen-reader and keyboard friendly.
