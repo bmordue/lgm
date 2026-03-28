@@ -1,6 +1,16 @@
 <template>
   <svg :viewBox="viewBox" @click="handleSvgClick"> <!-- Changed click handler to svg specific -->
-    <g v-for="(hex, index) in hexes" :key="index" :transform="getHexTransform(hex)" @click.stop="handleHexClick(hex)" @contextmenu.prevent="handleHexRightClick(hex)">
+    <g
+      v-for="(hex, index) in hexes"
+      :key="index"
+      :transform="getHexTransform(hex)"
+      @click.stop="handleHexClick(hex)"
+      @contextmenu.prevent="handleHexRightClick(hex)"
+      role="button"
+      tabindex="0"
+      :aria-label="getAriaLabel(hex)"
+      @keydown="handleKeyDown($event, hex)"
+    >
       <polygon
         :points="getHexPoints(hex)"
         :class="getHexClass(hex)"
@@ -216,6 +226,39 @@ export default defineComponent({
         }
     };
 
+    const getAriaLabel = (hex: Hex): string => {
+        const terrainType = getTerrainTypeForHex(hex);
+        const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex);
+        let label = `Hex at ${hexGridPos.col}, ${hexGridPos.row}`;
+
+        if (terrainType === Terrain.BLOCKED) label += ", Blocked";
+        else if (terrainType === Terrain.UNEXPLORED) label += ", Unexplored";
+
+        const actorOnHex = props.actors.find(actor => {
+            return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col;
+        });
+
+        if (actorOnHex) {
+            const isOwn = actorOnHex.owner === currentPlayerId;
+            label += `, Actor ${actorOnHex.id} (${isOwn ? 'Yours' : 'Enemy'})`;
+        }
+
+        if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r) {
+            label += ", Selected";
+        }
+
+        return label;
+    };
+
+    const handleKeyDown = (event: KeyboardEvent, hex: Hex) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            handleHexClick(hex);
+        }
+    };
+
+    const currentPlayerId = gamesStore.getCurrentPlayerId();
+
     return {
       hexes,
       selectedHexRef,
@@ -229,6 +272,8 @@ export default defineComponent({
       handleHexClick,
       handleSvgClick,
       handleHexRightClick,
+      getAriaLabel,
+      handleKeyDown,
     };
   },
 });
@@ -251,6 +296,12 @@ svg {
 
 .hex-polygon:hover {
   fill-opacity: 0.8; /* Make hex slightly more transparent on hover */
+}
+
+g:focus-visible .hex-polygon {
+  stroke: #2196f3; /* Blue stroke for focus */
+  stroke-width: 3;
+  outline: none;
 }
 
 .hex-polygon.selected {
