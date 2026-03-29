@@ -84,11 +84,13 @@ async function join(game: GameSummary) {
 <template>
   <h1>Games</h1>
   <div class="game-list">
-    <div 
+    <button
       v-for="game in gameList" 
       :key="game.id"
       class="game-item"
       :class="{ 'game-full': game.isFull }"
+      :disabled="game.isFull"
+      :aria-label="'Join Game #' + game.id"
       @click="join(game)"
     >
       <div class="game-id">Game #{{ game.id }}</div>
@@ -96,7 +98,7 @@ async function join(game: GameSummary) {
         Players: {{ game.playerCount }}/{{ game.maxPlayers }}
         <span v-if="game.isFull" class="full-indicator"> (FULL)</span>
       </div>
-    </div>
+    </button>
     <div v-if="gameList.length === 0" class="no-games">
       No games available
     </div>
@@ -110,6 +112,9 @@ async function join(game: GameSummary) {
 }
 
 .game-item {
+  display: block;
+  width: 100%;
+  text-align: left;
   border: 1px solid #ccc;
   border-radius: 8px;
   padding: 15px;
