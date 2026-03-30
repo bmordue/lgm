@@ -22,4 +22,14 @@ describe('LoginForm', () => {
     expect(button.text()).toBe('logging in...')
     expect(button.element.disabled).toBe(true)
   })
+
+  it('displays error message when errorMessage is set', async () => {
+    const wrapper = mount(LoginForm)
+    const errorText = 'Invalid username or password'
+    await wrapper.setData({ errorMessage: errorText })
+    const errorDiv = wrapper.find('.error-message')
+    expect(errorDiv.exists()).toBe(true)
+    expect(errorDiv.text()).toBe(errorText)
+    expect(errorDiv.attributes('role')).toBe('alert')
+  })
 })
