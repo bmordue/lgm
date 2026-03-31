@@ -5,7 +5,7 @@
 import assert = require("assert");
 import { getCombatConfig, overrideCombatConfig, COMBAT_CONFIG } from '../config/CombatConfig';
 import { getTerrainProperties, getTerrainByName, TERRAIN_PROPERTIES } from '../config/TerrainConfig';
-import { Terrain } from '../service/Models';
+import { Terrain, Weapon } from '../service/Models';
 import { getWeaponById, getDefaultWeapon, WEAPON_TYPES, getWeaponDamage } from '../config/WeaponsConfig';
 
 describe('Combat Configuration', () => {
@@ -163,12 +163,12 @@ describe('Combat Configuration', () => {
             assert.strictEqual(getWeaponDamage(rifle), 20);
             
             // Test with damage field (backward compatibility)
-            const oldWeapon: any = { damage: 15 };
-            assert.strictEqual(getWeaponDamage(oldWeapon), 15);
+            const weaponWithDamageField: Partial<Weapon> = { name: 'Old', minRange: 0, maxRange: 5, damage: 15 };
+            assert.strictEqual(getWeaponDamage(weaponWithDamageField as Weapon), 15);
             
             // Test with default fallback
-            const emptyWeapon: any = {};
-            assert.strictEqual(getWeaponDamage(emptyWeapon), 10);
+            const weaponWithoutDamage: Partial<Weapon> = { name: 'No Dmg', minRange: 0, maxRange: 5 };
+            assert.strictEqual(getWeaponDamage(weaponWithoutDamage as Weapon), 10);
         });
     });
 
