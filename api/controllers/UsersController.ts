@@ -1,6 +1,7 @@
 import { ExegesisContext } from "exegesis";
 import * as bcrypt from 'bcrypt';
 import logger = require('../utils/Logger');
+import { SECURITY_CONFIG } from '../config/GameConfig';
 
 const userTokens: UserToken[] = []
 
@@ -20,8 +21,7 @@ export async function loginUser(context: ExegesisContext) {
       return;
     }
   } else {
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(password, SECURITY_CONFIG.bcryptSaltRounds);
     userTokens.push({ username, token: hashedPassword });
   }
 
