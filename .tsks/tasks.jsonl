@@ -2,7 +2,7 @@
 {"id":"2","title":"Add combat-related unit actions","status":"blocked","dependencies":["3"],"created_at":"2026-03-30T17:44:40.099059409Z","doc_hash":"ed5e47cd2df705b8d7d7de684693cbc52592e70eaeaaa8f0eeff2919df9f6cb3"}
 {"id":"3","title":"Integrate combat mechanics into game loop","status":"blocked","dependencies":["6","4"],"created_at":"2026-03-30T17:44:40.11217057Z","doc_hash":"1072a76187533d40cb628a2123f2c535cc84e6a2a59ce2cefe94844b02eaa6df"}
 {"id":"4","title":"Implement damage calculation formulas","status":"blocked","dependencies":["5"],"created_at":"2026-03-30T17:44:40.124967434Z","doc_hash":"7c2fe8c687e1ba1b823c748227b5b591505f3ad708ab7072349baa781aadeff3"}
-{"id":"5","title":"Define damage calculation factors","status":"todo","created_at":"2026-03-30T17:44:40.136963125Z","doc_hash":"08c615d085ef691012f83bb7044cca1e674ead0cc37dd8ea2601ad44a7ff038a"}
+{"id":"5","title":"Define damage calculation factors","status":"done","created_at":"2026-03-30T17:44:40.136963125Z","doc_hash":"08c615d085ef691012f83bb7044cca1e674ead0cc37dd8ea2601ad44a7ff038a"}
 {"id":"6","title":"Implement weapon range validation logic","status":"todo","created_at":"2026-03-30T17:44:40.149253414Z","doc_hash":"9977df32892e90736e6801b1e852ae3d205e201d4e7f033d466923899aec6e25"}
 {"id":"7","title":"Add WebSocket support for real-time updates","status":"blocked","dependencies":["9"],"created_at":"2026-03-30T17:44:40.16129521Z","doc_hash":"2eaa3de88623150308719fa1c7d349103778506f71c5dcb23f621a7e8ba35ce2"}
 {"id":"8","title":"Enhance authentication and user management","status":"blocked","dependencies":["9"],"created_at":"2026-03-30T17:44:40.170442888Z","doc_hash":"ee43d9d951be8d1c1e84284d7f8c99ba033d01011efc28a2fd21ffe6ab6bee57"}
