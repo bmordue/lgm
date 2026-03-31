@@ -35,6 +35,24 @@ jobs:
         working-directory: ./api
         run: npm test
 
+      - name: Start server for E2E tests
+        working-directory: ./api
+        run: |
+          npm start &
+          echo $! > /tmp/server.pid
+          npx wait-on http://localhost:3000/games --timeout 30000
+
+      - name: Run E2E tests
+        working-directory: ./api
+        run: npm run test:e2e
+
+      - name: Stop server after E2E tests
+        if: always()
+        run: |
+          if [ -f /tmp/server.pid ]; then
+            kill $(cat /tmp/server.pid) || true
+          fi
+
       - name: Run Stryker.js mutation testing
         working-directory: ./api
         run: npx stryker run

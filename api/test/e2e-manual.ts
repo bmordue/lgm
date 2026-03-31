@@ -4,28 +4,38 @@ import util = require('util');
 import { TurnOrders } from '../service/Models';
 import { inspect } from 'util';
 
-// const TEST_AUTH_TOKEN = 'dummy auth';
+const BASE_URL = 'http://localhost:3000';
 
-function createAGame() {
-    return superagent.post('http://localhost:3000/games')
+async function getAuthToken(): Promise<string> {
+    const response = await superagent
+        .post(`${BASE_URL}/users/login`)
+        .send({ username: 'smoke_test_user', password: 'testpassword' });
+    return response.body.token;
+}
+
+function createAGame(token: string) {
+    return superagent.post(`${BASE_URL}/games`)
+        .set('Authorization', `Bearer ${token}`)
         .send();
 }
 
-function joinAGame(gameId: number) {
-    return superagent.put('http://localhost:3000/games/' + gameId)
+function joinAGame(gameId: number, token: string) {
+    return superagent.put(`${BASE_URL}/games/${gameId}`)
+        .set('Authorization', `Bearer ${token}`)
         .send();
 }
 
-function sendOrders(gameId: number, playerId: number, turn: number, orders: TurnOrders) {
+function sendOrders(gameId: number, playerId: number, turn: number, orders: TurnOrders, token: string) {
     //    POST /games/{gameId}/turns/{turn}/players/{playerId}
-    return superagent.post(util.format('http://localhost:3000/games/%s/turns/%s/players/%s', gameId, turn, playerId))
+    return superagent.post(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerId))
+        .set('Authorization', `Bearer ${token}`)
         .send(orders);
 }
 
-function getTurnResults(gameId: number, playerId: number, turn: number) {
+function getTurnResults(gameId: number, playerId: number, turn: number, token: string) {
     // GET /games/{gameId}/turns/{turn}/players/{playerId}:
-
-    return superagent.get(util.format('http://localhost:3000/games/%s/turns/%s/players/%s', gameId, turn, playerId))
+    return superagent.get(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerId))
+        .set('Authorization', `Bearer ${token}`)
         .send();
 }
 
@@ -33,17 +43,22 @@ process.env.RUN_E2E_TESTS &&
     describe('Smoke - API', () => {
         let gameId: number;
         let playerId: number;
+        let authToken: string;
+
+        before(async () => {
+            authToken = await getAuthToken();
+        });
 
         it('create a game', async () => {
-            await createAGame();
+            await createAGame(authToken);
         });
 
         it('create a new game and join it', async () => {
-            const createResp = await createAGame();
+            const createResp = await createAGame(authToken);
             console.log(JSON.stringify(createResp.body, null, 4));
 
             gameId = createResp.body.id;
-            const response = await joinAGame(gameId);
+            const response = await joinAGame(gameId, authToken);
             console.log(JSON.stringify(response.body, null, 4));
 
             assert.equal(response.statusCode, 200);
@@ -61,7 +76,7 @@ process.env.RUN_E2E_TESTS &&
                 playerId: playerId,
                 orders: []
             };
-            sendOrders(gameId, playerId, 1, orders).then((response) => {
+            sendOrders(gameId, playerId, 1, orders, authToken).then((response) => {
                 console.log(JSON.stringify(response.body, null, 4));
                 assert.equal(response.statusCode, 200);
                 done();
@@ -69,7 +84,7 @@ process.env.RUN_E2E_TESTS &&
         });
 
         it('get results for first turn', (done) => {
-            getTurnResults(gameId, playerId, 1).then((response) => {
+            getTurnResults(gameId, playerId, 1, authToken).then((response) => {
                 console.log(JSON.stringify(response.body, null, 4));
                 assert.equal(response.statusCode, 200);
                 console.log(inspect(response.body));

@@ -95,6 +95,32 @@ paths:
           description: player kicked
         "400":
           description: bad request
+    get:
+      summary: get current game state for a specific player
+      operationId: getPlayerGameState
+      security:
+        - bearerAuth: []
+      x-exegesis-controller: GameController
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: playerId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: current game state for the player
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinGameResponse'
+        "400":
+          description: bad request
   /games/{gameId}/start:
     put:
       summary: start a game
@@ -138,33 +164,6 @@ paths:
       responses:
         "200":
           description: host transferred
-        "400":
-          description: bad request
-  /games/{gameId}/players/{playerId}:
-    get:
-      summary: get current game state for a specific player
-      operationId: getPlayerGameState
-      security:
-        - bearerAuth: []
-      x-exegesis-controller: GameController
-      parameters:
-      - name: gameId
-        in: path
-        required: true
-        schema:
-          type: integer
-      - name: playerId
-        in: path
-        required: true
-        schema:
-          type: integer
-      responses:
-        "200":
-          description: current game state for the player
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/JoinGameResponse'
         "400":
           description: bad request
   /users/login:
@@ -282,6 +281,23 @@ components:
           type: integer
       example:
         gameId: 0
+    JoinGameResponse:
+      type: object
+      properties:
+        gameId:
+          type: integer
+        playerId:
+          type: integer
+        turn:
+          type: integer
+        world:
+          $ref: '#/components/schemas/World'
+        playerCount:
+          type: integer
+        maxPlayers:
+          type: integer
+        hostPlayerId:
+          type: integer
     ErrorMessageResponse:
       required:
       - message
