@@ -1,0 +1,19 @@
+{"id":"1","title":"Create combat system tests","status":"blocked","dependencies":["2"],"created_at":"2026-03-30T17:44:40.084166975Z","doc_hash":"98013839001b904014369c0019e4ab745de58e16a67d98571430bd96a16b47f0"}
+{"id":"2","title":"Add combat-related unit actions","status":"blocked","dependencies":["3"],"created_at":"2026-03-30T17:44:40.099059409Z","doc_hash":"ed5e47cd2df705b8d7d7de684693cbc52592e70eaeaaa8f0eeff2919df9f6cb3"}
+{"id":"3","title":"Integrate combat mechanics into game loop","status":"blocked","dependencies":["6","4"],"created_at":"2026-03-30T17:44:40.11217057Z","doc_hash":"1072a76187533d40cb628a2123f2c535cc84e6a2a59ce2cefe94844b02eaa6df"}
+{"id":"4","title":"Implement damage calculation formulas","status":"blocked","dependencies":["5"],"created_at":"2026-03-30T17:44:40.124967434Z","doc_hash":"7c2fe8c687e1ba1b823c748227b5b591505f3ad708ab7072349baa781aadeff3"}
+{"id":"5","title":"Define damage calculation factors","status":"done","created_at":"2026-03-30T17:44:40.136963125Z","doc_hash":"08c615d085ef691012f83bb7044cca1e674ead0cc37dd8ea2601ad44a7ff038a"}
+{"id":"6","title":"Implement weapon range validation logic","status":"todo","created_at":"2026-03-30T17:44:40.149253414Z","doc_hash":"9977df32892e90736e6801b1e852ae3d205e201d4e7f033d466923899aec6e25"}
+{"id":"7","title":"Add WebSocket support for real-time updates","status":"blocked","dependencies":["9"],"created_at":"2026-03-30T17:44:40.16129521Z","doc_hash":"2eaa3de88623150308719fa1c7d349103778506f71c5dcb23f621a7e8ba35ce2"}
+{"id":"8","title":"Enhance authentication and user management","status":"blocked","dependencies":["9"],"created_at":"2026-03-30T17:44:40.170442888Z","doc_hash":"ee43d9d951be8d1c1e84284d7f8c99ba033d01011efc28a2fd21ffe6ab6bee57"}
+{"id":"9","title":"Implement database integration","status":"todo","created_at":"2026-03-30T17:44:40.180795387Z","doc_hash":"20da9bda3e07a0ff1d69353e9a2e7c8adbff1c01c67724535896d52f4c597fec"}
+{"id":"10","title":"Fix game list refresh and add live game state updates","status":"blocked","dependencies":["7"],"created_at":"2026-03-30T17:44:40.206145479Z","doc_hash":"3f519c3f6d5f83e187f622c154a06558f08cd2b3a26b8db2007072a6724e9cad"}
+{"id":"11","title":"Standardize API response formats","status":"todo","created_at":"2026-03-30T17:45:01.030139153Z","doc_hash":"96b460cddc28fcca6bf4cfa7ec0ba21fcad11589aa5cf9de10f8c334f63a4989"}
+{"id":"12","title":"Replace actor placement algorithm","status":"todo","created_at":"2026-03-30T17:45:01.051134555Z","doc_hash":"e22f0a1d2a75a797d1303fcc58254d6a452432896b0d137ce911ebb6a49fa59a"}
+{"id":"13","title":"Add API endpoint for player-specific world state","status":"todo","created_at":"2026-03-30T17:45:01.063991054Z","doc_hash":"b0370594a45ba79f8e8be603556a73dc41b036a2f18c2d550f558e9cdd8e6bcc"}
+{"id":"14","title":"Improve actor visibility information","status":"todo","created_at":"2026-03-30T17:45:01.08507694Z","doc_hash":"21ff5b6d4007ea7d2f36c0275d34107830ac614478a94da3c01b5a3b2a163d9a"}
+{"id":"15","title":"Add actor indication to hex grid","status":"todo","created_at":"2026-03-30T17:45:01.097621324Z","doc_hash":"c8e5b254aaee7471148369a6b3b503fd8fdfa08c771f3cb1df8ad675ff48aeeb"}
+{"id":"16","title":"Standardize error handling patterns","status":"todo","created_at":"2026-03-30T17:45:01.111440509Z","doc_hash":"d8f8921db40fc11ec103c9610d5d3ecf2f8bbfe11bc37d171b37f2bec5fb57af"}
+{"id":"17","title":"Expand E2E test coverage","status":"todo","created_at":"2026-03-30T17:45:01.127244654Z","doc_hash":"9e2b5a5a05f29967cfed6cabad4eb6c46ab193e2d524d73f5b7ce7aea06d09b5"}
+{"id":"18","title":"Add Vue component tests","status":"todo","created_at":"2026-03-30T17:45:01.196368253Z","doc_hash":"56bb33a13eecc67c74af69d432b272fe7fe1b7dbb6e6563b238f8ff0055baefe"}
+{"id":"19","title":"Improve Draw utility function","status":"todo","created_at":"2026-03-30T17:45:01.209798763Z","doc_hash":"0ca5a36de5de298f2fd36d4515b04ee01180b7f3417f3002e3033f55cd2d2e2a"}

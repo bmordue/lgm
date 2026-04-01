@@ -50,14 +50,27 @@ export interface Actor {
     state: ActorState,
     owner: number // playerId
     health?: number;
+    maxHealth?: number;              // NEW: Maximum health for regeneration tracking
     weapon?: Weapon;
+    armor?: number;                  // NEW: Damage reduction (0-50)
+    
+    // Combat state (NEW)
+    currentAmmo?: number;            // Current ammunition
+    isUnderCover?: boolean;          // Currently in cover
+    coverBonus?: number;             // Cover damage reduction %
+    isAiming?: boolean;              // Aiming bonus active
+    aimBonus?: number;               // Aim accuracy bonus %
 }
 
 export interface Weapon {
     name: string;
     minRange: number; // minimum range in hexes (0 for melee weapons)
     maxRange: number; // maximum range in hexes
-    damage: number;
+    baseDamage?: number;             // NEW: Base damage (renamed from damage for clarity)
+    damage?: number;                 // DEPRECATED: Keep for backward compatibility, use baseDamage
+    optimalRange?: number;           // NEW: Best accuracy distance
+    accuracy?: number;               // NEW: Base hit chance modifier (0-100)
+    penetration?: number;            // NEW: Armor piercing (0-100)
     ammo?: number; // optional
 }
 

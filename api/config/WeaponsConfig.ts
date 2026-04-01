@@ -16,7 +16,10 @@ export const WEAPON_TYPES: Record<string, WeaponDefinition> = {
         description: 'Close-range personal defense weapon',
         minRange: 0,
         maxRange: 3,
-        damage: 15,
+        baseDamage: 15,
+        optimalRange: 2,
+        accuracy: 70,
+        penetration: 10,
         ammo: 12
     },
     RIFLE: {
@@ -25,7 +28,10 @@ export const WEAPON_TYPES: Record<string, WeaponDefinition> = {
         description: 'Medium-range automatic weapon',
         minRange: 1,
         maxRange: 8,
-        damage: 20,
+        baseDamage: 20,
+        optimalRange: 5,
+        accuracy: 60,
+        penetration: 20,
         ammo: 30
     },
     SNIPER: {
@@ -34,7 +40,10 @@ export const WEAPON_TYPES: Record<string, WeaponDefinition> = {
         description: 'Long-range precision weapon',
         minRange: 5,
         maxRange: 15,
-        damage: 50,
+        baseDamage: 50,
+        optimalRange: 10,
+        accuracy: 90,
+        penetration: 40,
         ammo: 5
     },
     SHOTGUN: {
@@ -43,7 +52,10 @@ export const WEAPON_TYPES: Record<string, WeaponDefinition> = {
         description: 'Close-range spread weapon',
         minRange: 0,
         maxRange: 2,
-        damage: 35,
+        baseDamage: 35,
+        optimalRange: 1,
+        accuracy: 40,
+        penetration: 15,
         ammo: 8
     },
     ROCKET_LAUNCHER: {
@@ -52,7 +64,10 @@ export const WEAPON_TYPES: Record<string, WeaponDefinition> = {
         description: 'Explosive anti-tank weapon',
         minRange: 2,
         maxRange: 10,
-        damage: 75,
+        baseDamage: 75,
+        optimalRange: 6,
+        accuracy: 50,
+        penetration: 60,
         ammo: 1
     },
     MELEE: {
@@ -61,7 +76,10 @@ export const WEAPON_TYPES: Record<string, WeaponDefinition> = {
         description: 'Close combat weapon',
         minRange: 0,
         maxRange: 1,
-        damage: 25,
+        baseDamage: 25,
+        optimalRange: 0,
+        accuracy: 80,
+        penetration: 5,
         ammo: undefined
     },
     STANDARD_BLASTER: {
@@ -70,7 +88,10 @@ export const WEAPON_TYPES: Record<string, WeaponDefinition> = {
         description: 'Basic energy weapon issued to all units',
         minRange: 0,
         maxRange: 5,
-        damage: 10,
+        baseDamage: 10,
+        optimalRange: 3,
+        accuracy: 65,
+        penetration: 10,
         ammo: 100
     }
 };
@@ -80,5 +101,17 @@ export function getWeaponById(id: string): WeaponDefinition | undefined {
 }
 
 export function getDefaultWeapon(): Weapon {
-    return { ...WEAPON_TYPES.STANDARD_BLASTER };
+    const weapon = { ...WEAPON_TYPES.STANDARD_BLASTER };
+    // Ensure baseDamage is set for backward compatibility
+    if (!weapon.baseDamage && weapon.damage) {
+        weapon.baseDamage = weapon.damage;
+    }
+    return weapon;
+}
+
+/**
+ * Get effective damage value from a weapon (handles backward compatibility)
+ */
+export function getWeaponDamage(weapon: Weapon): number {
+    return weapon.baseDamage || weapon.damage || 10;
 }
