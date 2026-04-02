@@ -8,26 +8,18 @@ import {
     Terrain, TurnStatus, TurnOrders, TurnResult, OrderType, Weapon
 } from './Models';
 import { JoinGameResponse } from './GameService';
-// Removed 'visibility' import, replaced 'hasLineOfSight' with 'getVisibleWorldForPlayer' and specific 'hasLineOfSight as combatLineOfSight'
-import { getVisibleWorldForPlayer, hasLineOfSight  } from '../service/Visibility';
+import { getVisibleWorldForPlayer, hasLineOfSight } from '../service/Visibility';
 import { Hex } from '../Hex';
 import { getConfig } from '../config/GameConfig';
-import { getDefaultWeapon } from '../config/WeaponsConfig';
+import { getDefaultWeapon, getWeaponDamage } from '../config/WeaponsConfig';
+import * as RangeValidation from './RangeValidation';
+import { calculateDamage } from './CombatMath';
 
 const config = getConfig();
 export const TIMESTEP_MAX = config.timestepMax;
 
 // Store the original world state that processGameTurn loads.
-// This is a bit of a module-level variable, which isn't ideal, but
-// helps pass the terrain info to turnResultsPerPlayer without major refactoring of processGameTurn.
 let currentTurnWorldTerrain: Terrain[][] | undefined;
-
-// Helper function to convert GridPosition to Hex
-function gridPositionToHex(pos: GridPosition): Hex {
-    const q = pos.y; // column is q
-    const r = pos.x - (pos.y - (pos.y & 1)) / 2; // row is x, convert to axial r for odd-q
-    return new Hex(q, r, -q - r); // s = -q - r
-}
 
 function findOrdersForTurn(gameId: number, turn: number) {
     logger.debug("rules.ordersForTurn");
@@ -160,56 +152,53 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: Wor
         return allActorsInWorld[attackerIndex]; // No target specified
     }
 
-    if (!allActorsInWorld[attackerIndex].weapon) {
-        logger.error(`Actor ${allActorsInWorld[attackerIndex].id} has no weapon, cannot execute ATTACK order.`);
-        return allActorsInWorld[attackerIndex];
+    const attacker = allActorsInWorld[attackerIndex];
+
+    if (!attacker.weapon) {
+        logger.error(`Actor ${attacker.id} has no weapon, cannot execute ATTACK order.`);
+        return attacker;
     }
 
     const targetIndex = allActorsInWorld.findIndex(a => a.id === actorOrders.targetId);
 
     if (targetIndex === -1) {
-        logger.warn(`ATTACK order: Target actor with ID ${actorOrders.targetId} not found for attacker ${allActorsInWorld[attackerIndex].id}.`);
-        return allActorsInWorld[attackerIndex];
+        logger.warn(`ATTACK order: Target actor with ID ${actorOrders.targetId} not found for attacker ${attacker.id}.`);
+        return attacker;
     }
 
-    if (allActorsInWorld[targetIndex].state === ActorState.DEAD) {
-        logger.info(`ATTACK order: Target actor ${allActorsInWorld[targetIndex].id} is already dead.`);
-        return allActorsInWorld[attackerIndex];
+    const target = allActorsInWorld[targetIndex];
+
+    // Use new RangeValidation service for comprehensive validation
+    const validation = await RangeValidation.validateAttack(attacker, target, world, allActorsInWorld);
+    
+    if (!validation.valid) {
+        logger.info(`ATTACK order invalid: ${validation.errors.join(', ')}`);
+        return attacker;
     }
 
-    if (allActorsInWorld[attackerIndex].id === allActorsInWorld[targetIndex].id) {
-        logger.info(`ATTACK order: Actor ${allActorsInWorld[attackerIndex].id} cannot target itself.`);
-        return allActorsInWorld[attackerIndex];
+    // Validation passed - apply damage using CombatMath for full calculation
+    const attackerTerrain = world.terrain[attacker.pos.x][attacker.pos.y];
+    const targetTerrain = world.terrain[target.pos.x][target.pos.y];
+    const damageResult = calculateDamage(
+        attacker,
+        target,
+        validation.distance,
+        attackerTerrain,
+        targetTerrain,
+        validation.hasLineOfSight
+    );
+
+    target.health = (target.health || 100) - damageResult.finalDamage;
+    
+    logger.info(`Actor ${attacker.id} attacked Actor ${target.id} with ${attacker.weapon.name}. ${damageResult.breakdown}`);
+
+    if (target.health <= 0) {
+        target.health = 0; // Ensure health doesn't go negative
+        target.state = ActorState.DEAD;
+        logger.info(`Actor ${target.id} has been defeated.`);
     }
 
-    const startHex = gridPositionToHex(allActorsInWorld[attackerIndex].pos);
-    const targetHex = gridPositionToHex(allActorsInWorld[targetIndex].pos);
-
-    // 1. Check Weapon Range
-    const distance = startHex.distance(targetHex); // Axial distance
-    if (distance < allActorsInWorld[attackerIndex].weapon.minRange || distance > allActorsInWorld[attackerIndex].weapon.maxRange) {
-        logger.info(`ATTACK order: Target ${allActorsInWorld[targetIndex].id} is out of range for ${allActorsInWorld[attackerIndex].id} (min: ${allActorsInWorld[attackerIndex].weapon.minRange}, max: ${allActorsInWorld[attackerIndex].weapon.maxRange}, distance: ${distance}).`);
-        return allActorsInWorld[attackerIndex];
-    }
-
-    // 2. Check Line of Sight
-    const losClear = hasLineOfSight(startHex, targetHex, world.terrain, allActorsInWorld);
-    if (!losClear) {
-        logger.info(`ATTACK order: Line of sight from ${allActorsInWorld[attackerIndex].id} to ${allActorsInWorld[targetIndex].id} is blocked.`);
-        return allActorsInWorld[attackerIndex];
-    }
-
-    // Apply damage - modify the actor directly in the array
-    allActorsInWorld[targetIndex].health -= allActorsInWorld[attackerIndex].weapon.damage;
-    logger.info(`Actor ${allActorsInWorld[attackerIndex].id} attacked Actor ${allActorsInWorld[targetIndex].id} with ${allActorsInWorld[attackerIndex].weapon.name} for ${allActorsInWorld[attackerIndex].weapon.damage} damage. Target health now: ${allActorsInWorld[targetIndex].health}`);
-
-    if (allActorsInWorld[targetIndex].health <= 0) {
-        allActorsInWorld[targetIndex].health = 0; // Ensure health doesn't go negative
-        allActorsInWorld[targetIndex].state = ActorState.DEAD;
-        logger.info(`Actor ${allActorsInWorld[targetIndex].id} has been defeated.`);
-    }
-
-    return allActorsInWorld[attackerIndex];
+    return attacker;
 }
 
 // update actors based on turn orders
