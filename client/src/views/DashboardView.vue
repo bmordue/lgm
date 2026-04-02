@@ -14,11 +14,18 @@ interface GameSummary {
 
 const gameList = ref<GameSummary[]>([])
 const isCreating = ref(false)
+const isLoading = ref(false)
+const successMessage = ref('')
 
 async function fetchGameList() {
-  const response = await fetch(`${API_URL}/games`);
-  const data = await response.json();
-  gameList.value = data.games || [];
+  isLoading.value = true;
+  try {
+    const response = await fetch(`${API_URL}/games`);
+    const data = await response.json();
+    gameList.value = data.games || [];
+  } finally {
+    isLoading.value = false;
+  }
 }
 
 watchEffect(() => {
@@ -39,6 +46,10 @@ async function callCreate() {
     });
 
     if (response.ok) {
+      successMessage.value = 'Game created successfully!';
+      setTimeout(() => {
+        successMessage.value = '';
+      }, 3000);
       await fetchGameList(); // Update game list after successful creation
     } else {
       const error = await response.json().catch(() => ({ message: "Failed to create game and parse error" }));
@@ -87,7 +98,10 @@ async function join(game: GameSummary) {
 
 <template>
   <h1>Games</h1>
-  <div class="game-list">
+  <div v-if="isLoading" class="no-games" role="status">
+    Loading games...
+  </div>
+  <div class="game-list" :aria-busy="isLoading" aria-live="polite">
     <button
       v-for="game in gameList" 
       :key="game.id"
@@ -103,9 +117,12 @@ async function join(game: GameSummary) {
         <span v-if="game.isFull" class="full-indicator"> (FULL)</span>
       </div>
     </button>
-    <div v-if="gameList.length === 0" class="no-games">
+    <div v-if="!isLoading && gameList.length === 0" class="no-games">
       No games available
     </div>
+  </div>
+  <div v-if="successMessage" class="no-games green" role="status" aria-live="polite">
+    {{ successMessage }}
   </div>
   <button
     @click="callCreate()"

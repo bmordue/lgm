@@ -74,4 +74,26 @@ describe('DashboardView.vue', () => {
     expect(button.attributes('disabled')).toBeUndefined();
     expect(button.attributes('aria-busy')).toBe('false');
   });
+
+  it('displays success message after successful game creation', async () => {
+    fetchMock.mockImplementation((url, options) => {
+      if (options?.method === 'post') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ games: [] }),
+      });
+    });
+
+    const wrapper = mount(DashboardView);
+    const button = wrapper.find('button');
+
+    await button.trigger('click');
+
+    await vi.waitFor(() => expect(wrapper.text()).toContain('Game created successfully!'), { timeout: 200 });
+  });
 });
