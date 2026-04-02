@@ -29,7 +29,7 @@ export interface GameConfiguration {
     defaultSightRange: number;
   };
   
-  /** Actor placement configuration */
+  /** Actor placement and health configuration */
   actors: {
     /** Number of actors per player */
     countPerPlayer: number;
@@ -37,6 +37,10 @@ export interface GameConfiguration {
     formationWidth: number;
     /** Formation height for actor placement */
     formationHeight: number;
+    /** Starting health for each actor */
+    startingHealth: number;
+    /** Maximum number of placement attempts before falling back */
+    maxPlacementAttempts: number;
   };
 }
 
@@ -65,6 +69,8 @@ export const DEFAULT_CONFIG: GameConfiguration = {
     countPerPlayer: 9,
     formationWidth: 3,
     formationHeight: 3,
+    startingHealth: 100,
+    maxPlacementAttempts: 50,
   },
 };
 
@@ -88,4 +94,12 @@ export function getConfig(): Readonly<GameConfiguration> {
 export const SERVER_CONFIG = {
   port: parseInt(process.env.LGM_PORT || '3000', 10) || 3000,
   debug: process.env.LGM_DEBUG === 'true',
+};
+
+/**
+ * Security configuration
+ */
+export const SECURITY_CONFIG = {
+  /** Number of bcrypt salt rounds for password hashing */
+  bcryptSaltRounds: parseInt(process.env.LGM_BCRYPT_SALT_ROUNDS || '10', 10) || 10,
 };

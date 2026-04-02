@@ -390,7 +390,7 @@ function emptyGrid(xMax: number, yMax: number) {
 }
 
 export async function generateTerrain(): Promise<Array<Array<Terrain>>> {
-    const terrain = emptyGrid(10, 10);
+    const terrain = emptyGrid(config.world.width, config.world.height);
     terrain[1][3] = Terrain.BLOCKED;
     terrain[2][3] = Terrain.BLOCKED;
     terrain[3][0] = Terrain.BLOCKED;
@@ -463,7 +463,7 @@ export async function filterGameForPlayer(gameId: number, playerId: number): Pro
             turn: game.turn, 
             world: filteredWorld,
             playerCount: playerCount,
-            maxPlayers: 4
+            maxPlayers: config.players.maxPlayers
         });
     } catch (e) {
         return Promise.reject(e);
@@ -492,8 +492,8 @@ export async function setupActors(game: Game, playerId: number) {
     const existingActorObjects = await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
 
     // Find an unoccupied spot using a more intelligent algorithm
-    const ACTOR_GRID_SIZE = 3; // 3x3 grid of actors
-    const MAX_ATTEMPTS = 50; // Increased attempts for better search
+    const ACTOR_GRID_SIZE = config.actors.formationWidth; // Formation grid size for actor placement
+    const MAX_ATTEMPTS = config.actors.maxPlacementAttempts; // Maximum search attempts
     let placed = false;
     let attempts = 0;
     let x = 0;
@@ -568,11 +568,11 @@ export async function setupActors(game: Game, playerId: number) {
     const defaultWeapon: Weapon = getDefaultWeapon();
 
     const newActorsData: Omit<Actor, 'id'>[] = [];
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < config.actors.countPerPlayer; i++) {
         newActorsData.push({
             owner: playerId,
-            pos: { x: x + Math.floor(i / 3), y: y + i % 3 }, // Use the determined x, y for starting position
-            health: 100, // Example starting health
+            pos: { x: x + Math.floor(i / config.actors.formationWidth), y: y + i % config.actors.formationHeight },
+            health: config.actors.startingHealth,
             state: ActorState.ALIVE,
             weapon: defaultWeapon
         });
