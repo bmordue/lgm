@@ -13,6 +13,7 @@ import { Hex } from '../Hex';
 import { getConfig } from '../config/GameConfig';
 import { getDefaultWeapon, getWeaponDamage } from '../config/WeaponsConfig';
 import * as RangeValidation from './RangeValidation';
+import { calculateDamage } from './CombatMath';
 
 const config = getConfig();
 export const TIMESTEP_MAX = config.timestepMax;
@@ -175,11 +176,21 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: Wor
         return attacker;
     }
 
-    // Validation passed - apply damage
-    const weaponDamage = getWeaponDamage(attacker.weapon);
-    target.health = (target.health || 100) - weaponDamage;
+    // Validation passed - apply damage using CombatMath for full calculation
+    const attackerTerrain = world.terrain[attacker.pos.x][attacker.pos.y];
+    const targetTerrain = world.terrain[target.pos.x][target.pos.y];
+    const damageResult = calculateDamage(
+        attacker,
+        target,
+        validation.distance,
+        attackerTerrain,
+        targetTerrain,
+        validation.hasLineOfSight
+    );
+
+    target.health = (target.health || 100) - damageResult.finalDamage;
     
-    logger.info(`Actor ${attacker.id} attacked Actor ${target.id} with ${attacker.weapon.name} for ${weaponDamage} damage. Target health now: ${target.health}`);
+    logger.info(`Actor ${attacker.id} attacked Actor ${target.id} with ${attacker.weapon.name}. ${damageResult.breakdown}`);
 
     if (target.health <= 0) {
         target.health = 0; // Ensure health doesn't go negative

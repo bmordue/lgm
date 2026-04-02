@@ -150,7 +150,7 @@ export function calculateDistanceModifier(
     }
 
     // Determine optimal range
-    const optimalRange = weapon.optimalRange || 
+    const optimalRange = weapon.optimalRange ?? 
         Math.floor((weapon.minRange + weapon.maxRange) / 2);
 
     // At optimal range = full damage
@@ -352,6 +352,7 @@ export function calculateExpectedDamage(
     defenderTerrain: Terrain,
     hasLineOfSight: boolean = true
 ): number {
+    if (!attacker.weapon) return 0;
     const config = getCombatConfig();
     const avgRandom = (config.damageVariance.min + config.damageVariance.max) / 2;
 
