@@ -189,31 +189,37 @@ describe('CombatMath', () => {
         });
 
         it('should reduce damage based on armor', () => {
-            const attacker = createTestActor(1, { x: 0, y: 0 }, 1, 'PISTOL');
-            const noArmor = createTestActor(2, { x: 2, y: 0 }, 2);
-            const heavyArmor = createTestActor(2, { x: 2, y: 0 }, 2, 'PISTOL', {
-                armor: 40
-            });
-            
-            const noArmorDamage = calculateDamage(
-                attacker,
-                noArmor,
-                2,
-                Terrain.EMPTY,
-                Terrain.EMPTY,
-                true
-            );
-            
-            const armorDamage = calculateDamage(
-                attacker,
-                heavyArmor,
-                2,
-                Terrain.EMPTY,
-                Terrain.EMPTY,
-                true
-            );
-            
-            assert.ok(armorDamage.finalDamage < noArmorDamage.finalDamage);
+            const original = getCombatConfig();
+            overrideCombatConfig({ damageVariance: { min: 1.0, max: 1.0 } });
+            try {
+                const attacker = createTestActor(1, { x: 0, y: 0 }, 1, 'PISTOL');
+                const noArmor = createTestActor(2, { x: 2, y: 0 }, 2);
+                const heavyArmor = createTestActor(2, { x: 2, y: 0 }, 2, 'PISTOL', {
+                    armor: 40
+                });
+                
+                const noArmorDamage = calculateDamage(
+                    attacker,
+                    noArmor,
+                    2,
+                    Terrain.EMPTY,
+                    Terrain.EMPTY,
+                    true
+                );
+                
+                const armorDamage = calculateDamage(
+                    attacker,
+                    heavyArmor,
+                    2,
+                    Terrain.EMPTY,
+                    Terrain.EMPTY,
+                    true
+                );
+                
+                assert.ok(armorDamage.finalDamage < noArmorDamage.finalDamage);
+            } finally {
+                overrideCombatConfig({ damageVariance: original.damageVariance });
+            }
         });
 
         it('should account for armor penetration', () => {
