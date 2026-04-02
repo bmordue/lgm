@@ -16,6 +16,8 @@ const gameList = ref<GameSummary[]>([])
 const isCreating = ref(false)
 const isLoading = ref(false)
 const successMessage = ref('')
+const errorMessage = ref('')
+const joiningGameId = ref<number | null>(null)
 
 async function fetchGameList() {
   isLoading.value = true;
@@ -37,6 +39,7 @@ async function callCreate() {
   const token = userStore.getToken();
 
   isCreating.value = true;
+  errorMessage.value = '';
   try {
     const response = await fetch(`${API_URL}/games`, {
       method: "post",
@@ -53,10 +56,10 @@ async function callCreate() {
       await fetchGameList(); // Update game list after successful creation
     } else {
       const error = await response.json().catch(() => ({ message: "Failed to create game and parse error" }));
-      alert(`Failed to create game: ${error.message || 'Unknown error'}`);
+      errorMessage.value = `Failed to create game: ${error.message || 'Unknown error'}`;
     }
   } catch (error) {
-    alert('Network error while creating game. Please try again.');
+    errorMessage.value = 'Network error while creating game. Please try again.';
   } finally {
     isCreating.value = false;
   }
@@ -64,13 +67,15 @@ async function callCreate() {
 
 async function join(game: GameSummary) {
   if (game.isFull) {
-    alert('Game is full!');
+    errorMessage.value = 'Game is full!';
     return;
   }
 
   const userStore = useUserStore();
   const token = userStore.getToken();
 
+  joiningGameId.value = game.id;
+  errorMessage.value = '';
   try {
     const resp = await fetch(`${API_URL}/games/${game.id}`, {
       method: "put", 
@@ -81,7 +86,7 @@ async function join(game: GameSummary) {
 
     if (!resp.ok) {
       const error = await resp.json();
-      alert(`Failed to join game: ${error.message || 'Unknown error'}`);
+      errorMessage.value = `Failed to join game: ${error.message || 'Unknown error'}`;
       return;
     }
 
@@ -90,13 +95,18 @@ async function join(game: GameSummary) {
     gamesStore.updateJoinResponse(joinBody);
     router.push('/game');
   } catch (error) {
-    alert('Network error. Please try again.');
+    errorMessage.value = 'Network error. Please try again.';
+  } finally {
+    joiningGameId.value = null;
   }
 }
 
 </script>
 
 <template>
+  <div v-if="errorMessage" class="error-message" role="alert" aria-live="assertive">
+    {{ errorMessage }}
+  </div>
   <h1>Games</h1>
   <div v-if="isLoading" class="no-games" role="status">
     Loading games...
@@ -107,18 +117,19 @@ async function join(game: GameSummary) {
       :key="game.id"
       class="game-item"
       :class="{ 'game-full': game.isFull }"
-      :disabled="game.isFull"
+      :disabled="joiningGameId !== null || game.isFull"
       :aria-label="'Join Game #' + game.id"
+      :aria-busy="joiningGameId === game.id"
       @click="join(game)"
     >
-      <div class="game-id">Game #{{ game.id }}</div>
+      <div class="game-id">{{ joiningGameId === game.id ? 'Joining...' : 'Game #' + game.id }}</div>
       <div class="game-status">
         Players: {{ game.playerCount }}/{{ game.maxPlayers }}
         <span v-if="game.isFull" class="full-indicator"> (FULL)</span>
       </div>
     </button>
     <div v-if="!isLoading && gameList.length === 0" class="no-games">
-      No games available
+      No active games found. Click 'Create New Game' to start a new journey!
     </div>
   </div>
   <div v-if="successMessage" class="no-games green" role="status" aria-live="polite">
@@ -189,5 +200,15 @@ async function join(game: GameSummary) {
   color: #666;
   font-style: italic;
   padding: 20px;
+}
+
+.error-message {
+  background-color: #fce4e4;
+  border: 1px solid #fcc2c2;
+  color: #cc0000;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 0.9em;
 }
 </style>
