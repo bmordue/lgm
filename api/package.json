@@ -62,7 +62,6 @@
     "snyk": "^1.1297.3",
     "source-map-support": "^0.5.21",
     "superagent": "^10.2.1",
-    "typescript": "^5.9.3",
-    "wait-on": "^9.0.4"
+    "typescript": "^5.9.3"
   }
 }

@@ -38,9 +38,20 @@ jobs:
       - name: Start server for E2E tests
         working-directory: ./api
         run: |
-          npm start &
+          node built/index.js &
           echo $! > /tmp/server.pid
-          npx wait-on http://localhost:3000/games --timeout 30000
+          echo "Waiting for server to be ready..."
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/games > /dev/null 2>&1; then
+              echo "Server is ready after ${i}s"
+              break
+            fi
+            if [ "$i" -eq 60 ]; then
+              echo "Server failed to start within 60s"
+              exit 1
+            fi
+            sleep 1
+          done
 
       - name: Run E2E tests
         working-directory: ./api
