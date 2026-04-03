@@ -67,6 +67,9 @@ describe('GameView.vue', () => {
         maxPlayers: 2,
       })),
       getCurrentPlayerId: vi.fn(() => 'p1'),
+      setCurrentGameTurn: vi.fn(),
+      fetchTurnResults: vi.fn().mockResolvedValue({}),
+      fetchGameDetails: vi.fn().mockResolvedValue({}),
       // games: [], // if GameView tries to access games list for some reason
       // gameTurns: [],
     };
@@ -178,6 +181,28 @@ describe('GameView.vue', () => {
         })
       );
       expect(wrapper.vm.plannedMoves).toEqual([]); // Moves cleared
+      expect(wrapper.find('.success-message').text()).toContain('Orders submitted successfully!');
+    });
+
+    it('shows loading state during submission', async () => {
+      let resolveFetch: any;
+      (global.fetch as any).mockReturnValue(new Promise(resolve => {
+        resolveFetch = resolve;
+      }));
+
+      const orderSubmissionComponent = wrapper.findComponent(OrderSubmission);
+      orderSubmissionComponent.vm.$emit('submit-orders', [...samplePlannedMoves]);
+
+      await wrapper.vm.$nextTick();
+      expect(wrapper.vm.isSubmitting).toBe(true);
+      expect(orderSubmissionComponent.props('isSubmitting')).toBe(true);
+
+      resolveFetch({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+      await flushPromises();
+      expect(wrapper.vm.isSubmitting).toBe(false);
     });
 
     it('calls fetch and does NOT clear moves on failed submission', async () => {
@@ -196,6 +221,7 @@ describe('GameView.vue', () => {
 
       expect(global.fetch).toHaveBeenCalledTimes(1); // fetch was still called
       expect(wrapper.vm.plannedMoves).toEqual(samplePlannedMoves); // Moves NOT cleared
+      expect(wrapper.find('.error-message').text()).toContain('Failed to submit orders: Test API Error');
       expect(consoleErrorSpy).toHaveBeenCalled(); // Check if error was logged
 
       consoleErrorSpy.mockRestore();
