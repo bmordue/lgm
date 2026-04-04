@@ -14,6 +14,7 @@
           @click="handleRemoveMove(move)"
           class="remove-move-btn"
           :aria-label="`Remove move for Actor ${move.actorId} to (${move.endPos.x}, ${move.endPos.y})`"
+          :disabled="isSubmitting"
         >
           Remove
         </button>
@@ -21,10 +22,12 @@
     </ul>
     <button
       @click="handleSubmitOrders"
-      :disabled="!plannedMoves || plannedMoves.length === 0"
+      :disabled="!plannedMoves || plannedMoves.length === 0 || isSubmitting"
       class="submit-orders-btn"
+      :aria-busy="isSubmitting"
+      aria-live="polite"
     >
-      Submit All Orders
+      {{ isSubmitting ? 'Submitting...' : 'Submit All Orders' }}
     </button>
   </div>
 </template>
@@ -38,6 +41,10 @@ const props = defineProps({
   plannedMoves: {
     type: Array as PropType<PlannedMove[]>,
     required: true,
+  },
+  isSubmitting: {
+    type: Boolean,
+    default: false,
   },
 });
 

@@ -9,3 +9,7 @@
 ## 2025-05-15 - SVG Grid Accessibility Pattern
 **Learning:** For interactive SVG grids (like the HexGrid), adding `role="button"` and `tabindex="0"` to the `<g>` element, combined with `g:focus-visible .hex-polygon` CSS, provides a robust keyboard navigation experience without breaking visual mouse interactions.
 **Action:** Apply this pattern to any future SVG-based interactive components to ensure they are screen-reader and keyboard friendly.
+
+## 2025-05-16 - Non-blocking Feedback Patterns
+**Learning:** Replacing disruptive `window.alert()` with non-blocking, accessible inline status messages improves user flow and professional feel. Using `role="status"` for success and `role="alert"` for errors ensures screen reader compatibility while maintaining context.
+**Action:** Always prefer integrated UI feedback over native browser dialogs for application-specific state changes.

@@ -16,6 +16,9 @@ interface GameData {
 
 const game = ref<GameData>({})
 const plannedMoves = ref<PlannedMove[]>([]); // Reactive state for planned moves
+const isSubmitting = ref(false);
+const submissionError = ref('');
+const submissionSuccess = ref('');
 
 const gamesStore = useGamesStore();
 
@@ -77,6 +80,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     return;
   }
 
+  isSubmitting.value = true;
+  submissionError.value = '';
+  submissionSuccess.value = '';
+
   try {
     // URL updated: /orders suffix removed
     const response = await fetch(`${API_URL}/games/${g.gameId}/turns/${g.turn}/players/${playerId}`, {
@@ -123,7 +130,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         await gamesStore.fetchTurnResults();
       }
 
-      alert("Orders submitted successfully!"); // Simple notification
+      submissionSuccess.value = "Orders submitted successfully!";
+      setTimeout(() => {
+        submissionSuccess.value = '';
+      }, 3000);
 
       // Refresh game state
       const currentGameId = gamesStore.getCurrentGame().gameId;
@@ -139,11 +149,13 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     } else {
       const errorData = await response.json().catch(() => ({ message: "Failed to parse error response" }));
       console.error("Failed to submit orders:", response.status, errorData);
-      alert(`Failed to submit orders: ${errorData.message || response.statusText}`);
+      submissionError.value = `Failed to submit orders: ${errorData.message || response.statusText}`;
     }
   } catch (error) {
     console.error("Error submitting orders:", error);
-    alert(`Error submitting orders: ${error instanceof Error ? error.message : 'Unknown network error'}`);
+    submissionError.value = `Error submitting orders: ${error instanceof Error ? error.message : 'Unknown network error'}`;
+  } finally {
+    isSubmitting.value = false;
   }
 }
 
@@ -167,8 +179,15 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         </div>
         
         <!-- Order Submission Component -->
+        <div v-if="submissionError" class="error-message" role="alert" aria-live="assertive">
+          {{ submissionError }}
+        </div>
+        <div v-if="submissionSuccess" class="success-message" role="status" aria-live="polite">
+          {{ submissionSuccess }}
+        </div>
         <order-submission
           :planned-moves="plannedMoves"
+          :is-submitting="isSubmitting"
           @remove-move="handleRemoveMove"
           @submit-orders="handleSubmitOrders"
         />
@@ -235,6 +254,27 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   margin: 5px 0;
   border-radius: 4px;
   border-left: 3px solid #2196f3;
+}
+
+.error-message {
+  background-color: #fce4e4;
+  border: 1px solid #fcc2c2;
+  color: #cc0000;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+}
+
+.success-message {
+  background-color: #e8f5e9;
+  border: 1px solid #c8e6c9;
+  color: #2e7d32;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 0.9em;
+  text-align: center;
 }
 
 .world-grid {
