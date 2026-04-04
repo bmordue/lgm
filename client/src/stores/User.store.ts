@@ -4,8 +4,9 @@ import { API_URL } from '@/main';
 
 export const useUserStore = defineStore('user', {
   state: () => {
+    const savedUser = localStorage.getItem('user');
     return {
-      user: null as UserInfo | null,
+      user: (savedUser ? JSON.parse(savedUser) : null) as UserInfo | null,
     }
   },
   actions: {
@@ -27,24 +28,22 @@ export const useUserStore = defineStore('user', {
       // update pinia state
       this.user = { name: username, token: data.token };
 
-      // store user  in local storage to keep user logged in between page refreshes
+      // store user in local storage to keep user logged in between page refreshes
       localStorage.setItem('user', JSON.stringify(this.user));
 
       // redirect to home page
       router.push('/');
     },
+    logout() {
+      this.user = null;
+      localStorage.removeItem('user');
+      router.push('/login');
+    },
     getToken(): string | null {
-      // get user from local storage 
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-
-      if (user) {
-        return user.token;
-      }
-
-      return null;
+      return this.user ? this.user.token : null;
     },
     isAuthenticated(): boolean {
-      return localStorage.getItem('user') != null;
+      return this.user !== null;
     }
   }
 })

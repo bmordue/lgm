@@ -1,5 +1,15 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import { useUserStore } from './stores/User.store'
+import { computed } from 'vue'
+
+const userStore = useUserStore()
+const isAuthenticated = computed(() => userStore.isAuthenticated())
+const username = computed(() => userStore.user?.name || '')
+
+function logout() {
+  userStore.logout()
+}
 </script>
 
 <template>
@@ -8,10 +18,12 @@ import { RouterLink, RouterView } from 'vue-router'
 
     <div class="wrapper">
       <nav>
-        <RouterLink to="/dashboard">Dashboard</RouterLink>
-        <RouterLink to="/login">Login</RouterLink>
+        <RouterLink v-if="isAuthenticated" to="/dashboard">Dashboard</RouterLink>
+        <RouterLink v-if="!isAuthenticated" to="/login">Login</RouterLink>
         <RouterLink to="/reset">Reset</RouterLink>
-
+        <button v-if="isAuthenticated" class="logout-btn" @click="logout">
+          Logout ({{ username }})
+        </button>
       </nav>
     </div>
   </header>
@@ -45,7 +57,7 @@ nav a.router-link-exact-active:hover {
   background-color: transparent;
 }
 
-nav a {
+nav a, .logout-btn {
   display: inline-block;
   padding: 0 1rem;
   border-left: 1px solid var(--color-border);
@@ -53,6 +65,22 @@ nav a {
 
 nav a:first-of-type {
   border: 0;
+}
+
+.logout-btn {
+  background: none;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  color: hsla(160, 100%, 37%, 1);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  transition: 0.4s;
+}
+
+.logout-btn:hover {
+  background-color: hsla(160, 100%, 37%, 0.2);
 }
 
 @media (min-width: 1024px) {
