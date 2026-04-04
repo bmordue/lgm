@@ -13,3 +13,7 @@
 ## 2025-05-16 - Non-blocking Feedback Patterns
 **Learning:** Replacing disruptive `window.alert()` with non-blocking, accessible inline status messages improves user flow and professional feel. Using `role="status"` for success and `role="alert"` for errors ensures screen reader compatibility while maintaining context.
 **Action:** Always prefer integrated UI feedback over native browser dialogs for application-specific state changes.
+
+## 2026-04-04 - Persistent Reactive Session Management
+**Learning:** Initializing Pinia state from `localStorage` on store creation, combined with a dedicated logout action, provides a more reliable and reactive authentication state than manual `localStorage` checks in individual methods. This allows for clean, conditional UI rendering and navigation guards.
+**Action:** Always prefer reactive state for session management and initialize from persistent storage at the earliest possible point.
