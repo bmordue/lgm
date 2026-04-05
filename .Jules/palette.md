@@ -13,3 +13,7 @@
 ## 2025-05-16 - Non-blocking Feedback Patterns
 **Learning:** Replacing disruptive `window.alert()` with non-blocking, accessible inline status messages improves user flow and professional feel. Using `role="status"` for success and `role="alert"` for errors ensures screen reader compatibility while maintaining context.
 **Action:** Always prefer integrated UI feedback over native browser dialogs for application-specific state changes.
+
+## 2025-05-17 - Dynamic Navigation and Session Persistence
+**Learning:** Initializing Pinia state from `localStorage` on creation ensures the UI remains reactive to the user's session even after a page refresh. Using a Pinia getter for `isAuthenticated` and the CSS sibling selector `nav > * + *` allows for clean, conditional navigation with consistent styling across mixed element types (links and buttons).
+**Action:** Always initialize session-dependent stores from persistent storage and use flexible CSS selectors for shared layout components.
