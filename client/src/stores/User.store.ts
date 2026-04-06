@@ -4,9 +4,13 @@ import { API_URL } from '@/main';
 
 export const useUserStore = defineStore('user', {
   state: () => {
+    const savedUser = localStorage.getItem('user');
     return {
-      user: null as UserInfo | null,
+      user: savedUser ? (JSON.parse(savedUser) as UserInfo) : (null as UserInfo | null),
     }
+  },
+  getters: {
+    isAuthenticated: (state) => state.user !== null,
   },
   actions: {
     async login(username: string, password: string) {
@@ -33,19 +37,14 @@ export const useUserStore = defineStore('user', {
       // redirect to home page
       router.push('/');
     },
-    getToken(): string | null {
-      // get user from local storage 
-      const user = JSON.parse(localStorage.getItem('user') || '{}');
-
-      if (user) {
-        return user.token;
-      }
-
-      return null;
+    logout() {
+      this.user = null;
+      localStorage.removeItem('user');
+      router.push('/login');
     },
-    isAuthenticated(): boolean {
-      return localStorage.getItem('user') != null;
-    }
+    getToken(): string | null {
+      return this.user ? this.user.token : null;
+    },
   }
 })
 

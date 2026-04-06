@@ -33,7 +33,7 @@ function requiresAuth (to: RouteLocationNormalized) {
 
 router.beforeEach((to, from, next) => {
   const usersStore = useUserStore();
-  if (requiresAuth(to) && !usersStore.isAuthenticated()) {
+  if (requiresAuth(to) && !usersStore.isAuthenticated) {
       next('/login')
   } else {
       next()

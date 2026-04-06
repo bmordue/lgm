@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { RouterLink, RouterView } from 'vue-router'
+import { useUserStore } from './stores/User.store';
+
+const userStore = useUserStore();
 </script>
 
 <template>
@@ -8,10 +11,10 @@ import { RouterLink, RouterView } from 'vue-router'
 
     <div class="wrapper">
       <nav>
-        <RouterLink to="/dashboard">Dashboard</RouterLink>
-        <RouterLink to="/login">Login</RouterLink>
-        <RouterLink to="/reset">Reset</RouterLink>
-
+        <RouterLink v-if="userStore.isAuthenticated" to="/dashboard">Dashboard</RouterLink>
+        <RouterLink v-if="!userStore.isAuthenticated" to="/login">Login</RouterLink>
+        <RouterLink v-if="!userStore.isAuthenticated" to="/reset">Reset</RouterLink>
+        <button v-if="userStore.isAuthenticated" @click="userStore.logout">Logout</button>
       </nav>
     </div>
   </header>
@@ -45,14 +48,26 @@ nav a.router-link-exact-active:hover {
   background-color: transparent;
 }
 
-nav a {
+nav > * {
   display: inline-block;
   padding: 0 1rem;
+}
+
+nav > * + * {
   border-left: 1px solid var(--color-border);
 }
 
-nav a:first-of-type {
-  border: 0;
+nav button {
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--color-link);
+  cursor: pointer;
+}
+
+nav button:hover {
+  background-color: var(--color-background-soft);
 }
 
 @media (min-width: 1024px) {
