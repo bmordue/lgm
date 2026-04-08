@@ -174,7 +174,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         <h3>Players</h3>
         <div class="player-list">
           <div v-for="player in getPlayerList()" :key="`player-${player.id}`" class="player-item">
-            {{ player.name }}
+            {{ player.name }}{{ player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
           </div>
         </div>
         
@@ -200,6 +200,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           <hex-grid
             :world="game.world"
             :actors="game.world?.actors || []"
+            :planned-moves="plannedMoves"
             @move-planned="handleMovePlanned"
           />
         </div>

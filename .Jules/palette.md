@@ -13,3 +13,11 @@
 ## 2025-05-16 - Non-blocking Feedback Patterns
 **Learning:** Replacing disruptive `window.alert()` with non-blocking, accessible inline status messages improves user flow and professional feel. Using `role="status"` for success and `role="alert"` for errors ensures screen reader compatibility while maintaining context.
 **Action:** Always prefer integrated UI feedback over native browser dialogs for application-specific state changes.
+
+## 2026-04-07 - Multi-modal Feedback for Planned Actions
+**Learning:** Providing both visual (e.g., dashed borders, subtle fills) and semantic (ARIA labels) feedback for planned but not yet committed actions helps users maintain mental context. For maps/grids, highlighting the destination of a move clarifies intent before submission.
+**Action:** Always pair visual state changes with descriptive ARIA labels to ensure screen reader users can perceive the same intent as sighted users.
+
+## 2026-04-07 - Self-Identification in Multi-player Lists
+**Learning:** In lists of users or players, appending a "(You)" indicator to the current user's name significantly reduces cognitive load by providing an immediate anchor point for self-identification.
+**Action:** Apply a consistent "(You)" suffix to the current user in all shared lists or dashboards where multiple identities are displayed.

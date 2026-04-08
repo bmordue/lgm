@@ -25,11 +25,10 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, computed, ref, Ref } from 'vue'; // Added ref
-import { World, Terrain, Actor as ServiceActor } from '../../../api/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not. Renamed Actor to ServiceActor to avoid conflict.
+import { defineComponent, PropType, computed, ref } from 'vue'; // Added ref
+import { World, Terrain } from '../../../api/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not.
 import { Hex, Point, Layout, OffsetCoord } from '../../../api/Hex';
-import { useGamesStore, Actor, PlannedMove, Coord } from '../stores/Games.store'; // Added imports
-import { hasLineOfSight } from '../../../api/service/Visibility';
+import { useGamesStore, Actor, PlannedMove } from '../stores/Games.store'; // Added imports
 
 interface HexStyle {
   fill?: string;
@@ -51,6 +50,10 @@ export default defineComponent({
     actors: { // New prop for actors
       type: Array as PropType<Actor[]>,
       required: true,
+    },
+    plannedMoves: {
+      type: Array as PropType<PlannedMove[]>,
+      default: () => [],
     },
   },
   emits: ['move-planned'], // Declare emitted events
@@ -98,7 +101,7 @@ export default defineComponent({
       return layout.polygonCorners(hex).map(p => `${p.x},${p.y}`).join(' ');
     };
 
-    const getHexTransform = (hex: Hex): string => ''; // Points are absolute
+    const getHexTransform = (_hex: Hex): string => ''; // Points are absolute
 
     const getTerrainTypeForHex = (hex: Hex): Terrain | null => {
       const offsetCoord = OffsetCoord.roffsetFromCube(offsetType, hex);
@@ -113,7 +116,7 @@ export default defineComponent({
       return null;
     };
 
-    const getHexStyle = (hex: Hex): HexStyle => {
+    const getHexStyle = (_hex: Hex): HexStyle => {
       // Base style, specific fills will be by CSS class
       return {};
     };
@@ -127,19 +130,23 @@ export default defineComponent({
         else if (terrainType === Terrain.UNEXPLORED) classes.push('terrain-unexplored'); // New class for unexplored
         else classes.push('terrain-unknown'); // Fallback for unexpected terrain values
 
+        const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex);
+
         // Logic for 'selected' class (e.g., if planning a move from this hex)
         if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r) {
             classes.push('selected');
         }
-        // TODO: Add class if an actor (props.actors) is on this hex ('has-actor', 'player-actor', 'enemy-actor')
+
         const actorOnHex = props.actors.find(actor => {
-            const actorOffset = OffsetCoord.roffsetFromCube(offsetType, OffsetCoord.qoffsetToCube(offsetType, new OffsetCoord(actor.pos.y, actor.pos.x))); // convert actor pos to match hex
-            const hexOffset = OffsetCoord.roffsetFromCube(offsetType, hex);
-            return actorOffset.col === hexOffset.col && actorOffset.row === hexOffset.row;
+            return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col;
         });
         if (actorOnHex) {
             classes.push('has-actor');
-            // Further classify if it's player's own actor vs enemy, if needed for styling
+        }
+
+        const isPlannedDestination = props.plannedMoves.some(m => m.endPos.x === hexGridPos.row && m.endPos.y === hexGridPos.col);
+        if (isPlannedDestination) {
+            classes.push('planned-path');
         }
 
         return classes;
@@ -247,6 +254,11 @@ export default defineComponent({
             label += ", Selected";
         }
 
+        const plannedMove = props.plannedMoves.find(m => m.endPos.x === hexGridPos.row && m.endPos.y === hexGridPos.col);
+        if (plannedMove) {
+            label += `, Planned destination for Actor ${plannedMove.actorId}`;
+        }
+
         return label;
     };
 
@@ -316,10 +328,10 @@ g:focus-visible .hex-polygon {
 }
 
 .hex-polygon.planned-path {
-  /* fill: rgba(230, 126, 34, 0.3); Orangeish fill for planned path hexes */
+  fill: rgba(230, 126, 34, 0.2); /* Subtle orange fill for planned path hexes */
   stroke: #d35400; /* Darker orange stroke for planned path */
   stroke-dasharray: 4; /* Dashed line for path */
-  stroke-width: 1.5;
+  stroke-width: 2;
 }
 
 

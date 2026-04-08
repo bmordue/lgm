@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import HexGrid from '../HexGrid.vue';
 import { Terrain } from '../../../../api/service/Models';
@@ -49,6 +49,21 @@ describe('HexGrid.vue accessibility', () => {
     // Check specific aria-label for blocked hex
     const blockedHex = hexGroups.find(g => g.attributes('aria-label')?.includes('Blocked'));
     expect(blockedHex).toBeTruthy();
+  });
+
+  it('renders hexes with planned destination in aria-label', () => {
+    const plannedMoves = [{
+      actorId: 101,
+      startPos: { x: 0, y: 0 },
+      endPos: { x: 0, y: 1 } // (col, row) -> (1, 0)
+    }];
+    const wrapper = mount(HexGrid, {
+      props: { world: sampleWorld, actors: sampleActors, plannedMoves }
+    });
+
+    const hexGroups = wrapper.findAll('g[role="button"]');
+    const plannedHex = hexGroups.find(g => g.attributes('aria-label')?.includes('Planned destination for Actor 101'));
+    expect(plannedHex).toBeTruthy();
   });
 
   it('triggers handleHexClick on Enter key press', async () => {

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, VueWrapper } from '@vue/test-utils';
 import HexGrid from '../HexGrid.vue';
 import { Terrain } from '../../../../api/service/Models'; // Path for Terrain
-import type { World, Actor, PlannedMove, Coord } from '../../stores/Games.store'; // Path for store types
-import { Hex, OffsetCoord } from '../../../../api/Hex'; // Path for Hex utils
+import type { World, Actor, PlannedMove } from '../../stores/Games.store'; // Path for store types
+import { Hex } from '../../../../api/Hex'; // Path for Hex utils
 
 // Mock console.log and console.error
 const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -437,6 +437,26 @@ describe('HexGrid.vue Movement Planning', () => {
 
       expect(updatedActor1StartHexPoly!.classes()).not.toContain('selected');
       expect(updatedDestinationHexPoly!.classes()).not.toContain('selected');
+    });
+
+    it('applies "planned-path" class to hexes in the plannedMoves prop', async () => {
+      const destinationQ = 1, destinationR = 0;
+      const plannedMove: PlannedMove = {
+        actorId: 101,
+        startPos: { x: 0, y: 0 },
+        endPos: { x: destinationR, y: destinationQ }
+      };
+
+      wrapper = mount(HexGrid, {
+        props: {
+          world: sampleWorldWithTerrain,
+          actors: sampleActors,
+          plannedMoves: [plannedMove]
+        }
+      });
+
+      const destinationHexPoly = findHexPolygonByAxial(wrapper, destinationQ, destinationR);
+      expect(destinationHexPoly!.classes()).toContain('planned-path');
     });
   });
 
