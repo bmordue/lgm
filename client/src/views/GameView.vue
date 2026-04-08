@@ -48,13 +48,23 @@ const handleSubmitOrders = async (movesToSubmit: PlannedMove[]) => {
 // --- End Event Handlers ---
 
 function actorToString(actor :Actor) {
-  return `Owner: ${actor.owner} (${actor.pos.x}, ${actor.pos.y}) [${actor.id}]`;
+  const currentPlayerId = gamesStore.getCurrentPlayerId();
+  const isOwn = actor.owner === currentPlayerId;
+  return `Owner: ${actor.owner}${isOwn ? ' (You)' : ''} (${actor.pos.x}, ${actor.pos.y}) [${actor.id}]`;
 }
 
 function getPlayerList() {
   if (!game.value.world?.actors) return [];
   const playerIds = [...new Set(game.value.world.actors.map((actor: Actor) => actor.owner))];
-  return playerIds.map(id => ({ id, name: `Player ${id}` }));
+  const currentPlayerId = gamesStore.getCurrentPlayerId();
+  return playerIds.map(id => {
+    const isCurrent = id === currentPlayerId;
+    return {
+      id,
+      name: `Player ${id}${isCurrent ? ' (You)' : ''}`,
+      isCurrent
+    };
+  });
 }
 
 async function postOrders(moves: PlannedMove[]) { // Modified signature
@@ -173,7 +183,12 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
       <div class="left-panel">
         <h3>Players</h3>
         <div class="player-list">
-          <div v-for="player in getPlayerList()" :key="`player-${player.id}`" class="player-item">
+          <div
+            v-for="player in getPlayerList()"
+            :key="`player-${player.id}`"
+            class="player-item"
+            :class="{ green: player.isCurrent }"
+          >
             {{ player.name }}
           </div>
         </div>
@@ -203,7 +218,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             @move-planned="handleMovePlanned"
           />
         </div>
-        <div v-else>Loading world data...</div>
+        <div v-else role="status" aria-live="polite">Loading world data...</div>
         
         <h3>Actors</h3>
         <div class="actors-list">

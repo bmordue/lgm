@@ -13,3 +13,7 @@
 ## 2025-05-16 - Non-blocking Feedback Patterns
 **Learning:** Replacing disruptive `window.alert()` with non-blocking, accessible inline status messages improves user flow and professional feel. Using `role="status"` for success and `role="alert"` for errors ensures screen reader compatibility while maintaining context.
 **Action:** Always prefer integrated UI feedback over native browser dialogs for application-specific state changes.
+
+## 2025-05-17 - Ownership Identification and Loading Feedback
+**Learning:** Explicitly labeling the current player's assets (e.g., appending "(You)") and using visual cues like highlighting significantly reduces cognitive load in multi-player interfaces. Additionally, applying `role="status"` and `aria-live="polite"` to loading messages ensures non-disruptive but accessible feedback during data fetches.
+**Action:** Consistently identify current user context in data-heavy views and ensure all loading states are aria-live regions.
