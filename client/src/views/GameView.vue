@@ -41,6 +41,11 @@ const handleRemoveMove = (moveToRemove: PlannedMove) => {
   console.log('Move removed:', moveToRemove);
 };
 
+const handleClearAll = () => {
+  plannedMoves.value = [];
+  console.log('All moves cleared');
+};
+
 const handleSubmitOrders = async (movesToSubmit: PlannedMove[]) => {
   console.log('Submitting orders:', movesToSubmit);
   await postOrders(movesToSubmit);
@@ -189,6 +194,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           :planned-moves="plannedMoves"
           :is-submitting="isSubmitting"
           @remove-move="handleRemoveMove"
+          @clear-all="handleClearAll"
           @submit-orders="handleSubmitOrders"
         />
         <!-- Removed old Post Orders button -->

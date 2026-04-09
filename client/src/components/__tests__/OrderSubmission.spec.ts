@@ -38,9 +38,23 @@ describe('OrderSubmission.vue', () => {
       const submitButton = wrapper.find('button.submit-orders-btn');
       expect(submitButton.attributes('disabled')).toBeDefined();
     });
+
+    it('does not render the "Clear All" button when plannedMoves is empty', () => {
+      expect(wrapper.find('button.clear-all-btn').exists()).toBe(false);
+    });
   });
 
-  describe('Rendering with Planned Moves', () => {
+  describe('Rendering with 1 Planned Move', () => {
+    beforeEach(() => {
+      wrapper = mountComponent({ plannedMoves: [sampleMoves[0]] });
+    });
+
+    it('does not render the "Clear All" button when there is only 1 move', () => {
+      expect(wrapper.find('button.clear-all-btn').exists()).toBe(false);
+    });
+  });
+
+  describe('Rendering with 2+ Planned Moves', () => {
     beforeEach(() => {
       wrapper = mountComponent({ plannedMoves: sampleMoves });
     });
@@ -74,6 +88,10 @@ describe('OrderSubmission.vue', () => {
       const submitButton = wrapper.find('button.submit-orders-btn');
       expect(submitButton.attributes('disabled')).toBeUndefined();
     });
+
+    it('renders the "Clear All" button when there are 2 or more moves', () => {
+      expect(wrapper.find('button.clear-all-btn').exists()).toBe(true);
+    });
   });
 
   describe('Event Emissions', () => {
@@ -97,6 +115,13 @@ describe('OrderSubmission.vue', () => {
       // The component emits [...props.plannedMoves], so it's a new array instance
       // but its contents should be deeply equal to sampleMoves.
       expect(wrapper.emitted('submit-orders')![0][0]).toEqual(sampleMoves);
+    });
+
+    it('emits "clear-all" event when "Clear All" button is clicked', async () => {
+      const clearAllButton = wrapper.find('button.clear-all-btn');
+      await clearAllButton.trigger('click');
+
+      expect(wrapper.emitted('clear-all')).toBeTruthy();
     });
 
     it('emits "submit-orders" with an empty array if all moves are removed and then submitted', async () => {
