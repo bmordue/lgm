@@ -21,6 +21,14 @@
       </li>
     </ul>
     <button
+      v-if="plannedMoves.length >= 2"
+      @click="handleClearAll"
+      class="clear-all-btn"
+      :disabled="isSubmitting"
+    >
+      Clear All
+    </button>
+    <button
       @click="handleSubmitOrders"
       :disabled="!plannedMoves || plannedMoves.length === 0 || isSubmitting"
       class="submit-orders-btn"
@@ -49,11 +57,15 @@ const props = defineProps({
 });
 
 // Emits
-const emit = defineEmits(['remove-move', 'submit-orders']);
+const emit = defineEmits(['remove-move', 'submit-orders', 'clear-all']);
 
 // Methods
 const handleRemoveMove = (move: PlannedMove) => {
   emit('remove-move', move);
+};
+
+const handleClearAll = () => {
+  emit('clear-all');
 };
 
 const handleSubmitOrders = () => {
@@ -119,6 +131,24 @@ ul {
 
 .remove-move-btn:hover {
   background-color: #c0392b;
+}
+
+.clear-all-btn {
+  background-color: #e74c3c;
+  color: white;
+  margin-top: 10px;
+  width: 100%;
+  padding: 10px;
+  font-size: 1em;
+}
+
+.clear-all-btn:hover {
+  background-color: #c0392b;
+}
+
+.clear-all-btn:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
 }
 
 .submit-orders-btn {

@@ -138,6 +138,21 @@ describe('GameView.vue', () => {
     });
   });
 
+  describe('clear-all Event Handling from OrderSubmission', () => {
+    it('clears all moves from plannedMoves when clear-all is emitted', async () => {
+      wrapper = mountComponent();
+      wrapper.vm.plannedMoves = [...samplePlannedMoves];
+      await wrapper.vm.$nextTick();
+
+      const orderSubmissionComponent = wrapper.findComponent({ name: 'OrderSubmission' });
+      await orderSubmissionComponent.vm.$emit('clear-all');
+      await wrapper.vm.$nextTick();
+
+      expect(wrapper.vm.plannedMoves).toEqual([]);
+      expect(orderSubmissionComponent.props('plannedMoves')).toEqual([]);
+    });
+  });
+
   describe('submit-orders Event Handling and postOrders Call', () => {
     beforeEach(() => {
         wrapper = mountComponent();
