@@ -142,6 +142,9 @@ export default defineComponent({
         });
         if (actorOnHex) {
             classes.push('has-actor');
+            if (actorOnHex.owner === currentPlayerId.value) {
+                classes.push('is-own-actor');
+            }
         }
 
         const isPlannedDestination = props.plannedMoves.some(m => m.endPos.x === hexGridPos.row && m.endPos.y === hexGridPos.col);
@@ -246,7 +249,7 @@ export default defineComponent({
         });
 
         if (actorOnHex) {
-            const isOwn = actorOnHex.owner === currentPlayerId;
+            const isOwn = actorOnHex.owner === currentPlayerId.value;
             label += `, Actor ${actorOnHex.id} (${isOwn ? 'Yours' : 'Enemy'})`;
         }
 
@@ -269,7 +272,7 @@ export default defineComponent({
         }
     };
 
-    const currentPlayerId = gamesStore.getCurrentPlayerId();
+    const currentPlayerId = computed(() => gamesStore.getCurrentPlayerId());
 
     return {
       hexes,
@@ -355,6 +358,11 @@ g:focus-visible .hex-polygon {
 .hex-polygon.has-actor {
   /* stroke-width: 1.5; */
   /* stroke: #f1c40f; */ /* Example: yellow stroke if an actor is on it */
+}
+
+.hex-polygon.is-own-actor {
+  stroke: #4caf50;
+  stroke-width: 2.5;
 }
 
 /* .hex-polygon.visibility-source and .hex-polygon.visible are removed as local visibility is gone */

@@ -53,7 +53,8 @@ const handleSubmitOrders = async (movesToSubmit: PlannedMove[]) => {
 // --- End Event Handlers ---
 
 function actorToString(actor :Actor) {
-  return `Owner: ${actor.owner} (${actor.pos.x}, ${actor.pos.y}) [${actor.id}]`;
+  const isSelf = actor.owner === gamesStore.getCurrentPlayerId();
+  return `Owner: ${actor.owner}${isSelf ? ' (You)' : ''} (${actor.pos.x}, ${actor.pos.y}) [${actor.id}]`;
 }
 
 function getPlayerList() {
@@ -177,11 +178,16 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     <div class="game-content">
       <div class="left-panel">
         <h3>Players</h3>
-        <div class="player-list">
-          <div v-for="player in getPlayerList()" :key="`player-${player.id}`" class="player-item">
+        <ul class="player-list">
+          <li
+            v-for="player in getPlayerList()"
+            :key="`player-${player.id}`"
+            class="player-item"
+            :class="{ 'is-self': player.id === gamesStore.getCurrentPlayerId() }"
+          >
             {{ player.name }}{{ player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
-          </div>
-        </div>
+          </li>
+        </ul>
         
         <!-- Order Submission Component -->
         <div v-if="submissionError" class="error-message" role="alert" aria-live="assertive">
@@ -210,14 +216,19 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             @move-planned="handleMovePlanned"
           />
         </div>
-        <div v-else>Loading world data...</div>
+        <div v-else role="status" aria-live="polite">Loading world data...</div>
         
         <h3>Actors</h3>
-        <div class="actors-list">
-          <div v-for="actor in game.world?.actors || []" :key="actor.id" class="actor-item">
+        <ul class="actors-list">
+          <li
+            v-for="actor in game.world?.actors || []"
+            :key="actor.id"
+            class="actor-item"
+            :class="{ 'is-self': actor.owner === gamesStore.getCurrentPlayerId() }"
+          >
             {{ actorToString(actor) }}
-          </div>
-        </div>
+          </li>
+        </ul>
       </div>
     </div>
   </template>
@@ -251,7 +262,9 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   flex: 1;
 }
 
-.player-list {
+.player-list, .actors-list {
+  list-style: none;
+  padding: 0;
   margin-bottom: 20px;
 }
 
@@ -261,6 +274,11 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   margin: 5px 0;
   border-radius: 4px;
   border-left: 3px solid #2196f3;
+}
+
+.player-item.is-self, .actor-item.is-self {
+  border-left-color: #4caf50;
+  background-color: #e8f5e9;
 }
 
 .error-message {
@@ -303,10 +321,11 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 }
 
 .actor-item {
-  padding: 4px;
-  margin: 2px 0;
+  padding: 8px;
+  margin: 5px 0;
   background: #fff3e0;
-  border-radius: 3px;
+  border-radius: 4px;
+  border-left: 3px solid #ff9800;
 }
 
 h3 {
