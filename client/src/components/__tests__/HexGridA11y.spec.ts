@@ -45,6 +45,7 @@ describe('HexGrid.vue accessibility', () => {
     const actorHex = hexGroups.find(g => g.attributes('aria-label')?.includes('Actor 101'));
     expect(actorHex).toBeTruthy();
     expect(actorHex?.attributes('aria-label')).toContain('Yours');
+    expect(actorHex?.find('polygon').classes()).toContain('is-own-actor');
 
     // Check specific aria-label for blocked hex
     const blockedHex = hexGroups.find(g => g.attributes('aria-label')?.includes('Blocked'));

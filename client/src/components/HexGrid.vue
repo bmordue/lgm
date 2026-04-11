@@ -59,6 +59,7 @@ export default defineComponent({
   emits: ['move-planned'], // Declare emitted events
   setup(props, { emit }) {
     const gamesStore = useGamesStore(); // Get store instance
+    const currentPlayerId = gamesStore.getCurrentPlayerId();
     const offsetType = OffsetCoord.ODD; // Using ODD as per existing qoffset/roffset logic
     const selectedHexRef = ref<Hex | null>(null); // For actor selection / move planning start
 
@@ -101,7 +102,7 @@ export default defineComponent({
       return layout.polygonCorners(hex).map(p => `${p.x},${p.y}`).join(' ');
     };
 
-    const getHexTransform = (_hex: Hex): string => ''; // Points are absolute
+    const getHexTransform = (): string => ''; // Points are absolute
 
     const getTerrainTypeForHex = (hex: Hex): Terrain | null => {
       const offsetCoord = OffsetCoord.roffsetFromCube(offsetType, hex);
@@ -116,7 +117,7 @@ export default defineComponent({
       return null;
     };
 
-    const getHexStyle = (_hex: Hex): HexStyle => {
+    const getHexStyle = (): HexStyle => {
       // Base style, specific fills will be by CSS class
       return {};
     };
@@ -142,6 +143,9 @@ export default defineComponent({
         });
         if (actorOnHex) {
             classes.push('has-actor');
+            if (actorOnHex.owner === currentPlayerId) {
+                classes.push('is-own-actor');
+            }
         }
 
         const isPlannedDestination = props.plannedMoves.some(m => m.endPos.x === hexGridPos.row && m.endPos.y === hexGridPos.col);
@@ -269,8 +273,6 @@ export default defineComponent({
         }
     };
 
-    const currentPlayerId = gamesStore.getCurrentPlayerId();
-
     return {
       hexes,
       selectedHexRef,
@@ -319,6 +321,11 @@ g:focus-visible .hex-polygon {
 .hex-polygon.selected {
     stroke: #c0392b; /* A strong red for selection stroke */
     stroke-width: 2.5; /* Clearly thicker stroke */
+}
+
+.hex-polygon.is-own-actor {
+  stroke: hsla(160, 100%, 37%, 1); /* Standard project green */
+  stroke-width: 2.5;
 }
 
 .hex-polygon.selected-actor {
