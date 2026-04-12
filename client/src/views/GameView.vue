@@ -178,7 +178,12 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
       <div class="left-panel">
         <h3>Players</h3>
         <div class="player-list">
-          <div v-for="player in getPlayerList()" :key="`player-${player.id}`" class="player-item">
+          <div
+            v-for="player in getPlayerList()"
+            :key="`player-${player.id}`"
+            class="player-item"
+            :class="{ 'is-self': player.id === gamesStore.getCurrentPlayerId() }"
+          >
             {{ player.name }}{{ player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
           </div>
         </div>
@@ -261,6 +266,12 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   margin: 5px 0;
   border-radius: 4px;
   border-left: 3px solid #2196f3;
+}
+
+.player-item.is-self {
+  background: hsla(160, 100%, 37%, 0.1);
+  border-left-color: hsla(160, 100%, 37%, 1);
+  font-weight: bold;
 }
 
 .error-message {
