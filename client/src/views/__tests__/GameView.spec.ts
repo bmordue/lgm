@@ -66,7 +66,7 @@ describe('GameView.vue', () => {
         playerCount: 1,
         maxPlayers: 2,
       })),
-      getCurrentPlayerId: vi.fn(() => 'p1'),
+      getCurrentPlayerId: vi.fn(() => 1),
       setCurrentGameTurn: vi.fn(),
       fetchTurnResults: vi.fn().mockResolvedValue({}),
       fetchGameDetails: vi.fn().mockResolvedValue({}),
@@ -99,6 +99,15 @@ describe('GameView.vue', () => {
       wrapper = mountComponent();
       const orderSubmissionComponent = wrapper.findComponent(OrderSubmission);
       expect(orderSubmissionComponent.props('plannedMoves')).toEqual([]);
+    });
+
+    it('highlights the current player in the player list', () => {
+      wrapper = mountComponent();
+      const playerItems = wrapper.findAll('.player-item');
+      // sampleActor has owner: 1, so Player 1 should be in the list
+      const selfPlayerItem = playerItems.find(item => item.text().includes('Player 1 (You)'));
+      expect(selfPlayerItem).toBeTruthy();
+      expect(selfPlayerItem?.classes()).toContain('is-self');
     });
   });
 
@@ -166,7 +175,7 @@ describe('GameView.vue', () => {
             playerCount: 1,
             maxPlayers: 2,
         });
-        mockGamesStore.getCurrentPlayerId.mockReturnValue('p1');
+        mockGamesStore.getCurrentPlayerId.mockReturnValue(1);
     });
 
     it('calls fetch with correct details and clears moves on successful submission', async () => {
@@ -174,7 +183,7 @@ describe('GameView.vue', () => {
       await orderSubmissionComponent.vm.$emit('submit-orders', [...samplePlannedMoves]);
       await flushPromises(); // Wait for postOrders async and fetch
 
-      const expectedUrl = `/api/test/games/g1/turns/1/players/p1`;
+      const expectedUrl = `/api/test/games/g1/turns/1/players/1`;
       const expectedBody = {
         orders: samplePlannedMoves.map(pm => ({
           actorId: pm.actorId,
@@ -185,7 +194,7 @@ describe('GameView.vue', () => {
 
       expect(global.fetch).toHaveBeenCalledTimes(1);
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`/games/g1/turns/1/players/p1`),
+        expect.stringContaining(`/games/g1/turns/1/players/1`),
         expect.objectContaining({
           method: 'POST',
           headers: {
