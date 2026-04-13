@@ -215,7 +215,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             @move-planned="handleMovePlanned"
           />
         </div>
-        <div v-else>Loading world data...</div>
+        <div v-else class="loading-state" role="status" aria-live="polite">Loading world data...</div>
         
         <h3>Actors</h3>
         <div class="actors-list">
@@ -318,6 +318,13 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   margin: 2px 0;
   background: #fff3e0;
   border-radius: 3px;
+}
+
+.loading-state {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 20px;
 }
 
 h3 {
