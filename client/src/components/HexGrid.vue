@@ -17,6 +17,7 @@
         :style="getHexStyle(hex)" />
       <text
         class="hex-text"
+        :class="{ 'is-own-actor': isOwnActor(hex) }"
         text-anchor="middle"
         dy=".3em"
         :font-size="getHexFontSize()">{{ getHexText(hex) }}</text>
@@ -61,6 +62,15 @@ export default defineComponent({
     const gamesStore = useGamesStore(); // Get store instance
     const offsetType = OffsetCoord.ODD; // Using ODD as per existing qoffset/roffset logic
     const selectedHexRef = ref<Hex | null>(null); // For actor selection / move planning start
+    const currentPlayerId = computed(() => gamesStore.getCurrentPlayerId());
+
+    const isOwnActor = (hex: Hex): boolean => {
+      const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex);
+      const actorOnHex = props.actors.find(actor => {
+        return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col;
+      });
+      return !!actorOnHex && actorOnHex.owner === currentPlayerId.value;
+    };
 
     // hexes are now generated based on props.world.terrain
     const hexes = computed(() => {
@@ -142,6 +152,9 @@ export default defineComponent({
         });
         if (actorOnHex) {
             classes.push('has-actor');
+            if (actorOnHex.owner === currentPlayerId.value) {
+                classes.push('is-own-actor');
+            }
         }
 
         const isPlannedDestination = props.plannedMoves.some(m => m.endPos.x === hexGridPos.row && m.endPos.y === hexGridPos.col);
@@ -171,20 +184,19 @@ export default defineComponent({
     const handleHexClick = (clickedHex: Hex) => {
       // This handler is now primarily for move planning or selecting actors.
       // The local visibility testing logic has been removed.
-      const currentPlayerId = gamesStore.getCurrentPlayerId();
       const actorOnClickedHex = props.actors.find(actor => {
         const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, clickedHex);
-        return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col && actor.owner === currentPlayerId;
+        return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col && actor.owner === currentPlayerId.value;
       });
 
-      if (selectedHexRef.value && actorOnClickedHex && actorOnClickedHex.owner === currentPlayerId) {
+      if (selectedHexRef.value && actorOnClickedHex && actorOnClickedHex.owner === currentPlayerId.value) {
         // Cannot select another actor if one is already selected for a move.
         // Or, this could be logic for targeting if implementing attacks.
         console.log("An actor is already selected for move. Click the destination or deselect.");
         return;
       }
 
-      if (actorOnClickedHex) { // If clicked on one of the current player's actors
+      if (actorOnClickedHex && actorOnClickedHex.owner === currentPlayerId.value) { // If clicked on one of the current player's actors
         selectedHexRef.value = clickedHex; // Select this actor's hex as start of a move
         console.log("Selected actor on hex:", clickedHex, "Actor ID:", actorOnClickedHex.id);
       } else if (selectedHexRef.value) { // If an actor was previously selected, and now an empty hex is clicked
@@ -246,7 +258,7 @@ export default defineComponent({
         });
 
         if (actorOnHex) {
-            const isOwn = actorOnHex.owner === currentPlayerId;
+            const isOwn = actorOnHex.owner === currentPlayerId.value;
             label += `, Actor ${actorOnHex.id} (${isOwn ? 'Yours' : 'Enemy'})`;
         }
 
@@ -269,8 +281,6 @@ export default defineComponent({
         }
     };
 
-    const currentPlayerId = gamesStore.getCurrentPlayerId();
-
     return {
       hexes,
       selectedHexRef,
@@ -286,6 +296,8 @@ export default defineComponent({
       handleHexRightClick,
       getAriaLabel,
       handleKeyDown,
+      currentPlayerId,
+      isOwnActor,
     };
   },
 });
@@ -319,6 +331,11 @@ g:focus-visible .hex-polygon {
 .hex-polygon.selected {
     stroke: #c0392b; /* A strong red for selection stroke */
     stroke-width: 2.5; /* Clearly thicker stroke */
+}
+
+.hex-polygon.is-own-actor {
+  stroke: hsla(160, 100%, 37%, 1);
+  stroke-width: 2.5;
 }
 
 .hex-polygon.selected-actor {
@@ -364,5 +381,10 @@ g:focus-visible .hex-polygon {
   fill: #2c3e50; /* Darker text color for better contrast */
   font-weight: 500; /* Slightly bolder text */
   font-family: 'Arial', sans-serif; /* Consistent font */
+}
+
+.hex-text.is-own-actor {
+  fill: hsla(160, 100%, 37%, 1);
+  font-weight: bold;
 }
 </style>

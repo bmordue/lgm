@@ -33,3 +33,7 @@
 ## 2026-04-13 - Accessible Loading States
 **Learning:** Loading indicators for async data (like "Loading world data...") must use `role="status"` and `aria-live="polite"` to ensure screen readers announce the state change without being overly disruptive.
 **Action:** Always wrap loading messages in a container with these ARIA attributes and apply the project's standard `.loading-state` styling (centered, italic, grey).
+
+## 2025-05-17 - Multi-modal Unit Identification
+**Learning:** In complex game maps, pairing textual indicators (e.g., "(You)" in labels) with distinct visual highlights (e.g., a specific stroke color and weight) significantly improves the ability of users to identify their own units. This multi-modal approach supports both scannability for sighted users and clarity for screen readers.
+**Action:** Always provide both a text suffix and a visual highlight when identifying the current player's assets in multi-player environments.

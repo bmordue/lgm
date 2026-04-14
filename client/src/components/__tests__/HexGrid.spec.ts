@@ -417,6 +417,15 @@ describe('HexGrid.vue Movement Planning', () => {
       actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
       expect(actor1HexPoly!.classes()).toContain('selected');
       expect(actor1HexPoly!.classes()).toContain('has-actor');
+      expect(actor1HexPoly!.classes()).toContain('is-own-actor');
+    });
+
+    it('applies is-own-actor class only to user-owned actors', () => {
+      const actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
+      const actor2HexPoly = findHexPolygonByAxial(wrapper, sampleActors[1].pos.x, sampleActors[1].pos.y);
+
+      expect(actor1HexPoly!.classes()).toContain('is-own-actor'); // Owner 1 is current player
+      expect(actor2HexPoly!.classes()).not.toContain('is-own-actor'); // Owner 2 is not
     });
 
     it('emits move-planned and clears selection after planning a move', async () => {
