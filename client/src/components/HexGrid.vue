@@ -25,12 +25,15 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, computed, ref } from 'vue'; // Added ref
-import { World, Terrain } from '../../../api/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not.
+import { defineComponent, computed, ref } from 'vue'; // Added ref
+import type { PropType, CSSProperties } from 'vue';
+import { Terrain } from '../../../api/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not.
+import type { World } from '../../../api/service/Models';
 import { Hex, Point, Layout, OffsetCoord } from '../../../api/Hex';
-import { useGamesStore, Actor, PlannedMove } from '../stores/Games.store'; // Added imports
+import { useGamesStore } from '../stores/Games.store'; // Added imports
+import type { Actor, PlannedMove } from '../stores/Games.store';
 
-interface HexStyle {
+interface HexStyle extends CSSProperties {
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
@@ -101,7 +104,7 @@ export default defineComponent({
       return layout.polygonCorners(hex).map(p => `${p.x},${p.y}`).join(' ');
     };
 
-    const getHexTransform = (_hex: Hex): string => ''; // Points are absolute
+    const getHexTransform = (): string => ''; // Points are absolute
 
     const getTerrainTypeForHex = (hex: Hex): Terrain | null => {
       const offsetCoord = OffsetCoord.roffsetFromCube(offsetType, hex);
@@ -116,10 +119,12 @@ export default defineComponent({
       return null;
     };
 
-    const getHexStyle = (_hex: Hex): HexStyle => {
+    const getHexStyle = (): HexStyle => {
       // Base style, specific fills will be by CSS class
       return {};
     };
+
+    const currentPlayerId = computed(() => gamesStore.getCurrentPlayerId());
 
     const getHexClass = (hex: Hex): string[] => {
         const classes = ['hex-polygon'];
@@ -142,6 +147,9 @@ export default defineComponent({
         });
         if (actorOnHex) {
             classes.push('has-actor');
+            if (actorOnHex.owner === currentPlayerId.value) {
+                classes.push('is-own-actor');
+            }
         }
 
         const isPlannedDestination = props.plannedMoves.some(m => m.endPos.x === hexGridPos.row && m.endPos.y === hexGridPos.col);
@@ -192,6 +200,7 @@ export default defineComponent({
         const endHexGridPos = OffsetCoord.roffsetFromCube(offsetType, clickedHex);
 
         const movingActor = props.actors.find(actor => {
+            if (!selectedHexRef.value) return false;
             const actorStartOffset = OffsetCoord.roffsetFromCube(offsetType, selectedHexRef.value);
             return actor.pos.x === actorStartOffset.row && actor.pos.y === actorStartOffset.col;
         });
@@ -246,7 +255,7 @@ export default defineComponent({
         });
 
         if (actorOnHex) {
-            const isOwn = actorOnHex.owner === currentPlayerId;
+            const isOwn = actorOnHex.owner === currentPlayerId.value;
             label += `, Actor ${actorOnHex.id} (${isOwn ? 'Yours' : 'Enemy'})`;
         }
 
@@ -268,8 +277,6 @@ export default defineComponent({
             handleHexClick(hex);
         }
     };
-
-    const currentPlayerId = gamesStore.getCurrentPlayerId();
 
     return {
       hexes,
@@ -319,6 +326,11 @@ g:focus-visible .hex-polygon {
 .hex-polygon.selected {
     stroke: #c0392b; /* A strong red for selection stroke */
     stroke-width: 2.5; /* Clearly thicker stroke */
+}
+
+.hex-polygon.is-own-actor {
+  stroke: hsla(160, 100%, 37%, 1); /* Brand green for player's actors */
+  stroke-width: 2.5;
 }
 
 .hex-polygon.selected-actor {
