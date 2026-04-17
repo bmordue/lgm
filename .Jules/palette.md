@@ -33,3 +33,7 @@
 ## 2026-04-13 - Accessible Loading States
 **Learning:** Loading indicators for async data (like "Loading world data...") must use `role="status"` and `aria-live="polite"` to ensure screen readers announce the state change without being overly disruptive.
 **Action:** Always wrap loading messages in a container with these ARIA attributes and apply the project's standard `.loading-state` styling (centered, italic, grey).
+
+## 2026-05-20 - Multi-modal Ownership Identification
+**Learning:** Consistent multi-modal identification (visual color/stroke + text suffix "(You)") across different UI components (e.g., a map and a side list) significantly reduces cognitive load for players tracking their own assets in a multi-player environment.
+**Action:** Always pair visual highlights with textual ownership indicators and ensure the identification pattern is consistent across all views showing the same entities.
