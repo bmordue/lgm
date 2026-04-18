@@ -33,3 +33,7 @@
 ## 2026-04-13 - Accessible Loading States
 **Learning:** Loading indicators for async data (like "Loading world data...") must use `role="status"` and `aria-live="polite"` to ensure screen readers announce the state change without being overly disruptive.
 **Action:** Always wrap loading messages in a container with these ARIA attributes and apply the project's standard `.loading-state` styling (centered, italic, grey).
+
+## 2026-04-18 - Cohesive Multi-modal Self-Identification
+**Learning:** For complex game interfaces, self-identification must be consistent across both spatial (grid/map) and textual (lists/sidebars) representations. Using the project's brand color for both provides a unified mental model for ownership.
+**Action:** Always synchronize map highlights (e.g., `.is-own-actor`) with sidebar highlights (e.g., `.is-self`) using shared color tokens and the "(You)" textual suffix.

@@ -142,6 +142,9 @@ export default defineComponent({
         });
         if (actorOnHex) {
             classes.push('has-actor');
+            if (actorOnHex.owner === currentPlayerId.value) {
+                classes.push('is-own-actor');
+            }
         }
 
         const isPlannedDestination = props.plannedMoves.some(m => m.endPos.x === hexGridPos.row && m.endPos.y === hexGridPos.col);
@@ -171,13 +174,12 @@ export default defineComponent({
     const handleHexClick = (clickedHex: Hex) => {
       // This handler is now primarily for move planning or selecting actors.
       // The local visibility testing logic has been removed.
-      const currentPlayerId = gamesStore.getCurrentPlayerId();
       const actorOnClickedHex = props.actors.find(actor => {
         const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, clickedHex);
-        return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col && actor.owner === currentPlayerId;
+        return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col && actor.owner === currentPlayerId.value;
       });
 
-      if (selectedHexRef.value && actorOnClickedHex && actorOnClickedHex.owner === currentPlayerId) {
+      if (selectedHexRef.value && actorOnClickedHex && actorOnClickedHex.owner === currentPlayerId.value) {
         // Cannot select another actor if one is already selected for a move.
         // Or, this could be logic for targeting if implementing attacks.
         console.log("An actor is already selected for move. Click the destination or deselect.");
@@ -246,7 +248,7 @@ export default defineComponent({
         });
 
         if (actorOnHex) {
-            const isOwn = actorOnHex.owner === currentPlayerId;
+            const isOwn = actorOnHex.owner === currentPlayerId.value;
             label += `, Actor ${actorOnHex.id} (${isOwn ? 'Yours' : 'Enemy'})`;
         }
 
@@ -269,7 +271,7 @@ export default defineComponent({
         }
     };
 
-    const currentPlayerId = gamesStore.getCurrentPlayerId();
+    const currentPlayerId = computed(() => gamesStore.getCurrentPlayerId());
 
     return {
       hexes,
@@ -332,6 +334,11 @@ g:focus-visible .hex-polygon {
   stroke: #d35400; /* Darker orange stroke for planned path */
   stroke-dasharray: 4; /* Dashed line for path */
   stroke-width: 2;
+}
+
+.hex-polygon.is-own-actor {
+  stroke: hsla(160, 100%, 37%, 1);
+  stroke-width: 2.5;
 }
 
 
