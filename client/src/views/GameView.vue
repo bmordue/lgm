@@ -52,8 +52,9 @@ const handleSubmitOrders = async (movesToSubmit: PlannedMove[]) => {
 };
 // --- End Event Handlers ---
 
-function actorToString(actor :Actor) {
-  return `Owner: ${actor.owner} (${actor.pos.x}, ${actor.pos.y}) [${actor.id}]`;
+function actorToString(actor: Actor) {
+  const isSelf = actor.owner === gamesStore.getCurrentPlayerId();
+  return `Actor ${actor.id} at (${actor.pos.x}, ${actor.pos.y}) - Player ${actor.owner}${isSelf ? ' (You)' : ''}`;
 }
 
 function getPlayerList() {
@@ -219,7 +220,12 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         
         <h3>Actors</h3>
         <div class="actors-list">
-          <div v-for="actor in game.world?.actors || []" :key="actor.id" class="actor-item">
+          <div
+            v-for="actor in game.world?.actors || []"
+            :key="actor.id"
+            class="actor-item"
+            :class="{ 'is-self': actor.owner === gamesStore.getCurrentPlayerId() }"
+          >
             {{ actorToString(actor) }}
           </div>
         </div>
@@ -318,6 +324,12 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   margin: 2px 0;
   background: #fff3e0;
   border-radius: 3px;
+}
+
+.actor-item.is-self {
+  background: hsla(160, 100%, 37%, 0.1);
+  border-left: 3px solid hsla(160, 100%, 37%, 1);
+  font-weight: bold;
 }
 
 .loading-state {
