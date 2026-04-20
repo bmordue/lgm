@@ -37,3 +37,11 @@
 ## 2026-04-18 - Cohesive Multi-modal Self-Identification
 **Learning:** For complex game interfaces, self-identification must be consistent across both spatial (grid/map) and textual (lists/sidebars) representations. Using the project's brand color for both provides a unified mental model for ownership.
 **Action:** Always synchronize map highlights (e.g., `.is-own-actor`) with sidebar highlights (e.g., `.is-self`) using shared color tokens and the "(You)" textual suffix.
+
+## 2026-04-20 - Cross-Component Feedback for Planned Actions
+**Learning:** Implementing hover/focus cross-highlighting between lists and spatial maps (e.g., highlighting a destination hex when hovering over a move in the sidebar) creates a much more tactile and intuitive experience. This reduces cognitive load when reviewing multiple planned actions.
+**Action:** When a list represents actions on a map, always implement two-way visual feedback where hovering a list item highlights its spatial target.
+
+## 2026-04-20 - Animated State Changes for Interactive Lists
+**Learning:** Using `<TransitionGroup>` to animate the addition and removal of items in interactive lists (like move planning) provides subtle but important visual feedback that an action was successful. This makes the interface feel responsive and modern.
+**Action:** Always use transitions when items are dynamically added to or removed from user-managed lists to improve the perceived smoothness of the UI.

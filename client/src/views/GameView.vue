@@ -16,6 +16,7 @@ interface GameData {
 
 const game = ref<GameData>({})
 const plannedMoves = ref<PlannedMove[]>([]); // Reactive state for planned moves
+const hoveredMove = ref<PlannedMove | null>(null); // State for hovered move
 const isSubmitting = ref(false);
 const submissionError = ref('');
 const submissionSuccess = ref('');
@@ -44,6 +45,10 @@ const handleRemoveMove = (moveToRemove: PlannedMove) => {
 const handleClearAll = () => {
   plannedMoves.value = [];
   console.log('All moves cleared');
+};
+
+const handleHoverMove = (move: PlannedMove | null) => {
+  hoveredMove.value = move;
 };
 
 const handleSubmitOrders = async (movesToSubmit: PlannedMove[]) => {
@@ -201,6 +206,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           @remove-move="handleRemoveMove"
           @clear-all="handleClearAll"
           @submit-orders="handleSubmitOrders"
+          @hover-move="handleHoverMove"
         />
         <!-- Removed old Post Orders button -->
       </div>
@@ -212,6 +218,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             :world="game.world"
             :actors="game.world?.actors || []"
             :planned-moves="plannedMoves"
+            :hovered-move="hoveredMove"
             @move-planned="handleMovePlanned"
           />
         </div>
@@ -362,4 +369,3 @@ button:hover {
 }
 */
 </style>
-

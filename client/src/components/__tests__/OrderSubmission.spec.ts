@@ -64,7 +64,8 @@ describe('OrderSubmission.vue', () => {
     });
 
     it('renders the list of moves', () => {
-      expect(wrapper.find('ul').exists()).toBe(true);
+      // TransitionGroup uses .planned-moves-list class
+      expect(wrapper.find('.planned-moves-list').exists()).toBe(true);
       const listItems = wrapper.findAll('li.planned-move-item');
       expect(listItems.length).toBe(sampleMoves.length);
     });
@@ -124,30 +125,14 @@ describe('OrderSubmission.vue', () => {
       expect(wrapper.emitted('clear-all')).toBeTruthy();
     });
 
-    it('emits "submit-orders" with an empty array if all moves are removed and then submitted', async () => {
-        wrapper = mountComponent({ plannedMoves: [] }); // Mount with empty initially
-        const submitButton = wrapper.find('button.submit-orders-btn');
-        await submitButton.trigger('click'); // Should not emit if button is disabled, which it is
+    it('emits "hover-move" when a move item is hovered', async () => {
+      const firstMoveItem = wrapper.find('li.planned-move-item');
+      await firstMoveItem.trigger('mouseenter');
+      expect(wrapper.emitted('hover-move')).toBeTruthy();
+      expect(wrapper.emitted('hover-move')![0]).toEqual([sampleMoves[0]]);
 
-        expect(wrapper.emitted('submit-orders')).toBeFalsy(); // Check it wasn't emitted due to disabled state
-
-        // Now test with moves, then remove them (simulated by re-rendering with empty)
-        // This case is more about the parent component's responsibility of clearing moves.
-        // For this component, if props.plannedMoves is empty, button is disabled.
-        // Let's re-evaluate this specific test's goal for this component.
-        // The component itself will emit its current `plannedMoves` prop.
-        // So if `plannedMoves` becomes empty and button somehow enabled (not possible by default), it would emit [].
-        // The disabling logic is key.
-
-        // Test that if mounted with empty, and button is clicked (though it should be disabled),
-        // it correctly reflects the (empty) state of plannedMoves if it *were* to emit.
-        // However, the button being disabled means it *won't* emit.
-        // The prior test for "disabled" covers this.
-
-        // The most direct test for emitting empty is if it's passed an empty array *and* the button is somehow enabled.
-        // Given the current logic, this isn't a standard scenario.
-        // The existing "Submit All Orders" test with `sampleMoves` is sufficient for event emission.
-        // The "disabled when plannedMoves is empty" test covers the empty state.
+      await firstMoveItem.trigger('mouseleave');
+      expect(wrapper.emitted('hover-move')![1]).toEqual([null]);
     });
   });
 });

@@ -55,6 +55,10 @@ export default defineComponent({
       type: Array as PropType<PlannedMove[]>,
       default: () => [],
     },
+    hoveredMove: {
+        type: Object as PropType<PlannedMove | null>,
+        default: null,
+    },
   },
   emits: ['move-planned'], // Declare emitted events
   setup(props, { emit }) {
@@ -144,12 +148,20 @@ export default defineComponent({
             classes.push('has-actor');
             if (actorOnHex.owner === currentPlayerId.value) {
                 classes.push('is-own-actor');
+                // Check if this specific actor has any planned moves
+                if (props.plannedMoves.some(m => m.actorId === actorOnHex.id)) {
+                  classes.push('actor-has-planned-move');
+                }
             }
         }
 
         const isPlannedDestination = props.plannedMoves.some(m => m.endPos.x === hexGridPos.row && m.endPos.y === hexGridPos.col);
         if (isPlannedDestination) {
             classes.push('planned-path');
+        }
+
+        if (props.hoveredMove && props.hoveredMove.endPos.x === hexGridPos.row && props.hoveredMove.endPos.y === hexGridPos.col) {
+          classes.push('is-hovered-destination');
         }
 
         return classes;
@@ -309,7 +321,8 @@ svg {
 }
 
 .hex-polygon:hover {
-  fill-opacity: 0.8; /* Make hex slightly more transparent on hover */
+  fill-opacity: 0.8;
+  stroke-width: 1.5;
 }
 
 g:focus-visible .hex-polygon {
@@ -339,6 +352,17 @@ g:focus-visible .hex-polygon {
 .hex-polygon.is-own-actor {
   stroke: hsla(160, 100%, 37%, 1);
   stroke-width: 2.5;
+}
+
+.hex-polygon.actor-has-planned-move {
+  stroke-dasharray: 2; /* Dash it to show it has a pending action */
+}
+
+.hex-polygon.is-hovered-destination {
+  fill: rgba(230, 126, 34, 0.5); /* Stronger orange fill */
+  stroke: #d35400;
+  stroke-width: 3;
+  stroke-dasharray: none; /* Solid line for clear focus */
 }
 
 
