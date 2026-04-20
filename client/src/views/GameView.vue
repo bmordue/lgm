@@ -53,7 +53,7 @@ const handleSubmitOrders = async (movesToSubmit: PlannedMove[]) => {
 // --- End Event Handlers ---
 
 function actorToString(actor :Actor) {
-  return `Owner: ${actor.owner} (${actor.pos.x}, ${actor.pos.y}) [${actor.id}]`;
+  return `Actor ${actor.id} at (${actor.pos.x}, ${actor.pos.y})`;
 }
 
 function getPlayerList() {
@@ -219,8 +219,13 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         
         <h3>Actors</h3>
         <div class="actors-list">
-          <div v-for="actor in game.world?.actors || []" :key="actor.id" class="actor-item">
-            {{ actorToString(actor) }}
+          <div
+            v-for="actor in game.world?.actors || []"
+            :key="actor.id"
+            class="actor-item"
+            :class="{ 'is-self': actor.owner === gamesStore.getCurrentPlayerId() }"
+          >
+            {{ actorToString(actor) }}{{ actor.owner === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
           </div>
         </div>
       </div>
@@ -314,10 +319,17 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 }
 
 .actor-item {
-  padding: 4px;
-  margin: 2px 0;
+  padding: 8px;
+  margin: 5px 0;
   background: #fff3e0;
-  border-radius: 3px;
+  border-radius: 4px;
+  border-left: 3px solid #ff9800;
+}
+
+.actor-item.is-self {
+  background: hsla(160, 100%, 37%, 0.1);
+  border-left-color: hsla(160, 100%, 37%, 1);
+  font-weight: bold;
 }
 
 .loading-state {
