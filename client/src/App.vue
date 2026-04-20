@@ -51,6 +51,7 @@ nav a.router-link-exact-active:hover {
 nav > * {
   display: inline-block;
   padding: 0 1rem;
+  transition: 0.4s;
 }
 
 nav > * + * {
@@ -62,12 +63,13 @@ nav button {
   border: none;
   font-family: inherit;
   font-size: inherit;
-  color: var(--color-link);
+  color: hsla(160, 100%, 37%, 1); /* Match brand green */
   cursor: pointer;
+  padding: 3px 1rem; /* Adjust padding to match links */
 }
 
-nav button:hover {
-  background-color: var(--color-background-soft);
+nav button:hover, nav a:hover {
+  background-color: hsla(160, 100%, 37%, 0.2);
 }
 
 @media (min-width: 1024px) {
