@@ -11,6 +11,7 @@
       :aria-label="getAriaLabel(hex)"
       @keydown="handleKeyDown($event, hex)"
     >
+      <title>{{ getAriaLabel(hex) }}</title>
       <polygon
         :points="getHexPoints(hex)"
         :class="getHexClass(hex)"
@@ -57,6 +58,14 @@ export default defineComponent({
     },
     hoveredMove: {
         type: Object as PropType<PlannedMove | null>,
+        default: null,
+    },
+    hoveredActorId: {
+        type: Number as PropType<number | null>,
+        default: null,
+    },
+    hoveredPlayerId: {
+        type: Number as PropType<number | null>,
         default: null,
     },
   },
@@ -162,6 +171,15 @@ export default defineComponent({
 
         if (props.hoveredMove && props.hoveredMove.endPos.x === hexGridPos.row && props.hoveredMove.endPos.y === hexGridPos.col) {
           classes.push('is-hovered-destination');
+        }
+
+        // Cross-highlighting logic
+        const isHoveredBySidebar = (actorOnHex && actorOnHex.id === props.hoveredActorId) ||
+                                  (actorOnHex && actorOnHex.owner === props.hoveredPlayerId) ||
+                                  (actorOnHex && props.hoveredMove && actorOnHex.id === props.hoveredMove.actorId);
+
+        if (isHoveredBySidebar) {
+            classes.push('is-hovered-actor');
         }
 
         return classes;
@@ -363,6 +381,12 @@ g:focus-visible .hex-polygon {
   stroke: #d35400;
   stroke-width: 3;
   stroke-dasharray: none; /* Solid line for clear focus */
+}
+
+.hex-polygon.is-hovered-actor {
+  stroke: #2196f3; /* Blue highlight */
+  stroke-width: 3;
+  fill: rgba(33, 150, 243, 0.2);
 }
 
 

@@ -45,3 +45,7 @@
 ## 2026-04-20 - Animated State Changes for Interactive Lists
 **Learning:** Using `<TransitionGroup>` to animate the addition and removal of items in interactive lists (like move planning) provides subtle but important visual feedback that an action was successful. This makes the interface feel responsive and modern.
 **Action:** Always use transitions when items are dynamically added to or removed from user-managed lists to improve the perceived smoothness of the UI.
+
+## 2026-04-22 - Cross-Component Highlight Correlation
+**Learning:** Implementing cross-highlighting between textual lists (sidebars) and spatial representations (maps/grids) drastically reduces the cognitive effort required to correlate data. Converting static list items to buttons/interactive elements allows keyboard users to participate in this discovery via focus.
+**Action:** When displaying a list of entities that also appear on a map, always implement two-way highlighting on hover and focus to strengthen the mental link between the two views.

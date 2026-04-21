@@ -17,6 +17,8 @@ interface GameData {
 const game = ref<GameData>({})
 const plannedMoves = ref<PlannedMove[]>([]); // Reactive state for planned moves
 const hoveredMove = ref<PlannedMove | null>(null); // State for hovered move
+const hoveredActorId = ref<number | null>(null); // New state for hovered actor
+const hoveredPlayerId = ref<number | null>(null); // New state for hovered player
 const isSubmitting = ref(false);
 const submissionError = ref('');
 const submissionSuccess = ref('');
@@ -183,14 +185,18 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
       <div class="left-panel">
         <h3>Players</h3>
         <div class="player-list">
-          <div
+          <button
             v-for="player in getPlayerList()"
             :key="`player-${player.id}`"
             class="player-item"
             :class="{ 'is-self': player.id === gamesStore.getCurrentPlayerId() }"
+            @mouseenter="hoveredPlayerId = player.id"
+            @mouseleave="hoveredPlayerId = null"
+            @focus="hoveredPlayerId = player.id"
+            @blur="hoveredPlayerId = null"
           >
             {{ player.name }}{{ player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
-          </div>
+          </button>
         </div>
         
         <!-- Order Submission Component -->
@@ -219,6 +225,8 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             :actors="game.world?.actors || []"
             :planned-moves="plannedMoves"
             :hovered-move="hoveredMove"
+            :hovered-actor-id="hoveredActorId"
+            :hovered-player-id="hoveredPlayerId"
             @move-planned="handleMovePlanned"
           />
         </div>
@@ -226,14 +234,18 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         
         <h3>Actors</h3>
         <div class="actors-list">
-          <div
+          <button
             v-for="actor in game.world?.actors || []"
             :key="actor.id"
             class="actor-item"
             :class="{ 'is-self': actor.owner === gamesStore.getCurrentPlayerId() }"
+            @mouseenter="hoveredActorId = actor.id"
+            @mouseleave="hoveredActorId = null"
+            @focus="hoveredActorId = actor.id"
+            @blur="hoveredActorId = null"
           >
             {{ actorToString(actor) }}{{ actor.owner === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
-          </div>
+          </button>
         </div>
       </div>
     </div>
@@ -273,11 +285,24 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 }
 
 .player-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 1em;
   padding: 8px;
   background: #e3f2fd;
   margin: 5px 0;
   border-radius: 4px;
+  border: none;
   border-left: 3px solid #2196f3;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.player-item:hover, .player-item:focus {
+  background: #bbdefb;
+  outline: none;
 }
 
 .player-item.is-self {
@@ -326,11 +351,24 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 }
 
 .actor-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font-family: monospace;
+  font-size: 0.9em;
   padding: 8px;
   margin: 5px 0;
   background: #fff3e0;
   border-radius: 4px;
+  border: none;
   border-left: 3px solid #ff9800;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.actor-item:hover, .actor-item:focus {
+  background: #ffe0b2;
+  outline: none;
 }
 
 .actor-item.is-self {
