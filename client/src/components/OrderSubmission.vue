@@ -9,6 +9,7 @@
         v-for="move in plannedMoves"
         :key="`${move.actorId}-${move.startPos.x}-${move.startPos.y}-${move.endPos.x}-${move.endPos.y}`"
         class="planned-move-item"
+        :class="{ 'is-hovered': hoveredMove && isSameMove(move, hoveredMove) }"
         @mouseenter="handleHover(move, true)"
         @mouseleave="handleHover(move, false)"
         @focusin="handleHover(move, true)"
@@ -62,6 +63,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  hoveredMove: {
+    type: Object as PropType<PlannedMove | null>,
+    default: null,
+  },
 });
 
 // Emits
@@ -80,6 +85,12 @@ const handleClearAll = () => {
 
 const handleHover = (move: PlannedMove, isHovering: boolean) => {
   emit('hover-move', isHovering ? move : null);
+};
+
+const isSameMove = (m1: PlannedMove, m2: PlannedMove) => {
+  return m1.actorId === m2.actorId &&
+         m1.startPos.x === m2.startPos.x && m1.startPos.y === m2.startPos.y &&
+         m1.endPos.x === m2.endPos.x && m1.endPos.y === m2.endPos.y;
 };
 
 const handleSubmitOrders = () => {
@@ -125,7 +136,7 @@ const handleSubmitOrders = () => {
   border-bottom: none;
 }
 
-.planned-move-item:hover {
+.planned-move-item:hover, .planned-move-item.is-hovered {
   background-color: #f0f0f0;
   padding-left: 5px;
 }
