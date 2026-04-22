@@ -6,6 +6,10 @@
       :transform="getHexTransform(hex)"
       @click.stop="handleHexClick(hex)"
       @contextmenu.prevent="handleHexRightClick(hex)"
+      @mouseenter="handleMouseEnter(hex)"
+      @mouseleave="handleMouseLeave"
+      @focusin="handleMouseEnter(hex)"
+      @focusout="handleMouseLeave"
       role="button"
       tabindex="0"
       :aria-label="getAriaLabel(hex)"
@@ -26,12 +30,12 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, PropType, computed, ref } from 'vue'; // Added ref
-import { World, Terrain } from '../../../api/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not.
+import { defineComponent, computed, ref, type PropType, type CSSProperties } from 'vue'; // Added ref
+import { Terrain, type World } from '../../../api/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not.
 import { Hex, Point, Layout, OffsetCoord } from '../../../api/Hex';
-import { useGamesStore, Actor, PlannedMove } from '../stores/Games.store'; // Added imports
+import { useGamesStore, type Actor, type PlannedMove } from '../stores/Games.store'; // Added imports
 
-interface HexStyle {
+interface HexStyle extends CSSProperties {
   fill?: string;
   stroke?: string;
   strokeWidth?: number;
@@ -69,7 +73,7 @@ export default defineComponent({
         default: null,
     },
   },
-  emits: ['move-planned'], // Declare emitted events
+  emits: ['move-planned', 'actor-hover', 'player-hover', 'move-hover'], // Declare emitted events
   setup(props, { emit }) {
     const gamesStore = useGamesStore(); // Get store instance
     const offsetType = OffsetCoord.ODD; // Using ODD as per existing qoffset/roffset logic
@@ -209,7 +213,7 @@ export default defineComponent({
         return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col && actor.owner === currentPlayerId.value;
       });
 
-      if (selectedHexRef.value && actorOnClickedHex && actorOnClickedHex.owner === currentPlayerId.value) {
+      if (selectedHexRef.value && actorOnClickedHex && actorOnClickedHex.owner === (currentPlayerId.value as number)) {
         // Cannot select another actor if one is already selected for a move.
         // Or, this could be logic for targeting if implementing attacks.
         console.log("An actor is already selected for move. Click the destination or deselect.");
@@ -217,7 +221,7 @@ export default defineComponent({
       }
 
       if (actorOnClickedHex) { // If clicked on one of the current player's actors
-        selectedHexRef.value = clickedHex; // Select this actor's hex as start of a move
+        selectedHexRef.value = clickedHex as any; // Select this actor's hex as start of a move
         console.log("Selected actor on hex:", clickedHex, "Actor ID:", actorOnClickedHex.id);
       } else if (selectedHexRef.value) { // If an actor was previously selected, and now an empty hex is clicked
         const startHexGridPos = OffsetCoord.roffsetFromCube(offsetType, selectedHexRef.value);
@@ -301,6 +305,26 @@ export default defineComponent({
         }
     };
 
+    const handleMouseEnter = (hex: Hex) => {
+        const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex);
+        const actor = props.actors.find(a => a.pos.x === hexGridPos.row && a.pos.y === hexGridPos.col);
+        const move = props.plannedMoves.find(m => m.endPos.x === hexGridPos.row && m.endPos.y === hexGridPos.col);
+
+        if (actor) {
+            emit('actor-hover', actor.id);
+            emit('player-hover', actor.owner);
+        }
+        if (move) {
+            emit('move-hover', move);
+        }
+    };
+
+    const handleMouseLeave = () => {
+        emit('actor-hover', null);
+        emit('player-hover', null);
+        emit('move-hover', null);
+    };
+
     const currentPlayerId = computed(() => gamesStore.getCurrentPlayerId());
 
     return {
@@ -318,6 +342,8 @@ export default defineComponent({
       handleHexRightClick,
       getAriaLabel,
       handleKeyDown,
+      handleMouseEnter,
+      handleMouseLeave,
     };
   },
 });

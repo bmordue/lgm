@@ -65,7 +65,8 @@ function actorToString(actor :Actor) {
 
 function getPlayerList() {
   if (!game.value.world?.actors) return [];
-  const playerIds = [...new Set(game.value.world.actors.map((actor: Actor) => actor.owner))];
+  const actors = game.value.world.actors as Actor[];
+  const playerIds = [...new Set(actors.map((actor: Actor) => actor.owner))];
   return playerIds.map(id => ({ id, name: `Player ${id}` }));
 }
 
@@ -189,7 +190,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             v-for="player in getPlayerList()"
             :key="`player-${player.id}`"
             class="player-item"
-            :class="{ 'is-self': player.id === gamesStore.getCurrentPlayerId() }"
+            :class="{
+              'is-self': player.id === gamesStore.getCurrentPlayerId(),
+              'is-hovered': player.id === hoveredPlayerId
+            }"
             @mouseenter="hoveredPlayerId = player.id"
             @mouseleave="hoveredPlayerId = null"
             @focus="hoveredPlayerId = player.id"
@@ -209,6 +213,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         <order-submission
           :planned-moves="plannedMoves"
           :is-submitting="isSubmitting"
+          :hovered-move="hoveredMove"
           @remove-move="handleRemoveMove"
           @clear-all="handleClearAll"
           @submit-orders="handleSubmitOrders"
@@ -228,6 +233,9 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             :hovered-actor-id="hoveredActorId"
             :hovered-player-id="hoveredPlayerId"
             @move-planned="handleMovePlanned"
+            @actor-hover="hoveredActorId = ($event as any)"
+            @player-hover="hoveredPlayerId = ($event as any)"
+            @move-hover="hoveredMove = ($event as any)"
           />
         </div>
         <div v-else class="loading-state" role="status" aria-live="polite">Loading world data...</div>
@@ -238,7 +246,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             v-for="actor in game.world?.actors || []"
             :key="actor.id"
             class="actor-item"
-            :class="{ 'is-self': actor.owner === gamesStore.getCurrentPlayerId() }"
+            :class="{
+              'is-self': actor.owner === gamesStore.getCurrentPlayerId(),
+              'is-hovered': actor.id === hoveredActorId
+            }"
             @mouseenter="hoveredActorId = actor.id"
             @mouseleave="hoveredActorId = null"
             @focus="hoveredActorId = actor.id"
@@ -300,7 +311,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   transition: background-color 0.2s;
 }
 
-.player-item:hover, .player-item:focus {
+.player-item:hover, .player-item:focus, .player-item.is-hovered {
   background: #bbdefb;
   outline: none;
 }
@@ -309,6 +320,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   background: hsla(160, 100%, 37%, 0.1);
   border-left-color: hsla(160, 100%, 37%, 1);
   font-weight: bold;
+}
+
+.player-item.is-self:hover, .player-item.is-self:focus, .player-item.is-self.is-hovered {
+  background: hsla(160, 100%, 37%, 0.2);
 }
 
 .error-message {
@@ -366,7 +381,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   transition: background-color 0.2s;
 }
 
-.actor-item:hover, .actor-item:focus {
+.actor-item:hover, .actor-item:focus, .actor-item.is-hovered {
   background: #ffe0b2;
   outline: none;
 }
@@ -375,6 +390,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   background: hsla(160, 100%, 37%, 0.1);
   border-left-color: hsla(160, 100%, 37%, 1);
   font-weight: bold;
+}
+
+.actor-item.is-self:hover, .actor-item.is-self:focus, .actor-item.is-self.is-hovered {
+  background: hsla(160, 100%, 37%, 0.2);
 }
 
 .loading-state {
