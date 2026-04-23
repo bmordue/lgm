@@ -49,3 +49,7 @@
 ## 2026-04-22 - Cross-Component Highlight Correlation
 **Learning:** Implementing cross-highlighting between textual lists (sidebars) and spatial representations (maps/grids) drastically reduces the cognitive effort required to correlate data. Converting static list items to buttons/interactive elements allows keyboard users to participate in this discovery via focus.
 **Action:** When displaying a list of entities that also appear on a map, always implement two-way highlighting on hover and focus to strengthen the mental link between the two views.
+
+## 2026-04-24 - Password Visibility Toggle Pattern
+**Learning:** A "Show/Hide Password" toggle significantly improves UX by allowing users to verify their input. Implementing this in Vue requires a reactive boolean and dynamic `:type` binding. Using a `type="button"` for the toggle is critical to avoid accidental form submission.
+**Action:** For all sensitive input fields, provide a visibility toggle with appropriate ARIA labels and ensure the toggle button does not trigger form submission.

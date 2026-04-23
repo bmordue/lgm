@@ -10,16 +10,16 @@ describe('LoginForm', () => {
 
   it('renders properly', () => {
     const wrapper = mount(LoginForm)
-    expect(wrapper.find('label[for="username"]').text()).toBe('Username')
-    expect(wrapper.find('label[for="password"]').text()).toBe('Password')
-    expect(wrapper.find('button[type="submit"]').text()).toBe('log in')
+    expect(wrapper.find('label[for="username"]').text()).toBe('Username *')
+    expect(wrapper.find('label[for="password"]').text()).toBe('Password *')
+    expect(wrapper.find('button[type="submit"]').text()).toBe('Log In')
   })
 
   it('shows loading state when isLoggingIn is true', async () => {
     const wrapper = mount(LoginForm)
     await wrapper.setData({ isLoggingIn: true })
     const button = wrapper.find('button[type="submit"]')
-    expect(button.text()).toBe('logging in...')
+    expect(button.text()).toBe('Logging In...')
     expect(button.element.disabled).toBe(true)
   })
 
