@@ -7,7 +7,9 @@ const userStore = useUserStore();
 
 <template>
   <header>
-    <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+    <RouterLink to="/" class="logo-link" aria-label="Go to home">
+      <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
+    </RouterLink>
 
     <div class="wrapper">
       <nav>
@@ -28,9 +30,20 @@ header {
   max-height: 100vh;
 }
 
-.logo {
+.logo-link {
   display: block;
   margin: 0 auto 2rem;
+  border-radius: 8px;
+}
+
+.logo-link:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 4px;
+}
+
+.logo {
+  display: block;
+  margin: 0;
 }
 
 nav {
@@ -52,10 +65,16 @@ nav > * {
   display: inline-block;
   padding: 0 1rem;
   transition: 0.4s;
+  border-radius: 4px;
 }
 
 nav > * + * {
   border-left: 1px solid var(--color-border);
+}
+
+nav > *:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
 }
 
 nav button {
@@ -65,7 +84,8 @@ nav button {
   font-size: inherit;
   color: hsla(160, 100%, 37%, 1); /* Match brand green */
   cursor: pointer;
-  padding: 3px 1rem; /* Adjust padding to match links */
+  padding: 0 1rem; /* Match links padding */
+  line-height: 1.5;
 }
 
 nav button:hover, nav a:hover {
@@ -79,7 +99,7 @@ nav button:hover, nav a:hover {
     padding-right: calc(var(--section-gap) / 2);
   }
 
-  .logo {
+  .logo-link {
     margin: 0 2rem 0 0;
   }
 
