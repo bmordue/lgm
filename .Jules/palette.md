@@ -53,3 +53,7 @@
 ## 2026-04-24 - Password Visibility Toggle Pattern
 **Learning:** A "Show/Hide Password" toggle significantly improves UX by allowing users to verify their input. Implementing this in Vue requires a reactive boolean and dynamic `:type` binding. Using a `type="button"` for the toggle is critical to avoid accidental form submission.
 **Action:** For all sensitive input fields, provide a visibility toggle with appropriate ARIA labels and ensure the toggle button does not trigger form submission.
+
+## 2026-04-25 - Skip to Main Content Landmark Pattern
+**Learning:** Adding a "Skip to main content" link as the first focusable element in the DOM, paired with a semantic `<main>` landmark, is a high-impact, low-effort accessibility improvement. It significantly enhances the navigation experience for keyboard and screen-reader users by allowing them to bypass repetitive navigation menus.
+**Action:** Always include a skip link and a corresponding main landmark in the root application component to ensure baseline keyboard accessibility.
