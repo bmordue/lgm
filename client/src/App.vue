@@ -6,6 +6,7 @@ const userStore = useUserStore();
 </script>
 
 <template>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   <header>
     <RouterLink to="/" class="logo-link" aria-label="Go to home">
       <img alt="Vue logo" class="logo" src="@/assets/logo.svg" width="125" height="125" />
@@ -16,18 +17,43 @@ const userStore = useUserStore();
         <RouterLink v-if="userStore.isAuthenticated" to="/dashboard">Dashboard</RouterLink>
         <RouterLink v-if="!userStore.isAuthenticated" to="/login">Login</RouterLink>
         <RouterLink v-if="!userStore.isAuthenticated" to="/reset">Reset</RouterLink>
-        <button v-if="userStore.isAuthenticated" @click="userStore.logout">Logout</button>
+        <button
+          v-if="userStore.isAuthenticated"
+          type="button"
+          @click="userStore.logout"
+        >
+          Logout
+        </button>
       </nav>
     </div>
   </header>
 
-  <RouterView />
+  <main id="main-content" tabindex="-1">
+    <RouterView />
+  </main>
 </template>
 
 <style scoped>
 header {
   line-height: 1.5;
   max-height: 100vh;
+}
+
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: hsla(160, 100%, 37%, 1);
+  color: white;
+  padding: 8px;
+  z-index: 100;
+  transition: top 0.2s;
+  text-decoration: none;
+  border-bottom-right-radius: 8px;
+}
+
+.skip-link:focus {
+  top: 0;
 }
 
 .logo-link {
