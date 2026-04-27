@@ -204,12 +204,16 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         </div>
         
         <!-- Order Submission Component -->
-        <div v-if="submissionError" class="error-message" role="alert" aria-live="assertive">
-          {{ submissionError }}
-        </div>
-        <div v-if="submissionSuccess" class="success-message" role="status" aria-live="polite">
-          {{ submissionSuccess }}
-        </div>
+        <Transition name="fade">
+          <div v-if="submissionError" class="error-message" role="alert" aria-live="assertive">
+            {{ submissionError }}
+          </div>
+        </Transition>
+        <Transition name="fade">
+          <div v-if="submissionSuccess" class="success-message" role="status" aria-live="polite">
+            {{ submissionSuccess }}
+          </div>
+        </Transition>
         <order-submission
           :planned-moves="plannedMoves"
           :is-submitting="isSubmitting"

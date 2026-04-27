@@ -53,3 +53,7 @@
 ## 2026-04-24 - Password Visibility Toggle Pattern
 **Learning:** A "Show/Hide Password" toggle significantly improves UX by allowing users to verify their input. Implementing this in Vue requires a reactive boolean and dynamic `:type` binding. Using a `type="button"` for the toggle is critical to avoid accidental form submission.
 **Action:** For all sensitive input fields, provide a visibility toggle with appropriate ARIA labels and ensure the toggle button does not trigger form submission.
+
+## 2026-04-25 - Smooth Feedback Transitions
+**Learning:** Using smooth transitions for feedback messages (success/error) prevents jarring UI jumps and improves the overall "polished" feel of the application.
+**Action:** Use Vue's `<Transition>` component for all dynamic feedback messages to ensure a cohesive and pleasant user experience.
