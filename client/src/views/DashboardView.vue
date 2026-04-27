@@ -104,9 +104,11 @@ async function join(game: GameSummary) {
 </script>
 
 <template>
-  <div v-if="errorMessage" class="error-message" role="alert" aria-live="assertive">
-    {{ errorMessage }}
-  </div>
+  <Transition name="fade">
+    <div v-if="errorMessage" class="error-message" role="alert" aria-live="assertive">
+      {{ errorMessage }}
+    </div>
+  </Transition>
   <h1>Games</h1>
   <div v-if="isLoading" class="no-games" role="status">
     Loading games...
@@ -132,9 +134,11 @@ async function join(game: GameSummary) {
       No active games found. Click 'Create New Game' to start a new journey!
     </div>
   </div>
-  <div v-if="successMessage" class="no-games green" role="status" aria-live="polite">
-    {{ successMessage }}
-  </div>
+  <Transition name="fade">
+    <div v-if="successMessage" class="no-games green" role="status" aria-live="polite">
+      {{ successMessage }}
+    </div>
+  </Transition>
   <button
     @click="callCreate()"
     :disabled="isCreating"
