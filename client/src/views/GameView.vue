@@ -315,9 +315,14 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   transition: background-color 0.2s;
 }
 
-.player-item:hover, .player-item:focus, .player-item.is-hovered {
+.player-item:hover, .player-item.is-hovered {
   background: #bbdefb;
-  outline: none;
+}
+
+.player-item:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
+  background: #bbdefb;
 }
 
 .player-item.is-self {
@@ -385,9 +390,14 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   transition: background-color 0.2s;
 }
 
-.actor-item:hover, .actor-item:focus, .actor-item.is-hovered {
+.actor-item:hover, .actor-item.is-hovered {
   background: #ffe0b2;
-  outline: none;
+}
+
+.actor-item:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
+  background: #ffe0b2;
 }
 
 .actor-item.is-self {

@@ -370,7 +370,7 @@ svg {
 }
 
 g:focus-visible .hex-polygon {
-  stroke: #2196f3; /* Blue stroke for focus */
+  stroke: hsla(160, 100%, 37%, 1); /* Brand green stroke for focus */
   stroke-width: 3;
   outline: none;
 }

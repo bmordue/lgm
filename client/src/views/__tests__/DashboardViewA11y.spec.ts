@@ -48,7 +48,7 @@ describe('DashboardView.vue accessibility and UX', () => {
     await vi.waitFor(() => expect(wrapper.findAll('.game-item').length).toBe(2));
 
     const gameButtons = wrapper.findAll('.game-item');
-    expect(gameButtons[0].attributes('aria-label')).toBe('Join Game #1');
+    expect(gameButtons[0].attributes('aria-label')).toBe('Game #1, 1 of 4 players');
     expect(gameButtons[0].attributes('aria-busy')).toBe('false');
     expect(gameButtons[1].attributes('disabled')).toBeDefined();
   });

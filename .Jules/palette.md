@@ -57,3 +57,7 @@
 ## 2026-04-25 - Smooth Feedback Transitions
 **Learning:** Using smooth transitions for feedback messages (success/error) prevents jarring UI jumps and improves the overall "polished" feel of the application.
 **Action:** Use Vue's `<Transition>` component for all dynamic feedback messages to ensure a cohesive and pleasant user experience.
+
+## 2026-04-27 - Standardized Brand-Aligned Focus Pattern
+**Learning:** Inconsistent focus indicators (or their absence via `outline: none`) significantly hinder keyboard accessibility. Implementing a standardized, brand-aligned `:focus-visible` pattern (using `hsla(160, 100%, 37%, 1)`) across all interactive elements (buttons, list items, SVG groups) ensures a clear, predictable, and professional experience for keyboard users without cluttering the UI for mouse users.
+**Action:** Always replace `outline: none` on interactive elements with a `:focus-visible` brand-green outline and appropriate offset (e.g., 2px-4px) to ensure multi-modal accessibility.
