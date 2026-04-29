@@ -11,17 +11,9 @@ import {
   ActorOrders,
   Actor,
   TurnOrders,
-  OrderType,
-  GridPosition
+  OrderType
 } from "./Models";
-import { Hex } from '../Hex';
-
-// Helper function to convert GridPosition to Hex
-function gridPositionToHex(pos: GridPosition): Hex {
-    const q = pos.y; // column is q
-    const r = pos.x - (pos.y - (pos.y & 1)) / 2; // row is x, convert to axial r for odd-q
-    return new Hex(q, r, -q - r); // s = -q - r
-}
+import { calculateHexDistance } from "./HexGrid";
 
 export interface RequestActorOrders {
   actorId: number;
@@ -179,9 +171,7 @@ async function validateOrders(
       const attackerPos = actor.pos;
       const targetPos = targetActor.pos;
 
-      const attackerHex = gridPositionToHex(attackerPos);
-      const targetHex = gridPositionToHex(targetPos);
-      const distance = attackerHex.distance(targetHex);
+      const distance = calculateHexDistance(attackerPos, targetPos);
 
       if (distance < actor.weapon.minRange || distance > actor.weapon.maxRange) {
         logger.info(`Preliminary range check: Target ${targetActor.id} is out of range for ${actorId} (min: ${actor.weapon.minRange}, max: ${actor.weapon.maxRange}, distance: ${distance}). Note: This is a preliminary check as actor positions may change before execution.`);

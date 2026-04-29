@@ -4,16 +4,18 @@
 
 import assert = require("assert");
 import { 
-    calculateHexDistance, 
     isTargetInRange, 
     canAttackTarget,
     validateAttack,
     getValidTargets,
     getPositionsInRange,
-    getRangeInfo,
+    getRangeInfo
+} from '../service/RangeValidation';
+import {
+    calculateHexDistance,
     gridPositionToHex,
     hexToGridPosition
-} from '../service/RangeValidation';
+} from '../service/HexGrid';
 import { Actor, ActorState, Terrain, World } from '../service/Models';
 import { WEAPON_TYPES, getWeaponById } from '../config/WeaponsConfig';
 

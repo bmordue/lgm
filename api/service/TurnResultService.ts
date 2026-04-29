@@ -6,11 +6,12 @@ import util = require("util");
 
 import {
   TurnResult,
+  World,
 } from "./Models";
 
 export interface TurnResultsResponse {
   success: boolean;
-  results?: TurnResult;
+  world?: World;
   message?: string;
 }
 
@@ -41,10 +42,20 @@ export async function turnResults(
       message: "turn results not available",
     });
   } else if (results.length == 1) {
-    return Promise.resolve({ success: true, results: results[0] });
+    const turnResult = results[0];
+    if (turnResult.world) {
+      return Promise.resolve({ success: true, world: turnResult.world });
+    }
+
+    logger.error(`Data integrity error: TurnResult.world is unexpectedly null/undefined for game ${gameId}, turn ${turn}, player ${playerId}.`);
+    return Promise.resolve({
+      success: false,
+      message: "Turn results are available but world data is missing.",
+    });
   } else {
+    logger.error(`Data integrity error: Found ${results.length} TurnResult entries for game ${gameId}, turn ${turn}, player ${playerId} (expected exactly 1).`);
     return Promise.reject(
-      new Error("expected a single result for turn results")
+      new Error("Internal server error: Duplicate turn results found.")
     );
   }
 }

@@ -2,19 +2,10 @@ import { GridPosition, Terrain, Actor, ActorState, World } from "./Models"; // A
 import { Hex, OffsetCoord } from "../Hex"; // Added Hex and OffsetCoord
 import { warn } from "../utils/Logger";
 import { getConfig } from "../config/GameConfig";
+import { gridPositionToHex, hexToGridPosition } from "./HexGrid";
 
 const config = getConfig();
 const MAX_RANGE = config.visibility.maxRange; // Define maximum visibility range for the old `visibility` function. Not directly used by getVisibleWorldForPlayer.
-
-// Helper to convert Hex to GridPosition for odd-q offset (flat-topped hexes)
-// Assumes GridPosition.x is row index, GridPosition.y is column index
-function hexToGridPosition(hex: Hex): GridPosition {
-    const col: number = hex.q; // y-coordinate in GridPosition
-    // For odd-q, RedBlobGames: row = r + (q + (q&1)*offset) / 2. Where ODD offset = -1.
-    // So, row = r + (q - (q&1)) / 2
-    const row: number = hex.r + (hex.q - (hex.q & 1)) / 2; // x-coordinate in GridPosition
-    return { x: row, y: col };
-}
 
 export function within(
   x: number,
@@ -244,16 +235,6 @@ export function hasLineOfSight(
     }
     // If the loop completes, no obstructions were found along the path.
     return true;
-}
-
-
-// Helper to convert GridPosition to Hex for odd-q offset (flat-topped hexes)
-// Assumes GridPosition.x is row index, GridPosition.y is column index
-// This is duplicative of the one in Rules.ts - should be consolidated
-function gridPositionToHex(pos: GridPosition): Hex {
-    const q = pos.y; // column is q
-    const r = pos.x - (pos.y - (pos.y & 1)) / 2; // row is x, convert to axial r for odd-q
-    return new Hex(q, r, -q - r);
 }
 
 export function getVisibleWorldForPlayer(
