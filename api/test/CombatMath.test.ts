@@ -190,7 +190,7 @@ describe('CombatMath', () => {
 
         it('should reduce damage based on armor', () => {
             const original = getCombatConfig();
-            overrideCombatConfig({ damageVariance: { min: 1.0, max: 1.0 } });
+            overrideCombatConfig({ damageVariance: { min: 1.0, max: 1.0 }, criticalHitChance: 0 });
             try {
                 const attacker = createTestActor(1, { x: 0, y: 0 }, 1, 'PISTOL');
                 const noArmor = createTestActor(2, { x: 2, y: 0 }, 2);
@@ -218,7 +218,7 @@ describe('CombatMath', () => {
                 
                 assert.ok(armorDamage.finalDamage < noArmorDamage.finalDamage);
             } finally {
-                overrideCombatConfig({ damageVariance: original.damageVariance });
+                overrideCombatConfig({ damageVariance: original.damageVariance, criticalHitChance: original.criticalHitChance });
             }
         });
 
