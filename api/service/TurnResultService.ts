@@ -47,7 +47,7 @@ export async function turnResults(
       return Promise.resolve({ success: true, world: turnResult.world });
     }
 
-    logger.error(`Data integrity error: TurnResult exists but is missing required world data for game ${gameId}, turn ${turn}, player ${playerId}.`);
+    logger.error(`Data integrity error: TurnResult.world is unexpectedly null/undefined for game ${gameId}, turn ${turn}, player ${playerId}.`);
     return Promise.resolve({
       success: false,
       message: "Turn results are available but world data is missing.",

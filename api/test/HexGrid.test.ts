@@ -21,7 +21,9 @@ describe("HexGrid", () => {
     it("calculates symmetric hex-grid distances", () => {
         const first = { x: 2, y: 7 };
         const second = { x: 8, y: 3 };
+        const expectedDistance = 8;
 
+        assert.strictEqual(calculateHexDistance(first, second), expectedDistance);
         assert.strictEqual(
             calculateHexDistance(first, second),
             calculateHexDistance(second, first)
