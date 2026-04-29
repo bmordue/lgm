@@ -1,15 +1,16 @@
 "use strict";
 
 import * as store from "./DatabaseStore";
-import logger = require("../utils/Logger");
-import util = require("util");
-import { World, Direction, TurnResult, Game } from "./Models";
+import { Direction } from "./Models";
 import * as GameLifecycleService from "./GameLifecycleService";
 import type { CreateGameResponse, JoinGameResponse, GameSummary, ListGamesResponse } from "./GameLifecycleService";
 import * as OrderService from "./OrderService";
+import * as TurnResultService from "./TurnResultService";
+import type { TurnResultsResponse } from "./TurnResultService";
 
 // Re-export types from GameLifecycleService for backward compatibility
 export type { CreateGameResponse, JoinGameResponse, GameSummary, ListGamesResponse };
+export type { TurnResultsResponse } from "./TurnResultService";
 
 // Export types from services for backward compatibility
 export interface RequestActorOrders {
@@ -27,12 +28,6 @@ export interface PostOrdersResponse {
   turnStatus: {
     complete: boolean;
   };
-}
-
-export interface TurnResultsResponse {
-  success: boolean;
-  world?: World; // Optional because results might not be ready
-  message?: string; // For cases where world is not available yet
 }
 
 // Delegate to GameLifecycleService
@@ -65,46 +60,13 @@ export async function postOrders(
   return OrderService.postOrders(body, gameId, turn, playerId);
 }
 
-// Delegate to TurnService
+// Delegate to TurnResultService
 export async function turnResults(
   gameId: number,
   turn: number,
   playerId: number
 ): Promise<TurnResultsResponse> {
-  const results = await store.readAll<TurnResult>(
-    store.keys.turnResults,
-    (r: TurnResult) => {
-      return r.gameId == gameId && r.turn == turn && r.playerId == playerId;
-    }
-  );
-
-  logger.debug(util.format("turnResults: found %s results", results.length));
-
-  if (results.length == 0) {
-    return Promise.resolve({
-      success: false,
-      message: "turn results not available",
-    });
-  } else if (results.length == 1) {
-    const turnResult = results[0];
-    if (turnResult.world) {
-      // Updated to match new TurnResultsResponse structure
-      return Promise.resolve({ success: true, world: turnResult.world });
-    } else {
-      // This case should ideally not happen if Rules.ts correctly populates world
-      logger.error(`TurnResult for game ${gameId}, turn ${turn}, player ${playerId} is missing world data.`);
-      return Promise.resolve({
-        success: false,
-        message: "Turn results are available but world data is missing.",
-      });
-    }
-  } else {
-    // This indicates a more serious issue, like duplicate TurnResult entries
-    logger.error(`Found ${results.length} TurnResult entries for game ${gameId}, turn ${turn}, player ${playerId}. Expected 1.`);
-    return Promise.reject(
-      new Error("Internal server error: Duplicate turn results found.")
-    );
-  }
+  return TurnResultService.turnResults(gameId, turn, playerId);
 }
 
 export function deleteStore() {
