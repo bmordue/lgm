@@ -114,22 +114,24 @@ async function join(game: GameSummary) {
     Loading games...
   </div>
   <div class="game-list" :aria-busy="isLoading" aria-live="polite">
-    <button
-      v-for="game in gameList" 
-      :key="game.id"
-      class="game-item"
-      :class="{ 'game-full': game.isFull }"
-      :disabled="joiningGameId !== null || game.isFull"
-      :aria-label="'Join Game #' + game.id"
-      :aria-busy="joiningGameId === game.id"
-      @click="join(game)"
-    >
-      <div class="game-id">{{ joiningGameId === game.id ? 'Joining...' : 'Game #' + game.id }}</div>
-      <div class="game-status">
-        Players: {{ game.playerCount }}/{{ game.maxPlayers }}
-        <span v-if="game.isFull" class="full-indicator"> (FULL)</span>
-      </div>
-    </button>
+    <TransitionGroup name="fade">
+      <button
+        v-for="game in gameList"
+        :key="game.id"
+        class="game-item"
+        :class="{ 'game-full': game.isFull }"
+        :disabled="joiningGameId !== null || game.isFull"
+        :aria-label="`Game #${game.id}, ${game.playerCount} of ${game.maxPlayers} players${game.isFull ? ', Full' : (joiningGameId === game.id ? ', Joining' : '')}`"
+        :aria-busy="joiningGameId === game.id"
+        @click="join(game)"
+      >
+        <div class="game-id">{{ joiningGameId === game.id ? 'Joining...' : 'Game #' + game.id }}</div>
+        <div class="game-status">
+          Players: {{ game.playerCount }}/{{ game.maxPlayers }}
+          <span v-if="game.isFull" class="full-indicator"> (FULL)</span>
+        </div>
+      </button>
+    </TransitionGroup>
     <div v-if="!isLoading && gameList.length === 0" class="no-games">
       No active games found. Click 'Create New Game' to start a new journey!
     </div>
@@ -140,6 +142,7 @@ async function join(game: GameSummary) {
     </div>
   </Transition>
   <button
+    class="create-game-btn"
     @click="callCreate()"
     :disabled="isCreating"
     :aria-busy="isCreating"
@@ -170,6 +173,11 @@ async function join(game: GameSummary) {
 .game-item:hover {
   background: #f0f0f0;
   transform: translateY(-1px);
+}
+
+.game-item:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
 }
 
 .game-item.game-full {
@@ -214,5 +222,36 @@ async function join(game: GameSummary) {
   border-radius: 4px;
   margin-bottom: 15px;
   font-size: 0.9em;
+}
+
+.create-game-btn {
+  background-color: hsla(160, 100%, 37%, 1);
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s, transform 0.1s;
+  width: 100%;
+  font-size: 1em;
+}
+
+.create-game-btn:hover:not(:disabled) {
+  background-color: hsla(160, 100%, 37%, 0.8);
+}
+
+.create-game-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.create-game-btn:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 4px;
+}
+
+.create-game-btn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
 }
 </style>
