@@ -1,6 +1,6 @@
 import router from '@/router';
 import { defineStore } from 'pinia';
-import { API_URL } from '@/main';
+import { API_URL } from '@/config';
 
 export const useUserStore = defineStore('user', {
   state: () => {
@@ -34,8 +34,8 @@ export const useUserStore = defineStore('user', {
       // store user  in local storage to keep user logged in between page refreshes
       localStorage.setItem('user', JSON.stringify(this.user));
 
-      // redirect to home page
-      router.push('/');
+      // redirect to dashboard page
+      router.push('/dashboard');
     },
     logout() {
       this.user = null;

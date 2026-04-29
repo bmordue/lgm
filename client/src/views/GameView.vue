@@ -4,7 +4,7 @@ import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue'; // Import OrderSubmission
 import { useUserStore } from '../stores/User.store'
 import { useGamesStore, type Actor, type PlannedMove, type Order } from '../stores/Games.store' // Import PlannedMove and Order
-import { API_URL } from '@/main';
+import { API_URL } from '@/config';
 
 interface GameData {
   gameId?: number | null;
@@ -176,6 +176,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 
 
 <template>
+    <RouterLink to="/dashboard" class="back-link">← Back to Dashboard</RouterLink>
     <h1>Game #{{ game.gameId }}</h1>
     <div class="game-info">
       <span class="turn-info">Turn {{ game.turn }}</span>
@@ -439,4 +440,23 @@ button:hover {
   background: #45a049;
 }
 */
+.back-link {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: hsla(160, 100%, 37%, 1);
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.2s;
+  border-radius: 4px;
+}
+
+.back-link:hover {
+  color: hsla(160, 100%, 37%, 0.8);
+  text-decoration: underline;
+}
+
+.back-link:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
+}
 </style>
