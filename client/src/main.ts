@@ -5,7 +5,8 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 
-export const API_URL = "/api"
+import { API_URL } from './config'
+export { API_URL }
 
 const app = createApp(App)
 app.use(router)

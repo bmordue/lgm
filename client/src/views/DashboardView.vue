@@ -3,7 +3,7 @@ import { ref, watchEffect } from 'vue'
 import { useUserStore } from '../stores/User.store'
 import  router  from '../router';
 import { useGamesStore, type World } from '@/stores/Games.store';
-import { API_URL } from '@/main';
+import { API_URL } from '@/config';
 
 interface GameSummary {
   id: number;

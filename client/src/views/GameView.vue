@@ -4,7 +4,7 @@ import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue'; // Import OrderSubmission
 import { useUserStore } from '../stores/User.store'
 import { useGamesStore, type Actor, type PlannedMove, type Order } from '../stores/Games.store' // Import PlannedMove and Order
-import { API_URL } from '@/main';
+import { API_URL } from '@/config';
 
 interface GameData {
   gameId?: number | null;

@@ -1,6 +1,6 @@
 import router from '@/router';
 import { defineStore } from 'pinia';
-import { API_URL } from '@/main';
+import { API_URL } from '@/config';
 
 export const useUserStore = defineStore('user', {
   state: () => {

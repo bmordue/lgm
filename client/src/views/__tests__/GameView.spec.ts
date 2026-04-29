@@ -14,7 +14,7 @@ vi.mock('@/stores/Games.store');
 // Mock global fetch
 global.fetch = vi.fn();
 
-// Stub API_URL (imported in GameView.vue from @/main)
+// Stub API_URL (imported in GameView.vue from @/config)
 // GameView.vue uses it to construct fetch URLs.
 vi.stubGlobal('API_URL', '/api/test');
 
@@ -42,7 +42,7 @@ describe('GameView.vue', () => {
         stubs: {
           HexGrid: true,
           OrderSubmission: true,
-          'router-link': true,
+          RouterLink: true,
         },
       },
     });
@@ -55,6 +55,7 @@ describe('GameView.vue', () => {
     // Provide default implementations for store mocks
     mockUserStore = {
       getToken: vi.fn(() => 'test-token-123'),
+      isAuthenticated: true,
     };
     (useUserStore as any).mockReturnValue(mockUserStore);
 

@@ -73,7 +73,7 @@ export const useGamesStore = defineStore('games', {
       // This endpoint needs to exist and return data similar to JoinGameResponse
       // It should provide the game state for the given player.
       // The backend might use something like `rules.filterGameForPlayer(gameId, playerId)`
-      const apiUrlModule = await import('@/main'); // Dynamically import API_URL
+      const apiUrlModule = await import('@/config'); // Dynamically import API_URL
       try {
         const response = await fetch(`${apiUrlModule.API_URL}/games/${gameId}/players/${playerId}`, { // Adjusted endpoint
           headers: {
@@ -99,7 +99,7 @@ export const useGamesStore = defineStore('games', {
 );
 
 // Make sure API_URL is imported if not already globally available
-import { API_URL } from '@/main';
+import { API_URL } from '@/config';
 import { useUserStore } from './User.store'; // Assuming UserStore provides the token
 
 // Interface for the expected response from the turn results endpoint
