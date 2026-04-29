@@ -61,3 +61,7 @@
 ## 2026-04-27 - Standardized Brand-Aligned Focus Pattern
 **Learning:** Inconsistent focus indicators (or their absence via `outline: none`) significantly hinder keyboard accessibility. Implementing a standardized, brand-aligned `:focus-visible` pattern (using `hsla(160, 100%, 37%, 1)`) across all interactive elements (buttons, list items, SVG groups) ensures a clear, predictable, and professional experience for keyboard users without cluttering the UI for mouse users.
 **Action:** Always replace `outline: none` on interactive elements with a `:focus-visible` brand-green outline and appropriate offset (e.g., 2px-4px) to ensure multi-modal accessibility.
+
+## 2026-04-29 - Logic-Aware UI Feedback Positioning
+**Learning:** Success messages and other high-priority feedback should be positioned at the top of the viewport or container to remain visible regardless of list length or scroll position. Shared layout styling between success and error messages improves visual consistency and code maintainability.
+**Action:** Always place global feedback messages at the top of the page/container and use a shared CSS base for all status alerts.

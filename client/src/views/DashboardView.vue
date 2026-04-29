@@ -109,6 +109,11 @@ async function join(game: GameSummary) {
       {{ errorMessage }}
     </div>
   </Transition>
+  <Transition name="fade">
+    <div v-if="successMessage" class="success-message" role="status" aria-live="polite">
+      {{ successMessage }}
+    </div>
+  </Transition>
   <h1>Games</h1>
   <div v-if="isLoading" class="no-games" role="status">
     Loading games...
@@ -136,11 +141,6 @@ async function join(game: GameSummary) {
       No active games found. Click 'Create New Game' to start a new journey!
     </div>
   </div>
-  <Transition name="fade">
-    <div v-if="successMessage" class="no-games green" role="status" aria-live="polite">
-      {{ successMessage }}
-    </div>
-  </Transition>
   <button
     class="create-game-btn"
     @click="callCreate()"
@@ -214,14 +214,25 @@ async function join(game: GameSummary) {
   padding: 20px;
 }
 
-.error-message {
-  background-color: #fce4e4;
-  border: 1px solid #fcc2c2;
-  color: #cc0000;
+.error-message, .success-message {
   padding: 10px;
   border-radius: 4px;
   margin-bottom: 15px;
   font-size: 0.9em;
+  border: 1px solid;
+}
+
+.error-message {
+  background-color: #fce4e4;
+  border-color: #fcc2c2;
+  color: #cc0000;
+}
+
+.success-message {
+  background-color: hsla(160, 100%, 37%, 0.1);
+  border-color: hsla(160, 100%, 37%, 1);
+  color: hsla(160, 100%, 37%, 1);
+  text-align: center;
 }
 
 .create-game-btn {

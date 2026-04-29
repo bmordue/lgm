@@ -176,6 +176,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 
 
 <template>
+    <RouterLink to="/dashboard" class="back-link">← Back to Dashboard</RouterLink>
     <h1>Game #{{ game.gameId }}</h1>
     <div class="game-info">
       <span class="turn-info">Turn {{ game.turn }}</span>
@@ -439,4 +440,23 @@ button:hover {
   background: #45a049;
 }
 */
+.back-link {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: hsla(160, 100%, 37%, 1);
+  text-decoration: none;
+  font-weight: bold;
+  transition: color 0.2s;
+  border-radius: 4px;
+}
+
+.back-link:hover {
+  color: hsla(160, 100%, 37%, 0.8);
+  text-decoration: underline;
+}
+
+.back-link:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
+}
 </style>
