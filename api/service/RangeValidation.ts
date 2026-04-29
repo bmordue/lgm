@@ -5,9 +5,7 @@
 import { Actor, GridPosition, World, Weapon, ActorState, Terrain } from './Models';
 import { hasLineOfSight } from './Visibility';
 import { getTerrainProperties } from '../config/TerrainConfig';
-import { calculateHexDistance, gridPositionToHex, hexToGridPosition } from './HexGrid';
-
-export { calculateHexDistance, gridPositionToHex, hexToGridPosition } from './HexGrid';
+import { calculateHexDistance, gridPositionToHex } from './HexGrid';
 
 export interface RangeCheckResult {
     inRange: boolean;
