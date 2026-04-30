@@ -44,6 +44,8 @@ The LGM API binds to `127.0.0.1` in production so it is only reachable through t
 
 ## Example nginx Configuration
 
+> **Note**: The configuration below uses Authelia-specific directives. If you are using oauth2-proxy or another OIDC provider, refer to the [OIDC / oauth2-proxy Notes](#oidc--oauth2-proxy-notes) section for the equivalent setup.
+
 ```nginx
 upstream lgm {
     server 127.0.0.1:3000;

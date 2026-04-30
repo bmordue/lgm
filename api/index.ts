@@ -86,11 +86,7 @@ const host = process.env.NODE_ENV === 'production' ? '127.0.0.1' : undefined;
 // Start server directly (database initialization removed for now)
 createServer()
     .then(server => {
-        if (host) {
-            server.listen(port, host);
-        } else {
-            server.listen(port);
-        }
+        server.listen(port, host);
         console.log(`Listening on port ${port}`);
     })
     .catch(err => {

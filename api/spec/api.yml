@@ -8,15 +8,6 @@ info:
     which the service uses for ownership and permission checks.
 servers:
 - url: /
-  securitySchemes:
-    proxyAuth:
-      description: |
-        Identity is provided by the upstream reverse proxy via HTTP headers.
-        Remote-User (or Remote-Email) identifies the principal.
-        No bearer tokens are issued or accepted by this service.
-      type: apiKey
-      in: header
-      name: Remote-User
 paths:
   /games:
     post:
