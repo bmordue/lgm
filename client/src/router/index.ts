@@ -1,5 +1,4 @@
-import { createRouter, createWebHistory, type RouteLocationNormalized } from 'vue-router'
-import { useUserStore } from '@/stores/User.store';
+import { createRouter, createWebHistory } from 'vue-router'
 
 const router = createRouter({
   history: createWebHistory(import.meta.BASE_URL),
@@ -23,22 +22,5 @@ const router = createRouter({
     {path: '/game', name: 'game', component: () => import('../views/GameView.vue')}
   ]
 })
-
-
-function requiresAuth (to: RouteLocationNormalized) {
-    
-  return !['/login', '/reset'].includes(to.path);
-// check if route requires authentication
-}
-
-router.beforeEach((to, from, next) => {
-  const usersStore = useUserStore();
-  if (requiresAuth(to) && !usersStore.isAuthenticated) {
-      next('/login')
-  } else {
-      next()
-  }
-})
-
 
 export default router

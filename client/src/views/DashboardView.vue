@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref, watchEffect } from 'vue'
-import { useUserStore } from '../stores/User.store'
 import  router  from '../router';
 import { useGamesStore, type World } from '@/stores/Games.store';
 import { API_URL } from '@/config';
@@ -35,17 +34,12 @@ watchEffect(() => {
 });
 
 async function callCreate() {
-  const userStore = useUserStore();
-  const token = userStore.getToken();
-
   isCreating.value = true;
   errorMessage.value = '';
   try {
     const response = await fetch(`${API_URL}/games`, {
       method: "post",
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include',
     });
 
     if (response.ok) {
@@ -71,17 +65,12 @@ async function join(game: GameSummary) {
     return;
   }
 
-  const userStore = useUserStore();
-  const token = userStore.getToken();
-
   joiningGameId.value = game.id;
   errorMessage.value = '';
   try {
     const resp = await fetch(`${API_URL}/games/${game.id}`, {
-      method: "put", 
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      method: "put",
+      credentials: 'include',
     });
 
     if (!resp.ok) {

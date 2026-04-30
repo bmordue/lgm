@@ -66,6 +66,20 @@ Stryker.js will perform mutation testing and provide a report on the code covera
 
 # Architecture & Development
 
+## 🔐 Authentication Model
+
+LGM uses a **reverse-proxy / forward-auth** pattern. The API is auth-agnostic and trusts identity headers (`Remote-User`, `Remote-Name`, `Remote-Email`, `Remote-Groups`) injected by an upstream nginx + Authelia stack. No bearer tokens are issued or validated by the API itself.
+
+For local development without a proxy, set `DEV_STUB_USER`:
+
+```bash
+DEV_STUB_USER="alice@example.com:Alice Smith:players" npm start
+# or pass the header directly:
+curl -X POST http://localhost:3000/games -H "Remote-User: alice@example.com"
+```
+
+See **[docs/auth.md](docs/auth.md)** for the full deployment topology, nginx config, Authelia rules, environment variables, and threat model.
+
 ## 📋 Documentation
 
 - **[Configuration Guide](CONFIGURATION.md)** - Environment variables and configuration options

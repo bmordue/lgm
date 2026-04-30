@@ -13,42 +13,44 @@ export const useUserStore = defineStore('user', {
     isAuthenticated: (state) => state.user !== null,
   },
   actions: {
-    async login(username: string, password: string) {
-      const res = await fetch(`${API_URL}/users/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ username, password })
+    /**
+     * Fetch the current user identity from the API.
+     * The proxy injects identity headers; the API resolves them and returns the user.
+     * In development without a proxy, DEV_STUB_USER on the server side handles identity.
+     */
+    async fetchCurrentUser() {
+      const res = await fetch(`${API_URL}/users/me`, {
+        credentials: 'include',
       });
 
       if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Login failed');
+        this.user = null;
+        localStorage.removeItem('user');
+        return;
       }
 
-      const data = await res.json();
-      // update pinia state
-      this.user = { name: username, token: data.token };
+      const data: UserInfo = await res.json();
+      if (data.isGuest) {
+        this.user = null;
+        localStorage.removeItem('user');
+        return;
+      }
 
-      // store user  in local storage to keep user logged in between page refreshes
+      this.user = data;
       localStorage.setItem('user', JSON.stringify(this.user));
-
-      // redirect to dashboard page
-      router.push('/dashboard');
     },
     logout() {
       this.user = null;
       localStorage.removeItem('user');
       router.push('/login');
     },
-    getToken(): string | null {
-      return this.user ? this.user.token : null;
-    },
   }
 })
 
 interface UserInfo {
-  name: string
-  token: string
+  id?: string;
+  name: string;
+  email?: string;
+  groups?: string[];
+  isGuest?: boolean;
 }

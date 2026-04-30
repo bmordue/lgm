@@ -55,30 +55,19 @@ export const useGamesStore = defineStore('games', {
         console.error("Cannot fetch turn results: gameId or playerId is not set.");
         return;
       }
-      const userStore = useUserStore();
-      const token = userStore.getToken();
     },
     async fetchGameDetails(gameId: number) {
-      const userStoreModule = await import('./User.store'); // Dynamically import User.store
-      const userStore = userStoreModule.useUserStore();
-      const token = userStore.getToken();
       const playerId = this.currentGamePlayerId; // Assuming current player ID is already set
 
       if (!playerId) {
         console.error("Player ID not set, cannot fetch game details.");
-        // Potentially redirect to login or show error
         return;
       }
 
-      // This endpoint needs to exist and return data similar to JoinGameResponse
-      // It should provide the game state for the given player.
-      // The backend might use something like `rules.filterGameForPlayer(gameId, playerId)`
       const apiUrlModule = await import('@/config'); // Dynamically import API_URL
       try {
-        const response = await fetch(`${apiUrlModule.API_URL}/games/${gameId}/players/${playerId}`, { // Adjusted endpoint
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+        const response = await fetch(`${apiUrlModule.API_URL}/games/${gameId}/players/${playerId}`, {
+          credentials: 'include',
         });
         if (!response.ok) {
           const error = await response.json().catch(() => ({ message: "Failed to fetch game details and parse error" }));
@@ -100,7 +89,6 @@ export const useGamesStore = defineStore('games', {
 
 // Make sure API_URL is imported if not already globally available
 import { API_URL } from '@/config';
-import { useUserStore } from './User.store'; // Assuming UserStore provides the token
 
 // Interface for the expected response from the turn results endpoint
 export interface TurnResultsResponse {

@@ -3,7 +3,7 @@ import * as express from 'express';
 import * as exegesisExpress from 'exegesis-express';
 import * as path from 'path';
 import * as http from "http";
-import { userForToken } from './controllers/UsersController';
+import { loadUser, RuntimeUser } from './middleware/auth';
 import { inspect } from 'util';
 import { SERVER_CONFIG } from './config/GameConfig';
 
@@ -17,23 +17,11 @@ const __dirname = path.dirname(__filename);
 
 async function createServer() {
     async function sessionAuthenticator(pluginContext) {
-        if (!pluginContext.req.headers.authorization) {
-            return { type: 'missing', statusCode: 401, message: 'Authorization header is missing'};
+        const user: RuntimeUser | undefined = pluginContext.res.locals.user;
+        if (!user || user.isGuest) {
+            return { type: 'missing', statusCode: 401, message: 'Authentication required' };
         }
-
-        const bearerToken = pluginContext.req.headers.authorization.split('Bearer ')[1];
-
-        if (!bearerToken) {
-            return { type: 'missing', statusCode: 401, message: 'Session key required' };
-        } 
-        
-        const authenticatedUser = userForToken(bearerToken);
-
-        if (authenticatedUser == null) {
-            return { type: 'invalid', statusCode: 401, message: 'Invalid bearer token' };
-        }
-
-        return { type: 'success', user: authenticatedUser, roles: [], scopes: [] };
+        return { type: 'success', user, roles: user.groups || [], scopes: [] };
     }
 
     // See https://github.com/exegesis-js/exegesis/blob/master/docs/Options.md
@@ -42,7 +30,6 @@ async function createServer() {
         allowMissingControllers: false,
         authenticators: {
             bearerAuth: sessionAuthenticator,
-            // sessionKey: sessionAuthenticator
         }
     };
 
@@ -55,6 +42,21 @@ async function createServer() {
 
     const app: express.Express = express();
 
+    // Trust the first proxy for correct IP resolution
+    app.set('trust proxy', 1);
+    app.disable('x-powered-by');
+
+    // Security headers
+    app.use((_req, res, next) => {
+        res.setHeader('X-Frame-Options', 'DENY');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+        next();
+    });
+
+    // Load user identity from proxy headers (or DEV_STUB_USER in dev)
+    app.use(loadUser);
+
     // If you have any body parsers, this should go before them.
     app.use(exegesisMiddleware);
 
@@ -62,7 +64,6 @@ async function createServer() {
     app.use(bodyParser.urlencoded({
         extended: true
     }));
-    //    app.use(cookieParser('keyboard mouse'));
 
     // Return a 404
     app.use((req, res) => {
@@ -80,11 +81,16 @@ async function createServer() {
 }
 
 const port = SERVER_CONFIG.port;
+const host = process.env.NODE_ENV === 'production' ? '127.0.0.1' : undefined;
 
 // Start server directly (database initialization removed for now)
 createServer()
     .then(server => {
-        server.listen(port);
+        if (host) {
+            server.listen(port, host);
+        } else {
+            server.listen(port);
+        }
         console.log(`Listening on port ${port}`);
     })
     .catch(err => {
