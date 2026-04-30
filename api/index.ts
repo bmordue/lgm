@@ -17,7 +17,10 @@ const __dirname = path.dirname(__filename);
 
 async function createServer() {
     async function sessionAuthenticator(pluginContext) {
-        const user: RuntimeUser | undefined = pluginContext.res.locals.user;
+        // The loadUser middleware sets res.locals.user on the Express response.
+        // In Exegesis's PluginContext, the original Express response is accessible
+        // via pluginContext.req.res (Express sets req.res = res internally).
+        const user: RuntimeUser | undefined = (pluginContext.req as any).res?.locals?.user;
         if (!user || user.isGuest) {
             return { type: 'missing', statusCode: 401, message: 'Authentication required' };
         }
