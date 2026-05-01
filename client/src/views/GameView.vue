@@ -51,6 +51,7 @@ const handleClearAll = () => {
 
 const handleHoverMove = (move: PlannedMove | null) => {
   hoveredMove.value = move;
+  hoveredActorId.value = move ? move.actorId : null;
 };
 
 const handleSubmitOrders = async (movesToSubmit: PlannedMove[]) => {
@@ -188,6 +189,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         <h3>Players</h3>
         <div class="player-list">
           <button
+            type="button"
             v-for="player in getPlayerList()"
             :key="`player-${player.id}`"
             class="player-item"
@@ -248,6 +250,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         <h3>Actors</h3>
         <div class="actors-list">
           <button
+            type="button"
             v-for="actor in game.world?.actors || []"
             :key="actor.id"
             class="actor-item"
@@ -347,9 +350,9 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 }
 
 .success-message {
-  background-color: #e8f5e9;
-  border: 1px solid #c8e6c9;
-  color: #2e7d32;
+  background-color: hsla(160, 100%, 37%, 0.1);
+  border: 1px solid hsla(160, 100%, 37%, 1);
+  color: hsla(160, 100%, 37%, 1);
   padding: 10px;
   border-radius: 4px;
   margin-bottom: 15px;

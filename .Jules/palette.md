@@ -65,3 +65,7 @@
 ## 2026-04-29 - Logic-Aware UI Feedback Positioning
 **Learning:** Success messages and other high-priority feedback should be positioned at the top of the viewport or container to remain visible regardless of list length or scroll position. Shared layout styling between success and error messages improves visual consistency and code maintainability.
 **Action:** Always place global feedback messages at the top of the page/container and use a shared CSS base for all status alerts.
+
+## 2026-05-01 - Synchronized Spatial-Textual Cross-Highlighting
+**Learning:** When users hover over an action (like a planned move) in a list, synchronizing the highlight of the associated entity (the actor) both in the list and on the map provides immediate and clear context. This further strengthens the correlation between spatial and textual data.
+**Action:** Ensure that hovering over a planned action updates the hover state of the associated entity (e.g., setting 'hoveredActorId' when hovering a move) to provide comprehensive visual feedback across the UI.
