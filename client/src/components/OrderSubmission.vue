@@ -20,6 +20,7 @@
           to ({{ move.endPos.x }}, {{ move.endPos.y }})
         </span>
         <button
+          type="button"
           @click="handleRemoveMove(move)"
           class="remove-move-btn"
           :aria-label="`Remove move for Actor ${move.actorId} to (${move.endPos.x}, ${move.endPos.y})`"
@@ -30,6 +31,7 @@
       </li>
     </TransitionGroup>
     <button
+      type="button"
       v-if="plannedMoves.length >= 2"
       @click="handleClearAll"
       class="clear-all-btn"
@@ -38,6 +40,7 @@
       Clear All
     </button>
     <button
+      type="button"
       @click="handleSubmitOrders"
       :disabled="!plannedMoves || plannedMoves.length === 0 || isSubmitting"
       class="submit-orders-btn"
@@ -153,6 +156,12 @@ const handleSubmitOrders = () => {
   border-radius: 4px;
   cursor: pointer;
   font-size: 0.9em;
+  transition: all 0.2s ease;
+}
+
+.remove-move-btn:focus-visible, .submit-orders-btn:focus-visible, .clear-all-btn:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
 }
 
 .remove-move-btn {
@@ -171,6 +180,10 @@ const handleSubmitOrders = () => {
   width: 100%;
   padding: 10px;
   font-size: 1em;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .clear-all-btn:hover {
@@ -183,16 +196,17 @@ const handleSubmitOrders = () => {
 }
 
 .submit-orders-btn {
-  background-color: #2ecc71;
+  background-color: hsla(160, 100%, 37%, 1);
   color: white;
   margin-top: 15px;
   width: 100%;
   padding: 10px;
   font-size: 1em;
+  transition: all 0.2s ease;
 }
 
-.submit-orders-btn:hover {
-  background-color: #27ae60;
+.submit-orders-btn:hover:not(:disabled) {
+  background-color: hsla(160, 100%, 37%, 0.8);
 }
 
 .submit-orders-btn:disabled {
