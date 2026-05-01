@@ -2,13 +2,12 @@ openapi: 3.0.1
 info:
   title: Lgm
   version: 0.0.1
+  description: |
+    LGM API. Authentication is handled by an upstream reverse-proxy (nginx + Authelia).
+    The proxy injects identity headers (Remote-User, Remote-Name, Remote-Email, Remote-Groups)
+    which the service uses for ownership and permission checks.
 servers:
 - url: /
-  securitySchemes:
-    bearerAuth: 
-      description: A request with a bearer token
-      type: http
-      scheme: bearer
 paths:
   /games:
     post:
@@ -168,12 +167,15 @@ paths:
           description: bad request
   /users/login:
     post:
-      summary: User login
+      summary: User login (deprecated — returns 410 Gone)
+      description: |
+        This endpoint is deprecated. Authentication is handled by the upstream reverse proxy.
+        Always returns 410 Gone.
       operationId: loginUser
       x-exegesis-controller: UsersController
       x-swagger-router-controller: UsersController
       requestBody:
-        required: true
+        required: false
         content:
           application/json:
             schema:
@@ -184,12 +186,28 @@ paths:
                 password:
                   type: string
       responses:
-        "200":
-          description: Login successful
+        "410":
+          description: Login no longer supported; authentication handled by proxy
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/LoginResponse'
+                $ref: '#/components/schemas/ErrorMessageResponse'
+  /users/me:
+    get:
+      summary: Get current user identity
+      description: |
+        Returns the current user as resolved from proxy identity headers.
+        Guest users (no proxy headers) receive the guest sentinel object.
+      operationId: getCurrentUser
+      x-exegesis-controller: UsersController
+      x-swagger-router-controller: UsersController
+      responses:
+        "200":
+          description: Current user identity
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserIdentity'
   /games/{gameId}/turns/{turn}/players/{playerId}:
     get:
       summary: get turn results
@@ -437,3 +455,28 @@ components:
       properties:
         token:
           type: string
+    UserIdentity:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+        isGuest:
+          type: boolean
+  securitySchemes:
+    bearerAuth:
+      description: |
+        Authentication is handled by an upstream reverse proxy that injects
+        Remote-User, Remote-Name, Remote-Email, and Remote-Groups headers.
+        This scheme name is retained for internal routing only; no bearer tokens
+        are issued or accepted by this service.
+      type: apiKey
+      in: header
+      name: Remote-User

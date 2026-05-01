@@ -2,7 +2,6 @@
 import { ref, watchEffect } from 'vue'
 import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue'; // Import OrderSubmission
-import { useUserStore } from '../stores/User.store'
 import { useGamesStore, type Actor, type PlannedMove, type Order } from '../stores/Games.store' // Import PlannedMove and Order
 import { API_URL } from '@/config';
 
@@ -71,8 +70,6 @@ function getPlayerList() {
 }
 
 async function postOrders(moves: PlannedMove[]) { // Modified signature
-  const userStore = useUserStore();
-  const token = userStore.getToken();
   const g = gamesStore.getCurrentGame();
   const playerId = gamesStore.getCurrentPlayerId();
 
@@ -101,9 +98,9 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     // URL updated: /orders suffix removed
     const response = await fetch(`${API_URL}/games/${g.gameId}/turns/${g.turn}/players/${playerId}`, {
       method: "POST",
+      credentials: 'include',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json' // Content-Type remains
+        'Content-Type': 'application/json'
       },
       // Body updated: orders array wrapped in an object { orders: orders }
       body: JSON.stringify({ orders: orders })

@@ -4,11 +4,9 @@ import GameView from '../GameView.vue';
 import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue';
 import type { PlannedMove, Order, Actor, World } from '@/stores/Games.store'; // Assuming World is also needed for store mock
-import { useUserStore } from '@/stores/User.store';
 import { useGamesStore } from '@/stores/Games.store';
 
 // Mock Pinia stores
-vi.mock('@/stores/User.store');
 vi.mock('@/stores/Games.store');
 
 // Mock global fetch
@@ -29,7 +27,6 @@ const sampleWorld: World = { id: 1, terrain: [[0]], actors: [sampleActor] };
 
 describe('GameView.vue', () => {
   let wrapper: VueWrapper<any>;
-  let mockUserStore: any;
   let mockGamesStore: any;
 
   // Helper to mount the component with fresh mocks for props
@@ -51,13 +48,6 @@ describe('GameView.vue', () => {
   beforeEach(() => {
     // Reset mocks for each test
     vi.clearAllMocks();
-
-    // Provide default implementations for store mocks
-    mockUserStore = {
-      getToken: vi.fn(() => 'test-token-123'),
-      isAuthenticated: true,
-    };
-    (useUserStore as any).mockReturnValue(mockUserStore);
 
     mockGamesStore = {
       getCurrentGame: vi.fn(() => ({
@@ -198,8 +188,8 @@ describe('GameView.vue', () => {
         expect.stringContaining(`/games/g1/turns/1/players/1`),
         expect.objectContaining({
           method: 'POST',
+          credentials: 'include',
           headers: {
-            'Authorization': 'Bearer test-token-123',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(expectedBody),

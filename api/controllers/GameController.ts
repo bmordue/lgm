@@ -10,19 +10,13 @@ module.exports.createGame = async function createGame(context: ExegesisContext) 
 };
 
 module.exports.joinGame = async function joinGame(context: ExegesisContext) {
-  const username = context.user?.username;
+  // context.user is the RuntimeUser provisioned by the loadUser middleware
+  const email = context.user?.email;
+  const userId = context.user?.id;
   try {
-    // GameService.joinGame already returns a JoinGameResponse or rejects with Error
-    // If it rejects, Exegesis should handle it by default.
-    // Let's explicitly catch and re-format to ensure OpenAPI compliance for error messages.
-    const sessionId = context.user?.sessionId;
-    return await GameService.joinGame(context.params.path.id, username, sessionId);
+    return await GameService.joinGame(context.params.path.id, email, userId);
   } catch (err: any) {
-    // Assuming err is an Error object, it will have a message property.
-    // Exegesis can define specific status codes for certain errors in the OpenAPI document (e.g. 400, 403).
-    // We'll let Exegesis determine the status code based on the error type or default to 500.
-    // The key is to ensure the response body has a `message` field.
-    context.res.status(err.status || 500); // Set status if available on error, else 500
+    context.res.status(err.status || 500);
     return { message: err.message || "An unexpected error occurred while trying to join the game." };
   }
 };
@@ -66,7 +60,7 @@ module.exports.listGames = async function listGames() {
 
 module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) {
     const { gameId, playerId } = context.params.path;
-    const requestingPlayerId = context.user.playerId;
+    const requestingPlayerId = context.user?.playerId;
 
     await GameLifecycleService.kickPlayer(
         gameId,
@@ -79,7 +73,7 @@ module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) 
 
 module.exports.startGame = async function startGame(context: ExegesisContext) {
     const { gameId } = context.params.path;
-    const requestingPlayerId = context.user.playerId;
+    const requestingPlayerId = context.user?.playerId;
 
     await GameLifecycleService.startGame(gameId, requestingPlayerId);
     return { success: true };
@@ -88,7 +82,7 @@ module.exports.startGame = async function startGame(context: ExegesisContext) {
 module.exports.transferHost = async function transferHost(context: ExegesisContext) {
     const { gameId } = context.params.path;
     const { newHostPlayerId } = context.requestBody;
-    const requestingPlayerId = context.user.playerId;
+    const requestingPlayerId = context.user?.playerId;
 
     await GameLifecycleService.transferHost(
         gameId,
@@ -101,7 +95,7 @@ module.exports.transferHost = async function transferHost(context: ExegesisConte
 
 module.exports.getPlayerGameState = async function getPlayerGameState(context: ExegesisContext) {
     const { gameId, playerId } = context.params.path;
-    const requestingPlayerId = context.user.playerId;
+    const requestingPlayerId = context.user?.playerId;
 
     if (playerId !== requestingPlayerId) {
         context.res.status(403);
