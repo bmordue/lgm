@@ -103,13 +103,40 @@ async function join(game: GameSummary) {
       {{ successMessage }}
     </div>
   </Transition>
-  <h1>Games</h1>
+  <div class="header-container">
+    <h1>Games</h1>
+    <button
+      type="button"
+      class="refresh-btn"
+      @click="fetchGameList"
+      :disabled="isLoading"
+      aria-label="Refresh game list"
+      title="Refresh game list"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        :class="{ 'spinning': isLoading }"
+      >
+        <path d="M23 4v6h-6"></path>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+    </button>
+  </div>
   <div v-if="isLoading" class="no-games" role="status">
     Loading games...
   </div>
   <div class="game-list" :aria-busy="isLoading" aria-live="polite">
     <TransitionGroup name="fade">
       <button
+        type="button"
         v-for="game in gameList"
         :key="game.id"
         class="game-item"
@@ -142,6 +169,49 @@ async function join(game: GameSummary) {
 </template>
 
 <style scoped>
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.refresh-btn {
+  background: none;
+  border: none;
+  color: hsla(160, 100%, 37%, 1);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background-color: hsla(160, 100%, 37%, 0.1);
+}
+
+.refresh-btn:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.refresh-btn:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 .game-list {
   margin: 20px 0;
 }
