@@ -69,3 +69,7 @@
 ## 2026-05-01 - Synchronized Spatial-Textual Cross-Highlighting
 **Learning:** When users hover over an action (like a planned move) in a list, synchronizing the highlight of the associated entity (the actor) both in the list and on the map provides immediate and clear context. This further strengthens the correlation between spatial and textual data.
 **Action:** Ensure that hovering over a planned action updates the hover state of the associated entity (e.g., setting 'hoveredActorId' when hovering a move) to provide comprehensive visual feedback across the UI.
+
+## 2026-05-03 - Manual Refresh Pattern for Dynamic Dashboards
+**Learning:** Providing a manual refresh button for dynamic lists (like a games dashboard) empowers users to check for updates without a full page reload. Combining this with an inline spinning icon provides immediate visual feedback that the request is in progress, satisfying the need for both control and status visibility.
+**Action:** Always include a manual refresh button for dynamic data lists, using an inline SVG with a spinning animation during the loading state and proper ARIA labels.
