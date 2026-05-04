@@ -244,7 +244,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         </div>
         <div v-else class="loading-state" role="status" aria-live="polite">Loading world data...</div>
         
-        <h3>Actors</h3>
+        <h3>Actors ({{ game.world?.actors?.length || 0 }})</h3>
         <div class="actors-list">
           <button
             type="button"
@@ -260,7 +260,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             @focus="hoveredActorId = actor.id"
             @blur="hoveredActorId = null"
           >
-            {{ actorToString(actor) }}{{ actor.owner === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
+            {{ actorToString(actor) }}{{ actor.owner === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}{{ plannedMoves.some(m => m.actorId === actor.id) ? ' (Planned)' : '' }}
           </button>
         </div>
       </div>

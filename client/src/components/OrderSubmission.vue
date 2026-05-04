@@ -1,6 +1,6 @@
 <template>
   <div class="order-submission">
-    <h3>Planned Moves</h3>
+    <h3>Planned Moves ({{ plannedMoves.length }})</h3>
     <div v-if="!plannedMoves || plannedMoves.length === 0">
       <p>No moves planned yet. Click an actor on the map and then an empty hex to plan a move.</p>
     </div>
