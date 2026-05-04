@@ -284,6 +284,9 @@ export default defineComponent({
         if (actorOnHex) {
             const isOwn = actorOnHex.owner === currentPlayerId.value;
             label += `, Actor ${actorOnHex.id} (${isOwn ? 'Yours' : 'Enemy'})`;
+            if (props.plannedMoves.some(m => m.actorId === actorOnHex.id)) {
+                label += ", Planned move";
+            }
         }
 
         if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r) {

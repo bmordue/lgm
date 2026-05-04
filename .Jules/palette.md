@@ -73,3 +73,7 @@
 ## 2026-05-03 - Manual Refresh Pattern for Dynamic Dashboards
 **Learning:** Providing a manual refresh button for dynamic lists (like a games dashboard) empowers users to check for updates without a full page reload. Combining this with an inline spinning icon provides immediate visual feedback that the request is in progress, satisfying the need for both control and status visibility.
 **Action:** Always include a manual refresh button for dynamic data lists, using an inline SVG with a spinning animation during the loading state and proper ARIA labels.
+
+## 2026-05-04 - Section Counts and Status Indicators
+**Learning:** Using parenthetical counts in section headings (e.g., 'Actors (9)', 'Planned Moves (1)') and appending a '(Planned)' text indicator to entity names in sidebars provides at-a-glance status updates. This reduces cognitive load by summarizing list state and highlighting active planning without requiring full list scanning.
+**Action:** Always include item counts in headings for primary lists and use explicit textual indicators for active states to supplement visual cues.
