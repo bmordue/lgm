@@ -77,3 +77,7 @@
 ## 2026-05-04 - Section Counts and Status Indicators
 **Learning:** Using parenthetical counts in section headings (e.g., 'Actors (9)', 'Planned Moves (1)') and appending a '(Planned)' text indicator to entity names in sidebars provides at-a-glance status updates. This reduces cognitive load by summarizing list state and highlighting active planning without requiring full list scanning.
 **Action:** Always include item counts in headings for primary lists and use explicit textual indicators for active states to supplement visual cues.
+
+## 2026-05-06 - Standardized Manual Refresh and Async State Management
+**Learning:** Manual refresh buttons should follow a consistent visual pattern (inline spinning SVG, brand-aligned styling) and always manage their loading state within a `try...finally` block. This ensures the UI remains interactive and accurate even if the network request fails, preventing "stuck" loading indicators.
+**Action:** Always wrap async state toggles in `try...finally` and reuse the established `.refresh-btn` and `.spinning` CSS patterns for consistency.
