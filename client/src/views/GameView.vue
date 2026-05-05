@@ -14,6 +14,7 @@ interface GameData {
 }
 
 const game = ref<GameData>({})
+const isRefreshing = ref(false);
 const plannedMoves = ref<PlannedMove[]>([]); // Reactive state for planned moves
 const hoveredMove = ref<PlannedMove | null>(null); // State for hovered move
 const hoveredActorId = ref<number | null>(null); // New state for hovered actor
@@ -27,6 +28,18 @@ const gamesStore = useGamesStore();
 watchEffect(async () => {
   game.value = gamesStore.getCurrentGame();
 });
+
+const refreshGame = async () => {
+  if (game.value.gameId) {
+    isRefreshing.value = true;
+    try {
+      await gamesStore.fetchGameDetails(game.value.gameId);
+      game.value = gamesStore.getCurrentGame();
+    } finally {
+      isRefreshing.value = false;
+    }
+  }
+};
 
 // --- Event Handlers for move planning ---
 const handleMovePlanned = (move: PlannedMove) => {
@@ -175,7 +188,33 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 
 <template>
     <RouterLink to="/dashboard" class="back-link">← Back to Dashboard</RouterLink>
-    <h1>Game #{{ game.gameId }}</h1>
+    <div class="header-container">
+      <h1>Game #{{ game.gameId }}</h1>
+      <button
+        type="button"
+        class="refresh-btn"
+        @click="refreshGame"
+        :disabled="isRefreshing"
+        aria-label="Refresh game state"
+        title="Refresh game state"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          :class="{ 'spinning': isRefreshing }"
+        >
+          <path d="M23 4v6h-6"></path>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+    </div>
     <div class="game-info">
       <span class="turn-info">Turn {{ game.turn }}</span>
       <span class="player-info">Players: {{ game.playerCount }}/{{ game.maxPlayers }}</span>
@@ -458,5 +497,48 @@ button:hover {
 .back-link:focus-visible {
   outline: 2px solid hsla(160, 100%, 37%, 1);
   outline-offset: 2px;
+}
+
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.refresh-btn {
+  background: none;
+  border: none;
+  color: hsla(160, 100%, 37%, 1);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background-color: hsla(160, 100%, 37%, 0.1);
+}
+
+.refresh-btn:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.refresh-btn:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
+}
+
+.spinning {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 </style>
