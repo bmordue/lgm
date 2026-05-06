@@ -146,7 +146,22 @@ async function join(game: GameSummary) {
         :aria-busy="joiningGameId === game.id"
         @click="join(game)"
       >
-        <div class="game-id">{{ joiningGameId === game.id ? 'Joining...' : 'Game #' + game.id }}</div>
+        <div class="game-id">
+          <svg
+            v-if="joiningGameId === game.id"
+            class="btn-spinner spinning"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+          </svg>
+          {{ joiningGameId === game.id ? 'Joining...' : 'Game #' + game.id }}
+        </div>
         <div class="game-status">
           Players: {{ game.playerCount }}/{{ game.maxPlayers }}
           <span v-if="game.isFull" class="full-indicator"> (FULL)</span>
@@ -158,12 +173,26 @@ async function join(game: GameSummary) {
     </div>
   </div>
   <button
+    type="button"
     class="create-game-btn"
     @click="callCreate()"
     :disabled="isCreating"
     :aria-busy="isCreating"
     aria-live="polite"
   >
+    <svg
+      v-if="isCreating"
+      class="btn-spinner spinning"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+    </svg>
     {{ isCreating ? 'Creating...' : 'Create New Game' }}
   </button>
 </template>
@@ -203,14 +232,6 @@ async function join(game: GameSummary) {
   outline-offset: 2px;
 }
 
-.spinning {
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
 
 .game-list {
   margin: 20px 0;

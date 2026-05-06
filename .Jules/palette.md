@@ -81,3 +81,7 @@
 ## 2026-05-06 - Standardized Manual Refresh and Async State Management
 **Learning:** Manual refresh buttons should follow a consistent visual pattern (inline spinning SVG, brand-aligned styling) and always manage their loading state within a `try...finally` block. This ensures the UI remains interactive and accurate even if the network request fails, preventing "stuck" loading indicators.
 **Action:** Always wrap async state toggles in `try...finally` and reuse the established `.refresh-btn` and `.spinning` CSS patterns for consistency.
+
+## 2026-05-08 - Standardized Async Feedback Pattern
+**Learning:** Centralizing loading animations (e.g., `.spinning`) and spinner styles (e.g., `.btn-spinner`) in a global stylesheet ensures a consistent user experience across the application. Using `aria-busy="true"` on buttons alongside visual spinners provides both visual and semantic feedback for long-running operations.
+**Action:** Always use the global `.btn-spinner` and `.spinning` classes for asynchronous action buttons, and ensure `aria-busy` and `aria-live` are set on the parent interactive element.
