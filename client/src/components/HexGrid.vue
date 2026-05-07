@@ -143,8 +143,14 @@ export default defineComponent({
         const terrainType = getTerrainTypeForHex(hex);
 
         if (terrainType === Terrain.EMPTY) classes.push('terrain-empty');
-        else if (terrainType === Terrain.BLOCKED) classes.push('terrain-blocked');
-        else if (terrainType === Terrain.UNEXPLORED) classes.push('terrain-unexplored'); // New class for unexplored
+        else if (terrainType === Terrain.BLOCKED) {
+            classes.push('terrain-blocked');
+            classes.push('is-dark-terrain');
+        }
+        else if (terrainType === Terrain.UNEXPLORED) {
+            classes.push('terrain-unexplored'); // New class for unexplored
+            classes.push('is-dark-terrain');
+        }
         else classes.push('terrain-unknown'); // Fallback for unexpected terrain values
 
         const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex);
@@ -206,6 +212,13 @@ export default defineComponent({
     const getHexFontSize = (): number => layout.size.x / 3.8;
 
     const handleHexClick = (clickedHex: Hex) => {
+      // If the clicked hex is already selected, deselect it
+      if (selectedHexRef.value && selectedHexRef.value.q === clickedHex.q && selectedHexRef.value.r === clickedHex.r) {
+        selectedHexRef.value = null;
+        console.log("Deselected hex:", clickedHex);
+        return;
+      }
+
       // This handler is now primarily for move planning or selecting actors.
       // The local visibility testing logic has been removed.
       const actorOnClickedHex = props.actors.find(actor => {
@@ -406,7 +419,7 @@ g:focus-visible .hex-polygon {
 }
 
 .hex-polygon.is-hovered-destination {
-  fill: rgba(230, 126, 34, 0.5); /* Stronger orange fill */
+  fill: rgba(230, 126, 34, 0.2); /* Subtle orange fill */
   stroke: #d35400;
   stroke-width: 3;
   stroke-dasharray: none; /* Solid line for clear focus */
@@ -448,5 +461,10 @@ g:focus-visible .hex-polygon {
   fill: #2c3e50; /* Darker text color for better contrast */
   font-weight: 500; /* Slightly bolder text */
   font-family: 'Arial', sans-serif; /* Consistent font */
+  transition: fill 0.2s ease-in-out;
+}
+
+.is-dark-terrain .hex-text {
+  fill: #ecf0f1; /* Lighter text color for better contrast on dark terrain */
 }
 </style>

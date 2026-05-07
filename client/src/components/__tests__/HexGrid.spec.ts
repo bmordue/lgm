@@ -294,19 +294,17 @@ describe('HexGrid.vue Movement Planning', () => {
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
-    it('clicking the same actor hex twice leaves selection (current behaviour)', async () => {
+    it('clicking the same actor hex twice deselects it', async () => {
       let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
       await actor1HexPoly!.trigger('click'); // First click: select
       await wrapper.vm.$nextTick();
-      actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
       expect(wrapper.vm.selectedHexRef).toBeTruthy();
       consoleLogSpy.mockClear();
 
-      await actor1HexPoly!.trigger('click'); // Second click: current component keeps selection
+      await actor1HexPoly!.trigger('click'); // Second click: should deselect
       await wrapper.vm.$nextTick();
-      actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      expect(wrapper.vm.selectedHexRef).toBeTruthy();
-      expect(consoleLogSpy).toHaveBeenCalled();
+      expect(wrapper.vm.selectedHexRef).toBeNull();
+      expect(consoleLogSpy).toHaveBeenCalledWith("Deselected hex:", expect.anything());
     });
 
     it('does not select another actor if one is already selected and a hex with another actor is clicked (logs message)', async () => {
