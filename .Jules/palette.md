@@ -85,3 +85,7 @@
 ## 2026-05-08 - Standardized Async Feedback Pattern
 **Learning:** Centralizing loading animations (e.g., `.spinning`) and spinner styles (e.g., `.btn-spinner`) in a global stylesheet ensures a consistent user experience across the application. Using `aria-busy="true"` on buttons alongside visual spinners provides both visual and semantic feedback for long-running operations.
 **Action:** Always use the global `.btn-spinner` and `.spinning` classes for asynchronous action buttons, and ensure `aria-busy` and `aria-live` are set on the parent interactive element.
+
+## 2026-05-10 - Dynamic Grid Contrast and Selection Patterns
+**Learning:** In spatial grids with varying terrain, coordinate text must dynamically adjust its color to maintain contrast (e.g., using a light color on dark 'Unexplored' or 'Blocked' hexes). Additionally, interactive selection should always be toggleable (click-to-select, click-again-to-deselect) to provide an intuitive and forgiving user experience.
+**Action:** Implement conditional 'dark-terrain' classes for grid entities and ensure all selection logic supports explicit deselection via re-clicking the active item.
