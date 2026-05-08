@@ -22,12 +22,27 @@ const hoveredPlayerId = ref<number | null>(null); // New state for hovered playe
 const isSubmitting = ref(false);
 const submissionError = ref('');
 const submissionSuccess = ref('');
+const copySuccess = ref(false);
 
 const gamesStore = useGamesStore();
 
 watchEffect(async () => {
   game.value = gamesStore.getCurrentGame();
 });
+
+const copyGameId = async () => {
+  if (game.value.gameId) {
+    try {
+      await navigator.clipboard.writeText(game.value.gameId.toString());
+      copySuccess.value = true;
+      setTimeout(() => {
+        copySuccess.value = false;
+      }, 2000);
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+    }
+  }
+};
 
 const refreshGame = async () => {
   if (game.value.gameId) {
@@ -188,8 +203,21 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 
 <template>
     <RouterLink to="/dashboard" class="back-link">← Back to Dashboard</RouterLink>
-    <div class="header-container">
-      <h1>Game #{{ game.gameId }}</h1>
+    <div class="header-container" v-if="game.gameId !== undefined && game.gameId !== null">
+      <div class="title-with-copy">
+        <h1>Game #{{ game.gameId }}</h1>
+        <button
+          type="button"
+          class="copy-btn"
+          @click="copyGameId"
+          :title="copySuccess ? 'Copied!' : 'Copy Game ID'"
+          :aria-label="copySuccess ? 'Game ID copied to clipboard' : 'Copy Game ID to clipboard'"
+        >
+          <svg v-if="!copySuccess" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+          <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="hsla(160, 100%, 37%, 1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+          <span v-if="copySuccess" class="copy-feedback" role="status">Copied!</span>
+        </button>
+      </div>
       <button
         type="button"
         class="refresh-btn"
@@ -215,7 +243,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         </svg>
       </button>
     </div>
-    <div class="game-info">
+    <div class="game-info" v-if="game.gameId !== undefined && game.gameId !== null">
       <span class="turn-info">Turn {{ game.turn }}</span>
       <span class="player-info">Players: {{ game.playerCount }}/{{ game.maxPlayers }}</span>
     </div>
@@ -504,6 +532,57 @@ button:hover {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+  min-height: 44px; /* Ensure height consistency when loading */
+}
+
+.title-with-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.copy-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: hsla(160, 100%, 37%, 1);
+}
+
+.copy-btn:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
+}
+
+.copy-feedback {
+  position: absolute;
+  top: -25px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.7em;
+  white-space: nowrap;
+  animation: fade-in-out 2s forwards;
+}
+
+@keyframes fade-in-out {
+  0% { opacity: 0; transform: translate(-50%, 0); }
+  10% { opacity: 1; transform: translate(-50%, -5px); }
+  90% { opacity: 1; transform: translate(-50%, -5px); }
+  100% { opacity: 0; transform: translate(-50%, 0); }
 }
 
 .refresh-btn {

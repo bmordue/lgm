@@ -89,3 +89,11 @@
 ## 2026-05-10 - Dynamic Grid Contrast and Selection Patterns
 **Learning:** In spatial grids with varying terrain, coordinate text must dynamically adjust its color to maintain contrast (e.g., using a light color on dark 'Unexplored' or 'Blocked' hexes). Additionally, interactive selection should always be toggleable (click-to-select, click-again-to-deselect) to provide an intuitive and forgiving user experience.
 **Action:** Implement conditional 'dark-terrain' classes for grid entities and ensure all selection logic supports explicit deselection via re-clicking the active item.
+
+## 2026-05-08 - Copy to Clipboard Pattern with Feedback
+**Learning:** Implementing a "Copy to Clipboard" feature requires both visual (icon change) and semantic (ARIA role="status") feedback to ensure all users are aware of the success. Using a temporary reactive state with a timeout and CSS animations provides a smooth, non-disruptive confirmation.
+**Action:** Always pair clipboard actions with a brief success state (e.g., 2 seconds) that updates the button's icon/label and provides a visible feedback message.
+
+## 2026-05-08 - Defensive Rendering for Async Data
+**Learning:** Guarding template sections that rely on async data with `v-if` prevent "flash of undefined content" (FOUC) where placeholders like "Game #undefined" are briefly visible. Setting a `min-height` on the container helps stabilize the layout during transitions.
+**Action:** Use explicit null/undefined checks for primary data IDs before rendering headers or metadata sections, and use CSS to preserve layout space.
