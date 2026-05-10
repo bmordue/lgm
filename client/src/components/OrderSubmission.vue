@@ -36,6 +36,7 @@
       @click="handleClearAll"
       class="clear-all-btn"
       :disabled="isSubmitting"
+      aria-label="Clear all planned moves"
     >
       Clear All
     </button>

@@ -73,7 +73,7 @@ export default defineComponent({
         default: null,
     },
   },
-  emits: ['move-planned', 'actor-hover', 'player-hover', 'move-hover'], // Declare emitted events
+  emits: ['move-planned', 'actor-hover', 'player-hover', 'move-hover', 'actor-select'], // Declare emitted events
   setup(props, { emit }) {
     const gamesStore = useGamesStore(); // Get store instance
     const offsetType = OffsetCoord.ODD; // Using ODD as per existing qoffset/roffset logic
@@ -215,6 +215,7 @@ export default defineComponent({
       // If the clicked hex is already selected, deselect it
       if (selectedHexRef.value && selectedHexRef.value.q === clickedHex.q && selectedHexRef.value.r === clickedHex.r) {
         selectedHexRef.value = null;
+        emit('actor-select', null);
         console.log("Deselected hex:", clickedHex);
         return;
       }
@@ -235,6 +236,7 @@ export default defineComponent({
 
       if (actorOnClickedHex) { // If clicked on one of the current player's actors
         selectedHexRef.value = clickedHex as any; // Select this actor's hex as start of a move
+        emit('actor-select', actorOnClickedHex.id);
         console.log("Selected actor on hex:", clickedHex, "Actor ID:", actorOnClickedHex.id);
       } else if (selectedHexRef.value) { // If an actor was previously selected, and now an empty hex is clicked
         const startHexGridPos = OffsetCoord.roffsetFromCube(offsetType, selectedHexRef.value);
@@ -255,9 +257,11 @@ export default defineComponent({
             console.log('Move planned:', move);
         }
         selectedHexRef.value = null; // Deselect after planning the move
+        emit('actor-select', null);
       } else {
         // Clicked on an empty hex without prior selection, or an enemy actor's hex
         selectedHexRef.value = null; // Deselect any previously selected hex
+        emit('actor-select', null);
         console.log("Clicked on hex:", clickedHex, ". No player actor selected or on this hex.");
       }
     };
@@ -267,9 +271,11 @@ export default defineComponent({
     const handleHexRightClick = (hex: Hex) => {
         if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r) {
             selectedHexRef.value = null; // Deselect if right-clicked on the selected hex
+            emit('actor-select', null);
             console.log("Deselected hex:", hex);
         } else {
             selectedHexRef.value = null; // General deselect on any right click for now
+            emit('actor-select', null);
              console.log("Deselected via right click.");
         }
     };
@@ -278,6 +284,7 @@ export default defineComponent({
     const handleSvgClick = (event: MouseEvent) => {
         if (event.target === event.currentTarget) { // Click on SVG background
             selectedHexRef.value = null;
+            emit('actor-select', null);
             console.log('Clicked SVG background, deselected hex.');
         }
     };
@@ -343,6 +350,19 @@ export default defineComponent({
 
     const currentPlayerId = computed(() => gamesStore.getCurrentPlayerId());
 
+    const selectHexByGridPos = (row: number, col: number) => {
+      const hexToSelect = hexes.value.find(h => {
+        const offsetCoord = OffsetCoord.roffsetFromCube(offsetType, h);
+        return offsetCoord.row === row && offsetCoord.col === col;
+      });
+
+      if (hexToSelect) {
+        selectedHexRef.value = hexToSelect;
+        const actor = props.actors.find(a => a.pos.x === row && a.pos.y === col);
+        emit('actor-select', actor ? actor.id : null);
+      }
+    };
+
     return {
       hexes,
       selectedHexRef,
@@ -360,6 +380,7 @@ export default defineComponent({
       handleKeyDown,
       handleMouseEnter,
       handleMouseLeave,
+      selectHexByGridPos,
     };
   },
 });
