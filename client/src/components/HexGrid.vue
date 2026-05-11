@@ -72,12 +72,15 @@ export default defineComponent({
         type: Number as PropType<number | null>,
         default: null,
     },
+    selectedActorId: {
+        type: Number as PropType<number | null>,
+        default: null,
+    },
   },
-  emits: ['move-planned', 'actor-hover', 'player-hover', 'move-hover'], // Declare emitted events
+  emits: ['move-planned', 'actor-hover', 'player-hover', 'move-hover', 'actor-select'], // Declare emitted events
   setup(props, { emit }) {
     const gamesStore = useGamesStore(); // Get store instance
     const offsetType = OffsetCoord.ODD; // Using ODD as per existing qoffset/roffset logic
-    const selectedHexRef = ref<Hex | null>(null); // For actor selection / move planning start
 
     // hexes are now generated based on props.world.terrain
     const hexes = computed(() => {
@@ -155,11 +158,6 @@ export default defineComponent({
 
         const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex);
 
-        // Logic for 'selected' class (e.g., if planning a move from this hex)
-        if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r) {
-            classes.push('selected');
-        }
-
         const actorOnHex = props.actors.find(actor => {
             return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col;
         });
@@ -171,6 +169,9 @@ export default defineComponent({
                 if (props.plannedMoves.some(m => m.actorId === actorOnHex.id)) {
                   classes.push('actor-has-planned-move');
                 }
+            }
+            if (actorOnHex.id === props.selectedActorId) {
+                classes.push('selected');
             }
         }
 
@@ -212,73 +213,57 @@ export default defineComponent({
     const getHexFontSize = (): number => layout.size.x / 3.8;
 
     const handleHexClick = (clickedHex: Hex) => {
-      // If the clicked hex is already selected, deselect it
-      if (selectedHexRef.value && selectedHexRef.value.q === clickedHex.q && selectedHexRef.value.r === clickedHex.r) {
-        selectedHexRef.value = null;
-        console.log("Deselected hex:", clickedHex);
-        return;
-      }
-
-      // This handler is now primarily for move planning or selecting actors.
-      // The local visibility testing logic has been removed.
+      const clickedHexGridPos = OffsetCoord.roffsetFromCube(offsetType, clickedHex);
       const actorOnClickedHex = props.actors.find(actor => {
-        const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, clickedHex);
-        return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col && actor.owner === currentPlayerId.value;
+        return actor.pos.x === clickedHexGridPos.row && actor.pos.y === clickedHexGridPos.col && actor.owner === currentPlayerId.value;
       });
 
-      if (selectedHexRef.value && actorOnClickedHex && actorOnClickedHex.owner === (currentPlayerId.value as number)) {
-        // Cannot select another actor if one is already selected for a move.
-        // Or, this could be logic for targeting if implementing attacks.
-        console.log("An actor is already selected for move. Click the destination or deselect.");
+      if (actorOnClickedHex) {
+        if (props.selectedActorId === actorOnClickedHex.id) {
+          emit('actor-select', null);
+          console.log("Deselected actor:", actorOnClickedHex.id);
+        } else {
+          emit('actor-select', actorOnClickedHex.id);
+          console.log("Selected actor:", actorOnClickedHex.id);
+        }
         return;
       }
 
-      if (actorOnClickedHex) { // If clicked on one of the current player's actors
-        selectedHexRef.value = clickedHex as any; // Select this actor's hex as start of a move
-        console.log("Selected actor on hex:", clickedHex, "Actor ID:", actorOnClickedHex.id);
-      } else if (selectedHexRef.value) { // If an actor was previously selected, and now an empty hex is clicked
-        const startHexGridPos = OffsetCoord.roffsetFromCube(offsetType, selectedHexRef.value);
-        const endHexGridPos = OffsetCoord.roffsetFromCube(offsetType, clickedHex);
-
-        const movingActor = props.actors.find(actor => {
-            const actorStartOffset = OffsetCoord.roffsetFromCube(offsetType, selectedHexRef.value);
-            return actor.pos.x === actorStartOffset.row && actor.pos.y === actorStartOffset.col;
-        });
-
-        if (movingActor) {
-            const move: PlannedMove = {
-                actorId: movingActor.id,
-                startPos: { x: startHexGridPos.row, y: startHexGridPos.col }, // These are grid coords
-                endPos: { x: endHexGridPos.row, y: endHexGridPos.col } // These are grid coords
-            };
-            emit('move-planned', move);
-            console.log('Move planned:', move);
+      if (props.selectedActorId) {
+        const selectedActor = props.actors.find(a => a.id === props.selectedActorId);
+        if (selectedActor) {
+          const move: PlannedMove = {
+            actorId: selectedActor.id,
+            startPos: { x: selectedActor.pos.x, y: selectedActor.pos.y },
+            endPos: { x: clickedHexGridPos.row, y: clickedHexGridPos.col }
+          };
+          emit('move-planned', move);
+          emit('actor-select', null);
+          console.log('Move planned:', move);
         }
-        selectedHexRef.value = null; // Deselect after planning the move
       } else {
-        // Clicked on an empty hex without prior selection, or an enemy actor's hex
-        selectedHexRef.value = null; // Deselect any previously selected hex
         console.log("Clicked on hex:", clickedHex, ". No player actor selected or on this hex.");
       }
     };
 
-    // handleHexRightClick is removed as local terrain editing is gone.
-    // It could be repurposed for other actions like deselecting or cancelling a move.
     const handleHexRightClick = (hex: Hex) => {
-        if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r) {
-            selectedHexRef.value = null; // Deselect if right-clicked on the selected hex
-            console.log("Deselected hex:", hex);
+        const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex);
+        const actorOnHex = props.actors.find(a => a.pos.x === hexGridPos.row && a.pos.y === hexGridPos.col && a.owner === currentPlayerId.value);
+
+        if (actorOnHex && props.selectedActorId === actorOnHex.id) {
+            emit('actor-select', null);
+            console.log("Deselected via right click.");
         } else {
-            selectedHexRef.value = null; // General deselect on any right click for now
-             console.log("Deselected via right click.");
+            emit('actor-select', null);
+            console.log("Selection cleared via right click.");
         }
     };
 
 
     const handleSvgClick = (event: MouseEvent) => {
         if (event.target === event.currentTarget) { // Click on SVG background
-            selectedHexRef.value = null;
-            console.log('Clicked SVG background, deselected hex.');
+            emit('actor-select', null);
+            console.log('Clicked SVG background, selection cleared.');
         }
     };
 
@@ -300,10 +285,9 @@ export default defineComponent({
             if (props.plannedMoves.some(m => m.actorId === actorOnHex.id)) {
                 label += ", Planned move";
             }
-        }
-
-        if (selectedHexRef.value && selectedHexRef.value.q === hex.q && selectedHexRef.value.r === hex.r) {
-            label += ", Selected";
+            if (actorOnHex.id === props.selectedActorId) {
+                label += ", Selected";
+            }
         }
 
         const plannedMove = props.plannedMoves.find(m => m.endPos.x === hexGridPos.row && m.endPos.y === hexGridPos.col);
@@ -345,7 +329,6 @@ export default defineComponent({
 
     return {
       hexes,
-      selectedHexRef,
       viewBox,
       getHexPoints,
       getHexTransform,
