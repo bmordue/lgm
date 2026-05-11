@@ -15,6 +15,7 @@ interface GameData {
 
 const game = ref<GameData>({})
 const isRefreshing = ref(false);
+const selectedActorId = ref<number | null>(null);
 const plannedMoves = ref<PlannedMove[]>([]); // Reactive state for planned moves
 const hoveredMove = ref<PlannedMove | null>(null); // State for hovered move
 const hoveredActorId = ref<number | null>(null); // New state for hovered actor
@@ -57,6 +58,14 @@ const refreshGame = async () => {
 };
 
 // --- Event Handlers for move planning ---
+const selectActor = (actorId: number) => {
+  if (selectedActorId.value === actorId) {
+    selectedActorId.value = null;
+  } else {
+    selectedActorId.value = actorId;
+  }
+};
+
 const handleMovePlanned = (move: PlannedMove) => {
   plannedMoves.value.push(move);
   console.log('Move planned:', move);
@@ -303,10 +312,12 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             :hovered-move="hoveredMove"
             :hovered-actor-id="hoveredActorId"
             :hovered-player-id="hoveredPlayerId"
+            :selected-actor-id="selectedActorId"
             @move-planned="handleMovePlanned"
             @actor-hover="hoveredActorId = ($event as any)"
             @player-hover="hoveredPlayerId = ($event as any)"
             @move-hover="hoveredMove = ($event as any)"
+            @actor-select="selectedActorId = $event"
           />
         </div>
         <div v-else class="loading-state" role="status" aria-live="polite">Loading world data...</div>
@@ -320,12 +331,14 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             class="actor-item"
             :class="{
               'is-self': actor.owner === gamesStore.getCurrentPlayerId(),
-              'is-hovered': actor.id === hoveredActorId
+              'is-hovered': actor.id === hoveredActorId,
+              'is-selected': actor.id === selectedActorId
             }"
             @mouseenter="hoveredActorId = actor.id"
             @mouseleave="hoveredActorId = null"
             @focus="hoveredActorId = actor.id"
             @blur="hoveredActorId = null"
+            @click="actor.owner === gamesStore.getCurrentPlayerId() && selectActor(actor.id)"
           >
             {{ actorToString(actor) }}{{ actor.owner === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}{{ plannedMoves.some(m => m.actorId === actor.id) ? ' (Planned)' : '' }}
           </button>
@@ -466,6 +479,11 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   outline: 2px solid hsla(160, 100%, 37%, 1);
   outline-offset: 2px;
   background: #ffe0b2;
+}
+
+.actor-item.is-selected {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: -2px;
 }
 
 .actor-item.is-self {

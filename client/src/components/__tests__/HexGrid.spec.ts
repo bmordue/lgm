@@ -32,11 +32,12 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
   });
 
   // Adjusted mountComponent to also accept actors, but provide default for original tests
-  const mountComponent = (world: World, actors: Actor[] = []) => {
+  const mountComponent = (world: World, actors: Actor[] = [], selectedActorId: number | null = null) => {
     return mount(HexGrid, {
       props: {
         world,
         actors,
+        selectedActorId,
       },
     });
   };
@@ -135,22 +136,18 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
         expect(consoleLogSpy).toHaveBeenCalled();
       });
 
-    it('clicking SVG background deselects the current hex and actor', async () => {
+    it('clicking SVG background emits actor-select with null', async () => {
       const terrain = [[Terrain.EMPTY]];
       const world = createWorld(terrain);
       wrapper = mountComponent(world); // Actors default to []
-      const polygon = wrapper.find('polygon');
-      // The current component doesn't select empty hexes on click by default.
-      // Instead, set selection via the component API to simulate a selected hex,
-      // then click the SVG background to verify deselection behaviour.
-      wrapper.vm.selectedHexRef = wrapper.vm.hexes[0];
-      await wrapper.vm.$nextTick();
-      expect(polygon.classes()).toContain('selected');
+
       consoleLogSpy.mockClear();
 
       await wrapper.find('svg').trigger('click');
       await wrapper.vm.$nextTick();
-      expect(polygon.classes()).not.toContain('selected');
+
+      expect(wrapper.emitted('actor-select')).toBeTruthy();
+      expect(wrapper.emitted('actor-select')![0]).toEqual([null]);
       // Accept any log indicating deselection happened rather than exact message
       expect(consoleLogSpy).toHaveBeenCalled();
     });
@@ -236,9 +233,9 @@ const findHexPolygonByAxial = (wrapper: VueWrapper<any>, q: number, r: number): 
 describe('HexGrid.vue Movement Planning', () => {
   let wrapper: VueWrapper<any>;
 
-  const mountMovementGrid = (world = sampleWorldWithTerrain, actors = sampleActors) => {
+  const mountMovementGrid = (world = sampleWorldWithTerrain, actors = sampleActors, selectedActorId: number | null = null) => {
     return mount(HexGrid, {
-      props: { world, actors },
+      props: { world, actors, selectedActorId },
       // Attach to document to ensure visibility/interaction if needed, though usually not for component tests
       // attachTo: document.body,
     });
@@ -280,65 +277,52 @@ describe('HexGrid.vue Movement Planning', () => {
       wrapper = mountMovementGrid();
     });
 
-    it('selects an actor when its hex is clicked', async () => {
+    it('emits actor-select when an actor hex is clicked', async () => {
       let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
       expect(actor1HexPoly, `Actor 1 hex polygon at (${sampleActors[0].pos.x}, ${sampleActors[0].pos.y}) should exist.`).toBeTruthy();
 
       await actor1HexPoly!.trigger('click');
       await wrapper.vm.$nextTick();
-      actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      // The component exposes selection via `selectedHexRef`; verify it is set
-      // after the click and actor text exists on that hex.
-      expect(wrapper.vm.selectedHexRef).toBeTruthy();
-      expect(actor1HexPoly!.classes()).toContain('has-actor');
+
+      expect(wrapper.emitted('actor-select')).toBeTruthy();
+      expect(wrapper.emitted('actor-select')![0]).toEqual([sampleActors[0].id]);
       expect(consoleLogSpy).toHaveBeenCalled();
     });
 
-    it('clicking the same actor hex twice deselects it', async () => {
+    it('emits actor-select(null) when the same actor hex is clicked twice', async () => {
+      wrapper = mountMovementGrid(sampleWorldWithTerrain, sampleActors, sampleActors[0].id);
       let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      await actor1HexPoly!.trigger('click'); // First click: select
-      await wrapper.vm.$nextTick();
-      expect(wrapper.vm.selectedHexRef).toBeTruthy();
-      consoleLogSpy.mockClear();
 
-      await actor1HexPoly!.trigger('click'); // Second click: should deselect
+      await actor1HexPoly!.trigger('click'); // Click: should deselect
       await wrapper.vm.$nextTick();
-      expect(wrapper.vm.selectedHexRef).toBeNull();
-      expect(consoleLogSpy).toHaveBeenCalledWith("Deselected hex:", expect.anything());
+
+      expect(wrapper.emitted('actor-select')).toBeTruthy();
+      expect(wrapper.emitted('actor-select')![0]).toEqual([null]);
+      expect(consoleLogSpy).toHaveBeenCalledWith("Deselected actor:", sampleActors[0].id);
     });
 
-    it('does not select another actor if one is already selected and a hex with another actor is clicked (logs message)', async () => {
-      const actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      const actor2HexPoly = findHexPolygonByAxial(wrapper, sampleActors[1].pos.x, sampleActors[1].pos.y);
-      expect(actor2HexPoly, `Actor 2 hex polygon at (${sampleActors[1].pos.x}, ${sampleActors[1].pos.y}) should exist.`).toBeTruthy();
+    it('emits actor-select with new ID when another OWN actor hex is clicked', async () => {
+      const myActors: Actor[] = [
+        { id: 101, owner: 1, pos: { x: 0, y: 0 } },
+        { id: 102, owner: 1, pos: { x: 1, y: 1 } },
+      ];
+      wrapper = mountMovementGrid(sampleWorldWithTerrain, myActors, myActors[0].id);
+      const actor2HexPoly = findHexPolygonByAxial(wrapper, myActors[1].pos.x, myActors[1].pos.y);
 
-
-      let actor1HexPolyRef = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      await actor1HexPolyRef!.trigger('click'); // Select actor 1
-      await wrapper.vm.$nextTick();
-      actor1HexPolyRef = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      expect(wrapper.vm.selectedHexRef).toBeTruthy();
       consoleLogSpy.mockClear();
 
       await actor2HexPoly!.trigger('click'); // Click on actor 2's hex
       await wrapper.vm.$nextTick();
-      actor1HexPolyRef = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      // Current component clears selection when another actor hex is clicked;
-      // assert selection is cleared and a log is emitted
-      expect(wrapper.vm.selectedHexRef).toBeNull();
-      expect(consoleLogSpy).toHaveBeenCalled();
+
+      expect(wrapper.emitted('actor-select')).toBeTruthy();
+      expect(wrapper.emitted('actor-select')![0]).toEqual([myActors[1].id]);
+      expect(consoleLogSpy).toHaveBeenCalledWith("Selected actor:", myActors[1].id);
     });
   });
 
   describe('Destination Selection & move-planned Event', () => {
     beforeEach(async () => {
-      wrapper = mountMovementGrid();
-      // Select actor 1 first
-      let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      await actor1HexPoly!.trigger('click');
-      await wrapper.vm.$nextTick();
-      actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      expect(wrapper.vm.selectedHexRef).toBeTruthy(); // Pre-condition
+      wrapper = mountMovementGrid(sampleWorldWithTerrain, sampleActors, sampleActors[0].id);
       consoleLogSpy.mockClear();
     });
 
@@ -361,10 +345,11 @@ describe('HexGrid.vue Movement Planning', () => {
       expect(consoleLogSpy).toHaveBeenCalledWith('Move planned:', emittedEventPayload);
     });
 
-    it('resets selectedActorId to null after a move is planned', async () => {
+    it('emits actor-select(null) after a move is planned', async () => {
       const destinationHexPoly = findHexPolygonByAxial(wrapper, 1, 0); // Empty hex
       await destinationHexPoly!.trigger('click');
-      expect(wrapper.vm.selectedHexRef).toBeNull();
+      expect(wrapper.emitted('actor-select')).toBeTruthy();
+      expect(wrapper.emitted('actor-select')![0]).toEqual([null]);
     });
 
     it('does not emit "move-planned" if trying to move to a blocked hex (no actor there)', async () => {
@@ -372,13 +357,10 @@ describe('HexGrid.vue Movement Planning', () => {
         const worldWithBlocked = JSON.parse(JSON.stringify(sampleWorldWithTerrain));
         // Offset (0,1) -> Axial (0,1) for ODD_R. Let's make this blocked.
         worldWithBlocked.terrain[1][0] = Terrain.BLOCKED;
-        wrapper = mount(HexGrid, { props: { world: worldWithBlocked, actors: sampleActors } });
+        wrapper = mount(HexGrid, { props: { world: worldWithBlocked, actors: sampleActors, selectedActorId: sampleActors[0].id } });
 
-        // Select actor 1 (at 0,0)
+        // Select actor 1 (at 0,0) - already selected via prop
         let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-        await actor1HexPoly!.trigger('click');
-        await wrapper.vm.$nextTick();
-        actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
         expect(actor1HexPoly!.classes()).toContain('selected');
         consoleLogSpy.mockClear();
 
@@ -386,20 +368,9 @@ describe('HexGrid.vue Movement Planning', () => {
         const blockedHexPoly = findHexPolygonByAxial(wrapper, blockedHexQ, blockedHexR);
         expect(blockedHexPoly, `Blocked hex polygon at (${blockedHexQ},${blockedHexR}) should exist.`).toBeTruthy();
 
-        // Check if the hex is actually considered blocked by the component logic
-        // This requires getTerrainTypeForHex to work correctly.
-        // For now, assume the click handler will not proceed to emit if hex is not empty.
-        // The current implementation of handleHexClick plans a move if !actorAtHex. It doesn't explicitly check for Terrain.BLOCKED.
-        // This might be a point of refinement for the component itself.
-        // For now, if it's not an actor, it's a destination.
-
         await blockedHexPoly!.trigger('click');
         // Based on current HexGrid logic: if no actor at (0,1), it will plan a move.
-        // This test might reveal that HexGrid needs to check terrain type before planning.
-        // For now, let's assume the current logic:
         expect(wrapper.emitted('move-planned')).toBeTruthy();
-        // If the requirement is that it SHOULDN'T plan to blocked, then this test needs adjustment after HexGrid logic is fixed.
-        // The subtask description for HexGrid didn't specify checking terrain for destination, only if it contains *another actor*.
     });
   });
 
@@ -408,33 +379,11 @@ describe('HexGrid.vue Movement Planning', () => {
       wrapper = mountMovementGrid();
     });
 
-    it('applies selection class to the selected actor\'s hex', async () => {
+    it('applies selection class to the selected actor\'s hex based on prop', async () => {
+      wrapper = mountMovementGrid(sampleWorldWithTerrain, sampleActors, sampleActors[0].id);
       let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      await actor1HexPoly!.trigger('click');
-      await wrapper.vm.$nextTick();
-      actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
       expect(actor1HexPoly!.classes()).toContain('selected');
       expect(actor1HexPoly!.classes()).toContain('has-actor');
-    });
-
-    it('emits move-planned and clears selection after planning a move', async () => {
-      let actor1StartHexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      await actor1StartHexPoly!.trigger('click'); // Select actor
-      await wrapper.vm.$nextTick();
-      actor1StartHexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-
-      const destinationQ = 1, destinationR = 0;
-      const destinationHexPoly = findHexPolygonByAxial(wrapper, destinationQ, destinationR);
-      await destinationHexPoly!.trigger('click'); // Plan move
-      await wrapper.vm.$nextTick();
-
-      // The component should emit the move-planned event and clear the selection
-      expect(wrapper.emitted('move-planned')).toBeTruthy();
-      const updatedActor1StartHexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      const updatedDestinationHexPoly = findHexPolygonByAxial(wrapper, destinationQ, destinationR);
-
-      expect(updatedActor1StartHexPoly!.classes()).not.toContain('selected');
-      expect(updatedDestinationHexPoly!.classes()).not.toContain('selected');
     });
 
     it('applies "planned-path" class to hexes in the plannedMoves prop', async () => {
@@ -459,20 +408,16 @@ describe('HexGrid.vue Movement Planning', () => {
   });
 
   describe('Deselection via SVG Background Click', () => {
-    it('resets selection when SVG background is clicked', async () => {
-      wrapper = mountMovementGrid();
-      let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      await actor1HexPoly!.trigger('click'); // Select actor
-      await wrapper.vm.$nextTick();
-      actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      expect(actor1HexPoly!.classes()).toContain('selected');
+    it('emits actor-select(null) when SVG background is clicked', async () => {
+      wrapper = mountMovementGrid(sampleWorldWithTerrain, sampleActors, sampleActors[0].id);
       consoleLogSpy.mockClear();
 
       await wrapper.find('svg').trigger('click');
       await wrapper.vm.$nextTick();
-      actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
-      expect(actor1HexPoly!.classes()).not.toContain('selected');
-      expect(consoleLogSpy).toHaveBeenCalled();
+
+      expect(wrapper.emitted('actor-select')).toBeTruthy();
+      expect(wrapper.emitted('actor-select')![0]).toEqual([null]);
+      expect(consoleLogSpy).toHaveBeenCalledWith('Clicked SVG background, selection cleared.');
     });
   });
 
