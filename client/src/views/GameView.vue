@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
+import { ref, watchEffect, onMounted, onUnmounted } from 'vue'
 import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue'; // Import OrderSubmission
 import { useGamesStore, type Actor, type PlannedMove, type Order } from '../stores/Games.store' // Import PlannedMove and Order
@@ -29,6 +29,20 @@ const gamesStore = useGamesStore();
 
 watchEffect(async () => {
   game.value = gamesStore.getCurrentGame();
+});
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (event.key === 'Escape') {
+    selectedActorId.value = null;
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
 });
 
 const copyGameId = async () => {
@@ -299,7 +313,18 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           @submit-orders="handleSubmitOrders"
           @hover-move="handleHoverMove"
         />
-        <!-- Removed old Post Orders button -->
+
+        <div class="legend">
+          <h4>Map Legend</h4>
+          <ul class="legend-list">
+            <li><span class="swatch terrain-empty"></span> Empty</li>
+            <li><span class="swatch terrain-blocked"></span> Blocked</li>
+            <li><span class="swatch terrain-unexplored"></span> Unexplored</li>
+            <li><span class="swatch is-own"></span> Your Unit</li>
+            <li><span class="swatch is-selected"></span> Selected</li>
+            <li><span class="swatch is-planned"></span> Planned Move</li>
+          </ul>
+        </div>
       </div>
       
       <div class="main-panel">
@@ -502,6 +527,25 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   font-style: italic;
   padding: 20px;
 }
+
+.legend {
+  margin-top: 20px;
+  padding: 12px;
+  background: #f9f9f9;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.legend h4 { margin: 0 0 10px 0; font-size: 0.9em; }
+.legend-list { list-style: none; padding: 0; margin: 0; font-size: 0.8em; }
+.legend-list li { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.swatch { width: 14px; height: 14px; border: 1px solid #34495E; flex-shrink: 0; border-radius: 2px; }
+.swatch.terrain-empty { background: #EAECEE; }
+.swatch.terrain-blocked { background: #5D6D7E; }
+.swatch.terrain-unexplored { background: #2C3E50; }
+.swatch.is-own { border: 2px solid hsla(160, 100%, 37%, 1); background: hsla(160, 100%, 37%, 0.1); }
+.swatch.is-selected { border: 2px solid #c0392b; }
+.swatch.is-planned { background: rgba(230, 126, 34, 0.2); border: 1.5px dashed #d35400; }
 
 h3 {
   color: #333;
