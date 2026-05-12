@@ -94,6 +94,10 @@
 **Learning:** For complex game views, synchronizing the selection state between a spatial map and a textual list (sidebar) significantly improves usability. Lifting the selection state to the parent component allows it to act as a single source of truth, enabling users to switch between units from either view seamlessly.
 **Action:** Always lift selection state to the nearest common ancestor when multiple views (e.g., map and sidebar) need to reflect the same interactive state.
 
+## 2026-05-12 - Discoverability via Legends and Keyboard Shortcuts
+**Learning:** Spatial grids with complex state (various terrain, unit ownership, selection status) suffer from "hidden knowledge" where visual cues are not immediately intuitive. Providing a visual legend alongside global keyboard shortcuts (like 'Escape' for deselection) drastically lowers the barrier to entry and makes the interface feel more professional and responsive.
+**Action:** Always include a visual legend for complex spatial grids and implement standard keyboard shortcuts (Escape, Enter, Arrows) to manage selection and navigation states.
+
 ## 2026-05-08 - Copy to Clipboard Pattern with Feedback
 **Learning:** Implementing a "Copy to Clipboard" feature requires both visual (icon change) and semantic (ARIA role="status") feedback to ensure all users are aware of the success. Using a temporary reactive state with a timeout and CSS animations provides a smooth, non-disruptive confirmation.
 **Action:** Always pair clipboard actions with a brief success state (e.g., 2 seconds) that updates the button's icon/label and provides a visible feedback message.
