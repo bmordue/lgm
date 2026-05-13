@@ -1,8 +1,13 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
 import { useUserStore } from './stores/User.store';
 
 const userStore = useUserStore();
+
+onMounted(() => {
+  userStore.fetchCurrentUser();
+});
 </script>
 
 <template>
@@ -14,6 +19,7 @@ const userStore = useUserStore();
 
     <div class="wrapper">
       <nav>
+        <span v-if="userStore.user" class="user-greeting">Welcome, {{ userStore.user.name }}!</span>
         <RouterLink v-if="userStore.isAuthenticated" to="/dashboard">Dashboard</RouterLink>
         <RouterLink v-if="!userStore.isAuthenticated" to="/login">Login</RouterLink>
         <RouterLink v-if="!userStore.isAuthenticated" to="/reset">Reset</RouterLink>
@@ -77,6 +83,16 @@ nav {
   font-size: 12px;
   text-align: center;
   margin-top: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.user-greeting {
+  padding: 0 1rem;
+  color: var(--color-text);
+  font-weight: 500;
 }
 
 nav a.router-link-exact-active {
@@ -139,7 +155,7 @@ nav button:hover, nav a:hover {
     text-align: left;
     margin-left: -1rem;
     font-size: 1rem;
-
+    justify-content: flex-start;
     padding: 1rem 0;
     margin-top: 1rem;
   }

@@ -105,3 +105,7 @@
 ## 2026-05-08 - Defensive Rendering for Async Data
 **Learning:** Guarding template sections that rely on async data with `v-if` prevent "flash of undefined content" (FOUC) where placeholders like "Game #undefined" are briefly visible. Setting a `min-height` on the container helps stabilize the layout during transitions.
 **Action:** Use explicit null/undefined checks for primary data IDs before rendering headers or metadata sections, and use CSS to preserve layout space.
+
+## 2026-05-15 - Global Authentication Synchronization Pattern
+**Learning:** In applications where identity is managed by an upstream proxy, explicitly synchronizing the frontend authentication state during the root component's `onMounted` lifecycle ensures a consistent experience across all routes. Displaying a personalized greeting immediately upon verification provides clear confirmation of identity and builds trust.
+**Action:** Always call identity synchronization methods in the root `App.vue` mount and provide visual feedback of the authenticated state in the global header.
