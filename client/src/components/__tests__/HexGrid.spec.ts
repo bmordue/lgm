@@ -278,7 +278,7 @@ describe('HexGrid.vue Movement Planning', () => {
     });
 
     it('emits actor-select when an actor hex is clicked', async () => {
-      let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
+      const actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
       expect(actor1HexPoly, `Actor 1 hex polygon at (${sampleActors[0].pos.x}, ${sampleActors[0].pos.y}) should exist.`).toBeTruthy();
 
       await actor1HexPoly!.trigger('click');
@@ -291,7 +291,7 @@ describe('HexGrid.vue Movement Planning', () => {
 
     it('emits actor-select(null) when the same actor hex is clicked twice', async () => {
       wrapper = mountMovementGrid(sampleWorldWithTerrain, sampleActors, sampleActors[0].id);
-      let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
+      const actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
 
       await actor1HexPoly!.trigger('click'); // Click: should deselect
       await wrapper.vm.$nextTick();
@@ -360,7 +360,7 @@ describe('HexGrid.vue Movement Planning', () => {
         wrapper = mount(HexGrid, { props: { world: worldWithBlocked, actors: sampleActors, selectedActorId: sampleActors[0].id } });
 
         // Select actor 1 (at 0,0) - already selected via prop
-        let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
+        const actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
         expect(actor1HexPoly!.classes()).toContain('selected');
         consoleLogSpy.mockClear();
 
@@ -381,7 +381,7 @@ describe('HexGrid.vue Movement Planning', () => {
 
     it('applies selection class to the selected actor\'s hex based on prop', async () => {
       wrapper = mountMovementGrid(sampleWorldWithTerrain, sampleActors, sampleActors[0].id);
-      let actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
+      const actor1HexPoly = findHexPolygonByAxial(wrapper, sampleActors[0].pos.x, sampleActors[0].pos.y);
       expect(actor1HexPoly!.classes()).toContain('selected');
       expect(actor1HexPoly!.classes()).toContain('has-actor');
     });
