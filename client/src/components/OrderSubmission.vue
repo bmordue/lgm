@@ -30,15 +30,42 @@
         </button>
       </li>
     </TransitionGroup>
-    <button
-      type="button"
-      v-if="plannedMoves.length >= 2"
-      @click="handleClearAll"
-      class="clear-all-btn"
-      :disabled="isSubmitting"
-    >
-      Clear All
-    </button>
+
+    <div v-if="plannedMoves.length >= 2" class="clear-all-container">
+      <template v-if="!isConfirmingClear">
+        <button
+          type="button"
+          @click="handleClearAllClick"
+          class="clear-all-btn"
+          :disabled="isSubmitting"
+          aria-label="Clear all planned moves"
+        >
+          Clear All
+        </button>
+      </template>
+      <template v-else>
+        <div class="confirmation-group" role="alert" aria-live="polite">
+          <button
+            ref="confirmButtonRef"
+            type="button"
+            @click="confirmClearAll"
+            class="confirm-btn"
+            :disabled="isSubmitting"
+          >
+            Confirm Clear
+          </button>
+          <button
+            type="button"
+            @click="cancelClear"
+            class="cancel-btn"
+            :disabled="isSubmitting"
+          >
+            Cancel
+          </button>
+        </div>
+      </template>
+    </div>
+
     <button
       type="button"
       @click="handleSubmitOrders"
@@ -66,7 +93,7 @@
 </template>
 
 <script setup lang="ts">
-import { type PropType } from 'vue';
+import { ref, watch, nextTick, type PropType } from 'vue';
 import type { PlannedMove } from '../stores/Games.store'; // Adjusted path assuming it's in a parent directory
 
 // Props
@@ -88,13 +115,35 @@ const props = defineProps({
 // Emits
 const emit = defineEmits(['remove-move', 'submit-orders', 'clear-all', 'hover-move']);
 
+const isConfirmingClear = ref(false);
+const confirmButtonRef = ref<HTMLButtonElement | null>(null);
+
+// Reset confirmation state if list changes
+watch(() => props.plannedMoves.length, (newLength) => {
+  if (newLength < 2) {
+    isConfirmingClear.value = false;
+  }
+});
+
 // Methods
 const handleRemoveMove = (move: PlannedMove) => {
   emit('hover-move', null); // Clear hover on remove
   emit('remove-move', move);
 };
 
-const handleClearAll = () => {
+const handleClearAllClick = () => {
+  isConfirmingClear.value = true;
+  nextTick(() => {
+    confirmButtonRef.value?.focus();
+  });
+};
+
+const cancelClear = () => {
+  isConfirmingClear.value = false;
+};
+
+const confirmClearAll = () => {
+  isConfirmingClear.value = false;
   emit('hover-move', null); // Clear hover on clear all
   emit('clear-all');
 };
@@ -186,10 +235,11 @@ const handleSubmitOrders = () => {
   background-color: #c0392b;
 }
 
-.clear-all-btn {
-  background-color: #e74c3c;
-  color: white;
+.clear-all-container {
   margin-top: 10px;
+}
+
+.clear-all-btn, .confirm-btn, .cancel-btn {
   width: 100%;
   padding: 10px;
   font-size: 1em;
@@ -199,11 +249,46 @@ const handleSubmitOrders = () => {
   transition: all 0.2s ease;
 }
 
+.clear-all-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
 .clear-all-btn:hover {
   background-color: #c0392b;
 }
 
 .clear-all-btn:disabled {
+  background-color: #bdc3c7;
+  cursor: not-allowed;
+}
+
+.confirmation-group {
+  display: flex;
+  gap: 10px;
+}
+
+.confirm-btn {
+  background-color: #e74c3c;
+  color: white;
+  flex: 2;
+}
+
+.confirm-btn:hover {
+  background-color: #c0392b;
+}
+
+.cancel-btn {
+  background-color: #95a5a6;
+  color: white;
+  flex: 1;
+}
+
+.cancel-btn:hover {
+  background-color: #7f8c8d;
+}
+
+.confirm-btn:disabled, .cancel-btn:disabled {
   background-color: #bdc3c7;
   cursor: not-allowed;
 }

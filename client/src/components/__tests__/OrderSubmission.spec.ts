@@ -118,11 +118,36 @@ describe('OrderSubmission.vue', () => {
       expect(wrapper.emitted('submit-orders')![0][0]).toEqual(sampleMoves);
     });
 
-    it('emits "clear-all" event when "Clear All" button is clicked', async () => {
+    it('requires confirmation before emitting "clear-all" event', async () => {
       const clearAllButton = wrapper.find('button.clear-all-btn');
       await clearAllButton.trigger('click');
 
+      // Should not emit yet
+      expect(wrapper.emitted('clear-all')).toBeFalsy();
+
+      // Confirmation buttons should appear
+      const confirmButton = wrapper.find('button.confirm-btn');
+      const cancelButton = wrapper.find('button.cancel-btn');
+      expect(confirmButton.exists()).toBe(true);
+      expect(cancelButton.exists()).toBe(true);
+
+      // Clicking confirm should emit
+      await confirmButton.trigger('click');
       expect(wrapper.emitted('clear-all')).toBeTruthy();
+
+      // Buttons should be gone (implicitly tested by next test or by rerender)
+    });
+
+    it('cancels "clear-all" action when "Cancel" is clicked', async () => {
+      const clearAllButton = wrapper.find('button.clear-all-btn');
+      await clearAllButton.trigger('click');
+
+      const cancelButton = wrapper.find('button.cancel-btn');
+      await cancelButton.trigger('click');
+
+      expect(wrapper.emitted('clear-all')).toBeFalsy();
+      expect(wrapper.find('button.clear-all-btn').exists()).toBe(true);
+      expect(wrapper.find('button.confirm-btn').exists()).toBe(false);
     });
 
     it('emits "hover-move" when a move item is hovered', async () => {
