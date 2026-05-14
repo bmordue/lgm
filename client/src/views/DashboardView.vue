@@ -255,6 +255,10 @@ async function join(game: GameSummary) {
   transform: translateY(-1px);
 }
 
+.game-item:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 .game-item:focus-visible {
   outline: 2px solid hsla(160, 100%, 37%, 1);
   outline-offset: 2px;

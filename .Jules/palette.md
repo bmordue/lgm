@@ -109,3 +109,7 @@
 ## 2026-05-15 - Global Authentication Synchronization Pattern
 **Learning:** In applications where identity is managed by an upstream proxy, explicitly synchronizing the frontend authentication state during the root component's `onMounted` lifecycle ensures a consistent experience across all routes. Displaying a personalized greeting immediately upon verification provides clear confirmation of identity and builds trust.
 **Action:** Always call identity synchronization methods in the root `App.vue` mount and provide visual feedback of the authenticated state in the global header.
+
+## 2026-05-14 - In-place Confirmation for Destructive Batch Actions
+**Learning:** For batch-destructive actions like "Clear All", an in-place confirmation flow (replacing the button with Confirm/Cancel options) provides a safe safeguard without the jarring interruption of a browser `window.confirm()`. Focus management (shifting focus to the "Confirm" button) is essential for keyboard accessibility in this pattern.
+**Action:** Implement in-place confirmation for batch actions and use `nextTick` to ensure the new interactive element receives focus immediately.
