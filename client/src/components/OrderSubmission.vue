@@ -192,9 +192,10 @@ const handleSubmitOrders = () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
+  padding: 8px;
   border-bottom: 1px solid #eee;
   transition: all 0.3s ease;
+  border-left: 3px solid transparent;
 }
 
 .planned-move-item:last-child {
@@ -203,7 +204,7 @@ const handleSubmitOrders = () => {
 
 .planned-move-item:hover, .planned-move-item.is-hovered {
   background-color: #f0f0f0;
-  padding-left: 5px;
+  border-left-color: hsla(160, 100%, 37%, 1);
 }
 
 .planned-move-item span {
@@ -219,6 +220,10 @@ const handleSubmitOrders = () => {
   cursor: pointer;
   font-size: 0.9em;
   transition: all 0.2s ease;
+}
+
+.remove-move-btn:active:not(:disabled), .submit-orders-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .remove-move-btn:focus-visible, .submit-orders-btn:focus-visible, .clear-all-btn:focus-visible {
@@ -247,6 +252,15 @@ const handleSubmitOrders = () => {
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.clear-all-btn:active:not(:disabled), .confirm-btn:active:not(:disabled), .cancel-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.confirm-btn:focus-visible, .cancel-btn:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
 }
 
 .clear-all-btn {
