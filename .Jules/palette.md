@@ -117,3 +117,7 @@
 ## 2026-05-15 - Standardized Tactile Feedback and Non-Shifting Hover States
 **Learning:** Standardizing click feedback using `:active { transform: scale(0.98); }` across all interactive elements (buttons, list items, navigation links) creates a much more tactile and responsive feel. Additionally, using a colored left border (initially transparent) for hover highlights instead of changing padding prevents jarring text shifts, maintaining visual stability during interaction.
 **Action:** Always apply the standard scale-down transform for active states and prefer border-based highlights over padding changes for list item hover states.
+
+## 2026-05-16 - Unified Spatial-Textual Coordinate and Selection Pattern
+**Learning:** In applications with both spatial (map) and textual (list) views, ensuring parity in coordinate display (e.g., matching the map's (row, col) text with the sidebar's labels) and selection styling (e.g., using the same red #c0392b highlight for both) drastically reduces cognitive load. Users can intuitively correlate entities between different modalities without mental translation.
+**Action:** Always unify coordinate formatting and interactive styling (colors, offsets) between map and sidebar components to strengthen the mental model of a single, synchronized state.

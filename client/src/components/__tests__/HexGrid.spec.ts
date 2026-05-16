@@ -263,9 +263,10 @@ describe('HexGrid.vue Movement Planning', () => {
       // This requires finding text for a specific hex, similar to findHexPolygonByAxial
       const hexElements = wrapper.vm.hexes as Hex[];
       const emptyHexQ = 1, emptyHexR = 0; // Axial for offset (1,0)
+      const emptyHexRow = 0, emptyHexCol = 1; // Grid for offset (1,0)
       const emptyHexIndex = hexElements.findIndex(hex => hex.q === emptyHexQ && hex.r === emptyHexR);
       if (emptyHexIndex !== -1 && texts[emptyHexIndex]) {
-         expect(texts[emptyHexIndex].text()).toBe(`${emptyHexQ},${emptyHexR}`);
+         expect(texts[emptyHexIndex].text()).toBe(`${emptyHexRow},${emptyHexCol}`);
       } else {
         throw new Error(`Could not find text for empty hex ${emptyHexQ},${emptyHexR} to verify no actor text.`);
       }
