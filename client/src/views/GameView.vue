@@ -425,6 +425,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   background: #bbdefb;
 }
 
+.player-item:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 .player-item:focus-visible {
   outline: 2px solid hsla(160, 100%, 37%, 1);
   outline-offset: 2px;
@@ -498,6 +502,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 
 .actor-item:hover, .actor-item.is-hovered {
   background: #ffe0b2;
+}
+
+.actor-item:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .actor-item:focus-visible {
@@ -582,6 +590,11 @@ button:hover {
 .back-link:hover {
   color: hsla(160, 100%, 37%, 0.8);
   text-decoration: underline;
+  background-color: hsla(160, 100%, 37%, 0.1);
+}
+
+.back-link:active {
+  transform: scale(0.98);
 }
 
 .back-link:focus-visible {
@@ -617,8 +630,12 @@ button:hover {
 }
 
 .copy-btn:hover {
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: hsla(160, 100%, 37%, 0.1);
   color: hsla(160, 100%, 37%, 1);
+}
+
+.copy-btn:active {
+  transform: scale(0.98);
 }
 
 .copy-btn:focus-visible {
@@ -662,6 +679,10 @@ button:hover {
 
 .refresh-btn:hover:not(:disabled) {
   background-color: hsla(160, 100%, 37%, 0.1);
+}
+
+.refresh-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .refresh-btn:disabled {

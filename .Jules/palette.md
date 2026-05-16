@@ -113,3 +113,7 @@
 ## 2026-05-14 - In-place Confirmation for Destructive Batch Actions
 **Learning:** For batch-destructive actions like "Clear All", an in-place confirmation flow (replacing the button with Confirm/Cancel options) provides a safe safeguard without the jarring interruption of a browser `window.confirm()`. Focus management (shifting focus to the "Confirm" button) is essential for keyboard accessibility in this pattern.
 **Action:** Implement in-place confirmation for batch actions and use `nextTick` to ensure the new interactive element receives focus immediately.
+
+## 2026-05-15 - Standardized Tactile Feedback and Non-Shifting Hover States
+**Learning:** Standardizing click feedback using `:active { transform: scale(0.98); }` across all interactive elements (buttons, list items, navigation links) creates a much more tactile and responsive feel. Additionally, using a colored left border (initially transparent) for hover highlights instead of changing padding prevents jarring text shifts, maintaining visual stability during interaction.
+**Action:** Always apply the standard scale-down transform for active states and prefer border-based highlights over padding changes for list item hover states.
