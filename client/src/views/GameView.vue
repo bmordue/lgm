@@ -308,10 +308,12 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           :planned-moves="plannedMoves"
           :is-submitting="isSubmitting"
           :hovered-move="hoveredMove"
+          :selected-actor-id="selectedActorId"
           @remove-move="handleRemoveMove"
           @clear-all="handleClearAll"
           @submit-orders="handleSubmitOrders"
           @hover-move="handleHoverMove"
+          @deselect-actor="selectedActorId = null"
         />
 
         <div class="legend">
@@ -347,7 +349,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         </div>
         <div v-else class="loading-state" role="status" aria-live="polite">Loading world data...</div>
         
-        <h3>Actors ({{ game.world?.actors?.length || 0 }})</h3>
+        <h3>
+          Actors ({{ game.world?.actors?.length || 0 }})
+          <span v-if="selectedActorId" class="hint-text">(Esc to deselect)</span>
+        </h3>
         <div class="actors-list">
           <button
             type="button"
@@ -515,7 +520,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 }
 
 .actor-item.is-selected {
-  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline: 2px solid #c0392b;
   outline-offset: -2px;
 }
 
@@ -558,6 +563,13 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 h3 {
   color: #333;
   margin: 15px 0 10px 0;
+}
+
+.hint-text {
+  font-size: 0.7em;
+  font-weight: normal;
+  color: #666;
+  margin-left: 8px;
 }
 
 /* General button styling was here, OrderSubmission now has its own button styles.

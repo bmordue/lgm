@@ -1,8 +1,12 @@
 <template>
   <div class="order-submission">
     <h3>Planned Moves ({{ plannedMoves.length }})</h3>
-    <div v-if="!plannedMoves || plannedMoves.length === 0">
-      <p>No moves planned yet. Click an actor on the map or in the list, then an empty hex to plan a move.</p>
+    <div v-if="!plannedMoves || plannedMoves.length === 0" class="empty-state">
+      <p v-if="selectedActorId">
+        Actor {{ selectedActorId }} selected. Click an empty hex on the map to plan a move.
+        <button type="button" @click="$emit('deselect-actor')" class="cancel-selection-btn">Cancel selection</button>
+      </p>
+      <p v-else>No moves planned yet. Select a unit from the map or list to begin planning moves.</p>
     </div>
     <TransitionGroup v-else name="list" tag="ul" class="planned-moves-list">
       <li
@@ -73,6 +77,7 @@
       class="submit-orders-btn"
       :aria-busy="isSubmitting"
       aria-live="polite"
+      :title="(!plannedMoves || plannedMoves.length === 0) ? 'Plan at least one move to submit orders' : ''"
     >
       <svg
         v-if="isSubmitting"
@@ -110,10 +115,14 @@ const props = defineProps({
     type: Object as PropType<PlannedMove | null>,
     default: null,
   },
+  selectedActorId: {
+    type: Number as PropType<number | null>,
+    default: null,
+  },
 });
 
 // Emits
-const emit = defineEmits(['remove-move', 'submit-orders', 'clear-all', 'hover-move']);
+const emit = defineEmits(['remove-move', 'submit-orders', 'clear-all', 'hover-move', 'deselect-actor']);
 
 const isConfirmingClear = ref(false);
 const confirmButtonRef = ref<HTMLButtonElement | null>(null);
@@ -181,6 +190,23 @@ const handleSubmitOrders = () => {
 
 .order-submission p {
   color: #555;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+
+.cancel-selection-btn {
+  background: none;
+  border: none;
+  color: hsla(160, 100%, 37%, 1);
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+.cancel-selection-btn:hover {
+  color: hsla(160, 100%, 37%, 0.8);
 }
 
 .planned-moves-list {
