@@ -197,17 +197,16 @@ export default defineComponent({
     };
 
     const getHexText = (hex: Hex): string => {
-      // Display Q,R coordinates. Could also show actor info if one is present.
+      const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex);
+      // Display Row,Col coordinates. Could also show actor info if one is present.
       const actorOnHex = props.actors.find(actor => {
-        // Actor positions are {x,y} which are grid row,col. Convert to hex for comparison or compare grid positions.
-        // Assuming actor.pos.x is row (r_offset) and actor.pos.y is col (q_offset)
-        const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex); // { col: q_offset, row: r_offset }
+        // Actor positions are {x,y} which are grid row,col.
         return actor.pos.x === hexGridPos.row && actor.pos.y === hexGridPos.col;
       });
       if (actorOnHex) {
         return `A:${actorOnHex.id}`; // Show "A" for Actor
       }
-      return `${hex.q},${hex.r}`;
+      return `${hexGridPos.row},${hexGridPos.col}`;
     };
 
     const getHexFontSize = (): number => layout.size.x / 3.8;
@@ -270,7 +269,7 @@ export default defineComponent({
     const getAriaLabel = (hex: Hex): string => {
         const terrainType = getTerrainTypeForHex(hex);
         const hexGridPos = OffsetCoord.roffsetFromCube(offsetType, hex);
-        let label = `Hex at ${hexGridPos.col}, ${hexGridPos.row}`;
+        let label = `Hex at ${hexGridPos.row}, ${hexGridPos.col}`;
 
         if (terrainType === Terrain.BLOCKED) label += ", Blocked";
         else if (terrainType === Terrain.UNEXPLORED) label += ", Unexplored";
