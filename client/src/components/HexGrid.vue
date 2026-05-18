@@ -376,6 +376,7 @@ g:focus-visible .hex-polygon {
 .hex-polygon.selected {
     stroke: #c0392b; /* A strong red for selection stroke */
     stroke-width: 2.5; /* Clearly thicker stroke */
+    fill: rgba(192, 57, 43, 0.1); /* Subtle red fill to make selected unit more prominent */
 }
 
 .hex-polygon.selected-actor {
