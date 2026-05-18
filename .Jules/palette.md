@@ -79,7 +79,7 @@
 **Action:** Always include item counts in headings for primary lists and use explicit textual indicators for active states to supplement visual cues.
 
 ## 2026-05-06 - Standardized Manual Refresh and Async State Management
-**Learning:** Manual refresh buttons should follow a consistent visual pattern (inline spinning SVG, brand-aligned styling) and always manage their loading state within a `try...finally` block. This ensures the UI remains interactive and accurate even if the network request fails, preventing "stuck" loading indicators.
+**Learning:** Manual refresh buttons should follow a common visual pattern (inline spinning SVG, brand-aligned styling) and always manage their loading state within a `try...finally` block. This ensures the UI remains interactive and accurate even if the network request fails, preventing "stuck" loading indicators.
 **Action:** Always wrap async state toggles in `try...finally` and reuse the established `.refresh-btn` and `.spinning` CSS patterns for consistency.
 
 ## 2026-05-08 - Standardized Async Feedback Pattern
@@ -103,7 +103,7 @@
 **Action:** Always pair clipboard actions with a brief success state (e.g., 2 seconds) that updates the button's icon/label and provides a visible feedback message.
 
 ## 2026-05-08 - Defensive Rendering for Async Data
-**Learning:** Guarding template sections that rely on async data with `v-if` prevent "flash of undefined content" (FOUC) where placeholders like "Game #undefined" are briefly visible. Setting a `min-height` on the container helps stabilize the layout during transitions.
+**Learning:** Guarding template sections that rely on async data with `v-if` prevents "flash of undefined content" (FOUC) where placeholders like "Game #undefined" are briefly visible. Setting a `min-height` on the container helps stabilize the layout during transitions.
 **Action:** Use explicit null/undefined checks for primary data IDs before rendering headers or metadata sections, and use CSS to preserve layout space.
 
 ## 2026-05-15 - Global Authentication Synchronization Pattern
@@ -117,3 +117,11 @@
 ## 2026-05-15 - Standardized Tactile Feedback and Non-Shifting Hover States
 **Learning:** Standardizing click feedback using `:active { transform: scale(0.98); }` across all interactive elements (buttons, list items, navigation links) creates a much more tactile and responsive feel. Additionally, using a colored left border (initially transparent) for hover highlights instead of changing padding prevents jarring text shifts, maintaining visual stability during interaction.
 **Action:** Always apply the standard scale-down transform for active states and prefer border-based highlights over padding changes for list item hover states.
+
+## 2026-05-18 - Context-Aware Instructional Guidance
+**Learning:** Replacing static instructions with context-aware guidance that updates based on user selection state significantly lowers the barrier to entry for complex interactive tasks. Providing a clear "Cancel" action alongside the guidance empowers users to reset their state without searching for hidden shortcuts.
+**Action:** For multi-step interactive flows (like unit move planning), always provide dynamic instructions and an explicit "Cancel" button for the current active state to improve discoverability and control.
+
+## 2026-05-18 - Discoverability of Global Shortcuts
+**Learning:** Even if a keyboard shortcut (like 'Escape' for deselection) is standard, providing a subtle visual hint (e.g., '(Esc to deselect)') significantly improves its discoverability for new or non-power users.
+**Action:** Always supplement global keyboard shortcuts with subtle textual hints in the relevant UI context (e.g., next to the item heading) to bridge the gap between mouse and keyboard interaction.

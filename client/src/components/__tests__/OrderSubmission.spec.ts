@@ -22,8 +22,22 @@ describe('OrderSubmission.vue', () => {
       wrapper = mountComponent({ plannedMoves: [] });
     });
 
-    it('displays "No moves planned yet" message when plannedMoves is empty', () => {
-      expect(wrapper.text()).toContain('No moves planned yet.');
+    it('displays guidance message when plannedMoves is empty and no actor is selected', () => {
+      expect(wrapper.text()).toContain('Select your unit on the map or in the list to start planning.');
+    });
+
+    it('displays actor-specific guidance when an actor is selected', async () => {
+      await wrapper.setProps({ selectedActorId: 101 });
+      expect(wrapper.text()).toContain('Actor 101 selected.');
+      expect(wrapper.text()).toContain('Click an empty hex on the map to plan a move.');
+      expect(wrapper.find('button.cancel-selection-btn').exists()).toBe(true);
+    });
+
+    it('emits "cancel-selection" when "Cancel selection" button is clicked', async () => {
+      await wrapper.setProps({ selectedActorId: 101 });
+      const cancelBtn = wrapper.find('button.cancel-selection-btn');
+      await cancelBtn.trigger('click');
+      expect(wrapper.emitted('cancel-selection')).toBeTruthy();
     });
 
     it('does not render the list of moves when plannedMoves is empty', () => {
@@ -59,8 +73,8 @@ describe('OrderSubmission.vue', () => {
       wrapper = mountComponent({ plannedMoves: sampleMoves });
     });
 
-    it('does not display "No moves planned yet" message', () => {
-      expect(wrapper.text()).not.toContain('No moves planned yet.');
+    it('does not display guidance message', () => {
+      expect(wrapper.text()).not.toContain('Select your unit on the map or in the list to start planning.');
     });
 
     it('renders the list of moves', () => {

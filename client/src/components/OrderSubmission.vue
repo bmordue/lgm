@@ -1,10 +1,20 @@
 <template>
   <div class="order-submission">
     <h3>Planned Moves ({{ plannedMoves.length }})</h3>
-    <div v-if="!plannedMoves || plannedMoves.length === 0">
-      <p>No moves planned yet. Click an actor on the map or in the list, then an empty hex to plan a move.</p>
+    <div class="guidance-container">
+      <Transition name="fade" mode="out-in">
+        <p v-if="selectedActorId === null" key="no-selection">
+          {{ plannedMoves.length === 0 ? 'Select your unit on the map or in the list to start planning.' : 'Select another unit to plan more moves.' }}
+        </p>
+        <div v-else key="has-selection" class="selection-guidance">
+          <p>Actor <strong>{{ selectedActorId }}</strong> selected. Click an empty hex on the map to plan a move.</p>
+          <button type="button" @click="$emit('cancel-selection')" class="cancel-selection-btn">
+            Cancel selection
+          </button>
+        </div>
+      </Transition>
     </div>
-    <TransitionGroup v-else name="list" tag="ul" class="planned-moves-list">
+    <TransitionGroup v-if="plannedMoves.length > 0" name="list" tag="ul" class="planned-moves-list">
       <li
         v-for="move in plannedMoves"
         :key="`${move.actorId}-${move.startPos.x}-${move.startPos.y}-${move.endPos.x}-${move.endPos.y}`"
@@ -102,6 +112,10 @@ const props = defineProps({
     type: Array as PropType<PlannedMove[]>,
     required: true,
   },
+  selectedActorId: {
+    type: Number as PropType<number | null>,
+    default: null,
+  },
   isSubmitting: {
     type: Boolean,
     default: false,
@@ -113,7 +127,7 @@ const props = defineProps({
 });
 
 // Emits
-const emit = defineEmits(['remove-move', 'submit-orders', 'clear-all', 'hover-move']);
+const emit = defineEmits(['remove-move', 'submit-orders', 'clear-all', 'hover-move', 'cancel-selection']);
 
 const isConfirmingClear = ref(false);
 const confirmButtonRef = ref<HTMLButtonElement | null>(null);
@@ -181,6 +195,42 @@ const handleSubmitOrders = () => {
 
 .order-submission p {
   color: #555;
+  margin: 5px 0;
+}
+
+.guidance-container {
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+}
+
+.selection-guidance {
+  width: 100%;
+}
+
+.cancel-selection-btn {
+  background-color: hsla(160, 100%, 37%, 0.1);
+  color: hsla(160, 100%, 37%, 1);
+  border: 1px solid hsla(160, 100%, 37%, 1);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  cursor: pointer;
+  margin-top: 5px;
+  transition: all 0.2s ease;
+}
+
+.cancel-selection-btn:hover {
+  background-color: hsla(160, 100%, 37%, 0.2);
+}
+
+.cancel-selection-btn:active {
+  transform: scale(0.98);
+}
+
+.cancel-selection-btn:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
 }
 
 .planned-moves-list {
