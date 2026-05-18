@@ -125,3 +125,6 @@
 ## 2026-05-18 - Discoverability of Global Shortcuts
 **Learning:** Even if a keyboard shortcut (like 'Escape' for deselection) is standard, providing a subtle visual hint (e.g., '(Esc to deselect)') significantly improves its discoverability for new or non-power users.
 **Action:** Always supplement global keyboard shortcuts with subtle textual hints in the relevant UI context (e.g., next to the item heading) to bridge the gap between mouse and keyboard interaction.
+## 2026-05-16 - Unified Spatial-Textual Coordinate and Selection Pattern
+**Learning:** In applications with both spatial (map) and textual (list) views, ensuring parity in coordinate display (e.g., matching the map's (row, col) text with the sidebar's labels) and selection styling (e.g., using the same red #c0392b highlight for both) drastically reduces cognitive load. Users can intuitively correlate entities between different modalities without mental translation.
+**Action:** Always unify coordinate formatting and interactive styling (colors, offsets) between map and sidebar components to strengthen the mental model of a single, synchronized state.
