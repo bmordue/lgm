@@ -33,7 +33,7 @@ Every exported function (`create`, `read`, `readAll`, `replace`, `update`, `remo
 
 **Positive.** `Models.ts` is well-oriented: `Game`, `World`, `Actor`, `TurnOrders`, `TurnResult` are plain TypeScript interfaces - transparent, serialisable records with no methods.
 
-**Dual representation of actors in `World`.** `World` carries both `actorIds: Array<number>` and `actors?: Array<Actor>` (line 44). The same information expressed two ways. `actorIds` is the stable identity; `actors` is a materialised cache. Callers must know which is populated and when. The API response type should be a distinct projection rather than an optional overlay on the storage type.
+**Dual representation of actors in `World`.** `World` carries both `actorIds: Array<number>` and `actors?: Array<Actor>` (lines 42-43). The same information expressed two ways. `actorIds` is the stable identity; `actors` is a materialised cache. Callers must know which is populated and when. The API response type should be a distinct projection rather than an optional overlay on the storage type.
 
 **`any` casts in `DatabaseStore`** - every `create` and `replace` branch casts `obj as any` (e.g. `const gameData = obj as any`, line 163). The generic `<T>` parameter conveys a false sense of type safety; the actual mapping is untyped. Typed mapper functions per entity would make this honest.
 
@@ -85,7 +85,7 @@ The functional core (game rules, damage calculation) and the stateful shell (sto
 - **`postOrdersResponseOf`** (OrderService.ts:216-219): A wrapper that does nothing - `return response` - yet has a name implying transformation. It satisfies a `Promise` wrapper pattern TypeScript resolves automatically. Delete it.
 - **`keys` enum** (DatabaseStore.ts:115-122): Named for its role in the store API, not what it represents. `EntityType` or `StoreEntity` would be more honest.
 - **`filterWorldForPlayer`** (Rules.ts:410): The word 'filter' undersells what this function does - it also populates `actors` from `actorIds`, computes visibility, and ensures the player's own actors are always included. The name obscures the complexity.
-- **`inBox`** (Rules.ts:462): A private geometry predicate that could be expressed as an inline arrow function.
+- **`inBox`** (Rules.ts:462): A private geometry predicate that is defined but not called anywhere. Dead code.
 - **`Store.ts`**: One line: `export * from './DatabaseStore'`. The name implies an abstraction; it is just a re-export alias.
 
 ---
@@ -98,7 +98,7 @@ The functional core (game rules, damage calculation) and the stateful shell (sto
 
 **`postOrdersResponseOf`** (OrderService.ts:216-219) is the identity function. Delete it.
 
-**`extractActorId`** (Rules.ts:261-263) is defined but not called anywhere in the turn processing loop. Dead code.
+**extractActorId** (Rules.ts:261-263) and **isAreaEmpty** (Rules.ts:469-476) are defined but not called. isAreaEmpty is shadowed by a local definition inside setupActors (line 492). Dead code.
 
 **`validateRequestOrders` and `validateOrders` in OrderService.ts** do overlapping work. Both validate actor ownership and order structure. The split is not conceptually clear and the duplication in attack validation (both check `targetId` presence) suggests the boundary was drawn arbitrarily.
 
