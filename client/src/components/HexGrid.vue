@@ -30,7 +30,7 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, computed, ref, type PropType, type CSSProperties } from 'vue'; // Added ref
+import { defineComponent, computed, type PropType, type CSSProperties } from 'vue'; // Added ref
 import { Terrain, type World } from '../../../api/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not.
 import { Hex, Point, Layout, OffsetCoord } from '../../../api/Hex';
 import { useGamesStore, type Actor, type PlannedMove } from '../stores/Games.store'; // Added imports
@@ -214,7 +214,7 @@ export default defineComponent({
     const handleHexClick = (clickedHex: Hex) => {
       const clickedHexGridPos = OffsetCoord.roffsetFromCube(offsetType, clickedHex);
       const actorOnClickedHex = props.actors.find(actor => {
-        return actor.pos.x === clickedHexGridPos.row && actor.pos.y === clickedHexGridPos.col && actor.owner === currentPlayerId.value;
+        return actor.pos.x === clickedHexGridPos.row && actor.pos.y === clickedHexGridPos.col;
       });
 
       if (actorOnClickedHex) {
@@ -230,7 +230,7 @@ export default defineComponent({
 
       if (props.selectedActorId) {
         const selectedActor = props.actors.find(a => a.id === props.selectedActorId);
-        if (selectedActor) {
+        if (selectedActor && selectedActor.owner === currentPlayerId.value) {
           const move: PlannedMove = {
             actorId: selectedActor.id,
             startPos: { x: selectedActor.pos.x, y: selectedActor.pos.y },
@@ -373,11 +373,6 @@ g:focus-visible .hex-polygon {
   outline: none;
 }
 
-.hex-polygon.selected {
-    stroke: #c0392b; /* A strong red for selection stroke */
-    stroke-width: 2.5; /* Clearly thicker stroke */
-    fill: rgba(192, 57, 43, 0.1); /* Subtle red fill to make selected unit more prominent */
-}
 
 .hex-polygon.selected-actor {
   stroke: #2980b9; /* Blue stroke for selected actor */
@@ -399,6 +394,13 @@ g:focus-visible .hex-polygon {
 
 .hex-polygon.actor-has-planned-move {
   stroke-dasharray: 2; /* Dash it to show it has a pending action */
+}
+
+/* Specific selection and hover states take priority */
+.hex-polygon.selected {
+    stroke: #c0392b;
+    stroke-width: 2.5;
+    fill: rgba(192, 57, 43, 0.1);
 }
 
 .hex-polygon.is-hovered-destination {

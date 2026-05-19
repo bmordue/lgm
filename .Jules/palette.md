@@ -121,3 +121,11 @@
 ## 2026-05-16 - Unified Spatial-Textual Coordinate and Selection Pattern
 **Learning:** In applications with both spatial (map) and textual (list) views, ensuring parity in coordinate display (e.g., matching the map's (row, col) text with the sidebar's labels) and selection styling (e.g., using the same red #c0392b highlight for both) drastically reduces cognitive load. Users can intuitively correlate entities between different modalities without mental translation.
 **Action:** Always unify coordinate formatting and interactive styling (colors, offsets) between map and sidebar components to strengthen the mental model of a single, synchronized state.
+
+## 2026-05-18 - Explicit Null Checks for Numeric IDs
+**Learning:** In Vue templates, using `v-if="id"` is dangerous if `id` can be `0`, as it will be treated as falsy. This leads to broken UI states where the first item in a list (often ID 0) doesn't trigger the expected conditional rendering.
+**Action:** Always use explicit null/undefined checks (e.g., `v-if="id !== null"`) when dealing with numeric IDs in conditional logic.
+
+## 2026-05-18 - "Tactical Insight" Inspection Pattern
+**Learning:** In tactical interfaces, users instinctively want to "select" all entities to gather information. Restricting selection only to owned units feels broken and frustrating. Allowing universal selection while clearly labeling non-owned units as "Tactical Insight" provides a satisfying information-gathering experience without confusing the user about their available actions.
+**Action:** Implement universal selection for all entities on a map, but use distinct visual themes (e.g., orange for enemy, green for own) and clear instructional text to differentiate between informative and actionable selections.
