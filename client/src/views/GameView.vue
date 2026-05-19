@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watchEffect, onMounted, onUnmounted } from 'vue'
+import { ref, watchEffect, onMounted, onUnmounted, computed } from 'vue'
 import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue'; // Import OrderSubmission
 import { useGamesStore, type Actor, type PlannedMove, type Order } from '../stores/Games.store' // Import PlannedMove and Order
@@ -29,6 +29,12 @@ const gamesStore = useGamesStore();
 
 watchEffect(async () => {
   game.value = gamesStore.getCurrentGame();
+});
+
+const isSelectedActorOwned = computed(() => {
+  if (selectedActorId.value === null) return true;
+  const actor = game.value.world?.actors?.find((a: Actor) => a.id === selectedActorId.value);
+  return actor ? actor.owner === gamesStore.getCurrentPlayerId() : true;
 });
 
 const handleKeyDown = (event: KeyboardEvent) => {
@@ -309,6 +315,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           :is-submitting="isSubmitting"
           :hovered-move="hoveredMove"
           :selected-actor-id="selectedActorId"
+          :selected-actor-owned="isSelectedActorOwned"
           @remove-move="handleRemoveMove"
           @clear-all="handleClearAll"
           @submit-orders="handleSubmitOrders"
@@ -373,7 +380,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             @mouseleave="hoveredActorId = null"
             @focus="hoveredActorId = actor.id"
             @blur="hoveredActorId = null"
-            @click="actor.owner === gamesStore.getCurrentPlayerId() && selectActor(actor.id)"
+            @click="selectActor(actor.id)"
           >
             {{ actorToString(actor) }}{{ actor.owner === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}{{ plannedMoves.some(m => m.actorId === actor.id) ? ' (Planned)' : '' }}
           </button>

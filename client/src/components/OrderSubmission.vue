@@ -1,14 +1,24 @@
 <template>
   <div class="order-submission">
     <h3>Planned Moves ({{ plannedMoves.length }})</h3>
-    <div v-if="!plannedMoves || plannedMoves.length === 0" class="empty-state">
-      <p v-if="selectedActorId">
-        Actor {{ selectedActorId }} selected. Click an empty hex on the map to plan a move.
-        <button type="button" @click="$emit('deselect-actor')" class="cancel-selection-btn">Cancel selection</button>
+
+    <div v-if="selectedActorId !== null" class="selection-guidance" :class="{ 'is-enemy': !selectedActorOwned }">
+      <p v-if="selectedActorOwned">
+        <strong>Unit Selected:</strong> Actor {{ selectedActorId }} (Yours)
+        <span class="guidance-hint">Click an empty hex on the map to plan a move.</span>
       </p>
-      <p v-else>No moves planned yet. Select a unit from the map or list to begin planning moves.</p>
+      <p v-else>
+        <strong>Tactical Insight:</strong> Actor {{ selectedActorId }} (Enemy)
+        <span class="guidance-hint">Enemy units cannot receive orders.</span>
+      </p>
+      <button type="button" @click="$emit('deselect-actor')" class="cancel-selection-btn" :aria-label="`Cancel selection of Actor ${selectedActorId}`">Cancel selection</button>
     </div>
-    <TransitionGroup v-else name="list" tag="ul" class="planned-moves-list">
+
+    <div v-if="(!plannedMoves || plannedMoves.length === 0) && selectedActorId === null" class="empty-state">
+      <p>No moves planned yet. Select a unit from the map or list to begin planning moves.</p>
+    </div>
+
+    <TransitionGroup v-if="plannedMoves && plannedMoves.length > 0" name="list" tag="ul" class="planned-moves-list">
       <li
         v-for="move in plannedMoves"
         :key="`${move.actorId}-${move.startPos.x}-${move.startPos.y}-${move.endPos.x}-${move.endPos.y}`"
@@ -119,6 +129,10 @@ const props = defineProps({
     type: Number as PropType<number | null>,
     default: null,
   },
+  selectedActorOwned: {
+    type: Boolean,
+    default: true,
+  },
 });
 
 // Emits
@@ -194,24 +208,58 @@ const handleSubmitOrders = () => {
   line-height: 1.4;
 }
 
+.selection-guidance {
+  padding: 10px;
+  background-color: hsla(160, 100%, 37%, 0.1);
+  border-left: 3px solid hsla(160, 100%, 37%, 1);
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.selection-guidance.is-enemy {
+  background-color: #fff3e0;
+  border-left-color: #ff9800;
+}
+
+.selection-guidance p {
+  margin: 0;
+}
+
+.guidance-hint {
+  display: block;
+  font-size: 0.85em;
+  color: #666;
+  margin-top: 4px;
+}
+
 .cancel-selection-btn {
   background: none;
   border: none;
   color: hsla(160, 100%, 37%, 1);
   padding: 0;
-  font: inherit;
+  font-size: 0.85em;
+  font-weight: bold;
   cursor: pointer;
   text-decoration: underline;
-  margin-left: 4px;
+  margin-top: 8px;
+  display: inline-block;
+  transition: color 0.2s;
 }
 
 .cancel-selection-btn:hover {
   color: hsla(160, 100%, 37%, 0.8);
 }
 
+.cancel-selection-btn:focus-visible {
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 .planned-moves-list {
   list-style-type: none;
   padding: 0;
+  margin-bottom: 0;
 }
 
 .planned-move-item {
@@ -350,6 +398,10 @@ const handleSubmitOrders = () => {
 .submit-orders-btn:disabled {
   background-color: #bdc3c7;
   cursor: not-allowed;
+}
+
+.empty-state {
+  margin-bottom: 10px;
 }
 
 /* List Transitions */
