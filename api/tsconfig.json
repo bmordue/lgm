@@ -13,8 +13,6 @@
         "./**/*ts"
     ],
     "exclude": [
-        "service/DatabaseService.ts",
-        "service/DatabaseStore.ts",
-        "test-database.ts"
+        "service/DatabaseService.ts"
     ]
 }
