@@ -330,6 +330,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             <li><span class="swatch terrain-blocked"></span> Blocked</li>
             <li><span class="swatch terrain-unexplored"></span> Unexplored</li>
             <li><span class="swatch is-own"></span> Your Unit</li>
+            <li><span class="swatch is-enemy"></span> Enemy Unit</li>
             <li><span class="swatch is-selected"></span> Selected</li>
             <li><span class="swatch is-planned"></span> Planned Move</li>
           </ul>
@@ -569,6 +570,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 .swatch.terrain-blocked { background: #5D6D7E; }
 .swatch.terrain-unexplored { background: #2C3E50; }
 .swatch.is-own { border: 2px solid hsla(160, 100%, 37%, 1); background: hsla(160, 100%, 37%, 0.1); }
+.swatch.is-enemy { border: 2px solid #ff9800; background: rgba(255, 152, 0, 0.1); }
 .swatch.is-selected { border: 2px solid #c0392b; }
 .swatch.is-planned { background: rgba(230, 126, 34, 0.2); border: 1.5px dashed #d35400; }
 
