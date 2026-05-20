@@ -169,6 +169,8 @@ export default defineComponent({
                 if (props.plannedMoves.some(m => m.actorId === actorOnHex.id)) {
                   classes.push('actor-has-planned-move');
                 }
+            } else {
+                classes.push('is-enemy-actor');
             }
             if (actorOnHex.id === props.selectedActorId) {
                 classes.push('selected');
@@ -390,6 +392,13 @@ g:focus-visible .hex-polygon {
 .hex-polygon.is-own-actor {
   stroke: hsla(160, 100%, 37%, 1);
   stroke-width: 2.5;
+  fill: hsla(160, 100%, 37%, 0.1);
+}
+
+.hex-polygon.is-enemy-actor {
+  stroke: #ff9800;
+  stroke-width: 2.5;
+  fill: rgba(255, 152, 0, 0.1);
 }
 
 .hex-polygon.actor-has-planned-move {
