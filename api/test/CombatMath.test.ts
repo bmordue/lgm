@@ -172,7 +172,8 @@ describe('CombatMath', () => {
                 5,
                 Terrain.EMPTY,
                 Terrain.EMPTY,
-                true
+                true,
+                { hasLineOfSight: true }
             );
             
             const withCover = calculateDamage(
@@ -181,10 +182,11 @@ describe('CombatMath', () => {
                 5,
                 Terrain.EMPTY,
                 Terrain.BLOCKED, // Full cover
-                true
+                true,
+                { hasLineOfSight: true }
             );
             
-            assert.ok(withCover.finalDamage < noCover.finalDamage);
+            assert.ok(withCover.finalDamage < noCover.finalDamage, `Final damage should be reduced by cover: ${withCover.finalDamage} vs ${noCover.finalDamage}`);
             assert.ok(withCover.coverModifier < 1.0);
         });
 
@@ -568,34 +570,34 @@ describe('CombatMath', () => {
     });
 
     describe('applyDamage', () => {
-        it('should reduce actor health', () => {
+        it('should reduce actor health and return new object', () => {
             const target = createTestActor(1, { x: 0, y: 0 }, 1);
             target.health = 100;
             
-            const damage = applyDamage(target, 30);
+            const updatedActor = applyDamage(target, 30);
             
-            assert.strictEqual(target.health, 70);
-            assert.strictEqual(damage, 30);
+            assert.strictEqual(updatedActor.health, 70);
+            assert.notStrictEqual(updatedActor, target);
+            assert.strictEqual(target.health, 100); // Original remains unchanged
         });
 
-        it('should not reduce health below 0', () => {
+        it('should not reduce health below 0 and update state', () => {
             const target = createTestActor(1, { x: 0, y: 0 }, 1);
             target.health = 30;
             
-            const damage = applyDamage(target, 50);
+            const updatedActor = applyDamage(target, 50);
             
-            assert.strictEqual(target.health, 0);
-            assert.strictEqual(damage, 30); // Only 30 actual damage
+            assert.strictEqual(updatedActor.health, 0);
+            assert.strictEqual(updatedActor.state, ActorState.DEAD);
         });
 
         it('should handle undefined health as 100', () => {
             const target = createTestActor(1, { x: 0, y: 0 }, 1);
             target.health = undefined;
             
-            const damage = applyDamage(target, 30);
+            const updatedActor = applyDamage(target, 30);
             
-            assert.strictEqual(target.health, 70);
-            assert.strictEqual(damage, 30);
+            assert.strictEqual(updatedActor.health, 70);
         });
     });
 

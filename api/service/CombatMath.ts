@@ -2,7 +2,7 @@
  * Combat mathematics and damage calculation utilities
  */
 
-import { Actor, Weapon, Terrain, GridPosition } from './Models';
+import { Actor, Weapon, Terrain, GridPosition, ActorState } from './Models';
 import { Hex } from '../Hex';
 import { getCombatConfig, CombatConfig } from '../config/CombatConfig';
 import { getTerrainProperties, TerrainProperties } from '../config/TerrainConfig';
@@ -374,17 +374,18 @@ export function calculateExpectedDamage(
 
 /**
  * Apply damage to target actor
- * Returns the actual damage dealt
+ * Returns a new Actor object with updated health and state
  */
 export function applyDamage(
     target: Actor,
     damage: number
-): number {
-    const currentHealth = target.health || 100;
+): Actor {
+    const currentHealth = target.health ?? 100;
     const newHealth = Math.max(0, currentHealth - damage);
-    const actualDamage = currentHealth - newHealth;
     
-    target.health = newHealth;
-    
-    return actualDamage;
+    return {
+        ...target,
+        health: newHealth,
+        state: newHealth <= 0 ? ActorState.DEAD : target.state
+    };
 }
