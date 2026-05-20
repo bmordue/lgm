@@ -15,13 +15,19 @@ export class PostgresStore implements Store {
     this.client = client;
   }
 
+  private getQuotedTableName(key: keys): string {
+    if (key === keys.turnOrders) return '"turnOrders"';
+    if (key === keys.turnResults) return '"turnResults"';
+    return `"${key}"`;
+  }
+
   async deleteAll(): Promise<void> {
     await this.client.query('DELETE FROM "turnResults";');
     await this.client.query('DELETE FROM "turnOrders";');
-    await this.client.query('DELETE FROM actors;');
-    await this.client.query('DELETE FROM players;');
-    await this.client.query('DELETE FROM games;');
-    await this.client.query('DELETE FROM worlds;');
+    await this.client.query('DELETE FROM "actors";');
+    await this.client.query('DELETE FROM "players";');
+    await this.client.query('DELETE FROM "games";');
+    await this.client.query('DELETE FROM "worlds";');
   }
 
   async create<T>(key: keys, obj: T): Promise<number> {
@@ -33,7 +39,7 @@ export class PostgresStore implements Store {
     switch (key) {
       case keys.games:
         query = `
-          INSERT INTO games ("hostPlayerId", "maxPlayers", "gameState", turn, "worldId", "startedAt")
+          INSERT INTO "games" ("hostPlayerId", "maxPlayers", "gameState", "turn", "worldId", "startedAt")
           VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`;
         values = [
           data.hostPlayerId || null,
@@ -47,7 +53,7 @@ export class PostgresStore implements Store {
 
       case keys.players:
         query = `
-          INSERT INTO players ("gameId", username, "isHost", "sessionId")
+          INSERT INTO "players" ("gameId", "username", "isHost", "sessionId")
           VALUES ($1, $2, $3, $4) RETURNING id`;
         values = [
           data.gameId,
@@ -59,7 +65,7 @@ export class PostgresStore implements Store {
 
       case keys.worlds:
         query = `
-          INSERT INTO worlds ("actorIds", terrain)
+          INSERT INTO "worlds" ("actorIds", "terrain")
           VALUES ($1, $2) RETURNING id`;
         values = [
           JSON.stringify(data.actorIds || []),
@@ -69,7 +75,7 @@ export class PostgresStore implements Store {
 
       case keys.actors:
         query = `
-          INSERT INTO actors (pos, state, owner, health, weapon)
+          INSERT INTO "actors" ("pos", "state", "owner", "health", "weapon")
           VALUES ($1, $2, $3, $4, $5) RETURNING id`;
         values = [
           JSON.stringify(data.pos),
@@ -82,7 +88,7 @@ export class PostgresStore implements Store {
 
       case keys.turnOrders:
         query = `
-          INSERT INTO "turnOrders" ("gameId", turn, "playerId", orders)
+          INSERT INTO "turnOrders" ("gameId", "turn", "playerId", "orders")
           VALUES ($1, $2, $3, $4) RETURNING id`;
         values = [
           data.gameId,
@@ -94,7 +100,7 @@ export class PostgresStore implements Store {
 
       case keys.turnResults:
         query = `
-          INSERT INTO "turnResults" ("gameId", turn, "playerId", world)
+          INSERT INTO "turnResults" ("gameId", "turn", "playerId", "world")
           VALUES ($1, $2, $3, $4) RETURNING id`;
         values = [
           data.gameId,
@@ -114,12 +120,8 @@ export class PostgresStore implements Store {
 
   async read<T>(key: keys, id: number): Promise<T> {
     store_debug("PostgresStore.read");
-    let query = '';
-    let tableName = key;
-    if (key === keys.turnOrders) tableName = '"turnOrders"' as keys;
-    if (key === keys.turnResults) tableName = '"turnResults"' as keys;
-
-    query = `SELECT * FROM ${tableName} WHERE id = $1`;
+    const tableName = this.getQuotedTableName(key);
+    const query = `SELECT * FROM ${tableName} WHERE id = $1`;
     const result = await this.client.query(query, [id]);
 
     if (!result || result.rows.length === 0) {
@@ -131,10 +133,7 @@ export class PostgresStore implements Store {
 
   async readAll<T>(key: keys, filterFunc: (item: T) => boolean): Promise<Array<T>> {
     store_debug("PostgresStore.readAll");
-    let tableName = key;
-    if (key === keys.turnOrders) tableName = '"turnOrders"' as keys;
-    if (key === keys.turnResults) tableName = '"turnResults"' as keys;
-
+    const tableName = this.getQuotedTableName(key);
     const query = `SELECT * FROM ${tableName}`;
     const result = await this.client.query(query);
     return (result.rows as T[]).filter(filterFunc);
@@ -149,9 +148,9 @@ export class PostgresStore implements Store {
     switch (key) {
       case keys.games:
         query = `
-          UPDATE games
-          SET "hostPlayerId" = $1, "maxPlayers" = $2, "gameState" = $3, turn = $4, "worldId" = $5, "startedAt" = $6
-          WHERE id = $7
+          UPDATE "games"
+          SET "hostPlayerId" = $1, "maxPlayers" = $2, "gameState" = $3, "turn" = $4, "worldId" = $5, "startedAt" = $6
+          WHERE "id" = $7
           RETURNING *`;
         values = [
           data.hostPlayerId || null,
@@ -165,9 +164,9 @@ export class PostgresStore implements Store {
         break;
       case keys.players:
         query = `
-          UPDATE players
-          SET "gameId" = $1, username = $2, "isHost" = $3, "sessionId" = $4
-          WHERE id = $5
+          UPDATE "players"
+          SET "gameId" = $1, "username" = $2, "isHost" = $3, "sessionId" = $4
+          WHERE "id" = $5
           RETURNING *`;
         values = [
           data.gameId,
@@ -179,9 +178,9 @@ export class PostgresStore implements Store {
         break;
       case keys.worlds:
         query = `
-          UPDATE worlds
-          SET "actorIds" = $1, terrain = $2
-          WHERE id = $3
+          UPDATE "worlds"
+          SET "actorIds" = $1, "terrain" = $2
+          WHERE "id" = $3
           RETURNING *`;
         values = [
           JSON.stringify(data.actorIds || []),
@@ -191,9 +190,9 @@ export class PostgresStore implements Store {
         break;
       case keys.actors:
         query = `
-          UPDATE actors
-          SET pos = $1, state = $2, owner = $3, health = $4, weapon = $5
-          WHERE id = $6
+          UPDATE "actors"
+          SET "pos" = $1, "state" = $2, "owner" = $3, "health" = $4, "weapon" = $5
+          WHERE "id" = $6
           RETURNING *`;
         values = [
           JSON.stringify(data.pos),
@@ -207,8 +206,8 @@ export class PostgresStore implements Store {
       case keys.turnOrders:
         query = `
           UPDATE "turnOrders"
-          SET "gameId" = $1, turn = $2, "playerId" = $3, orders = $4
-          WHERE id = $5
+          SET "gameId" = $1, "turn" = $2, "playerId" = $3, "orders" = $4
+          WHERE "id" = $5
           RETURNING *`;
         values = [
           data.gameId,
@@ -221,8 +220,8 @@ export class PostgresStore implements Store {
       case keys.turnResults:
         query = `
           UPDATE "turnResults"
-          SET "gameId" = $1, turn = $2, "playerId" = $3, world = $4
-          WHERE id = $5
+          SET "gameId" = $1, "turn" = $2, "playerId" = $3, "world" = $4
+          WHERE "id" = $5
           RETURNING *`;
         values = [
           data.gameId,
@@ -245,10 +244,7 @@ export class PostgresStore implements Store {
 
   async update<T>(key: keys, id: number, diffObj: T): Promise<T> {
     store_debug("PostgresStore.update");
-
-    let tableName = key;
-    if (key === keys.turnOrders) tableName = '"turnOrders"' as keys;
-    if (key === keys.turnResults) tableName = '"turnResults"' as keys;
+    const tableName = this.getQuotedTableName(key);
 
     // First, check if the record exists
     const checkQuery = `SELECT id FROM ${tableName} WHERE id = $1`;
@@ -264,7 +260,6 @@ export class PostgresStore implements Store {
 
     for (const field in obj) {
       if (obj.hasOwnProperty(field)) {
-        // Wrap field name in double quotes for camelCase preservation
         const dbField = `"${field}"`;
 
         if (['actorIds', 'terrain', 'pos', 'weapon', 'orders', 'world'].includes(field)) {
@@ -289,10 +284,7 @@ export class PostgresStore implements Store {
 
   async remove<T>(key: keys, id: number): Promise<boolean> {
     store_debug("PostgresStore.remove");
-    let tableName = key;
-    if (key === keys.turnOrders) tableName = '"turnOrders"' as keys;
-    if (key === keys.turnResults) tableName = '"turnResults"' as keys;
-
+    const tableName = this.getQuotedTableName(key);
     const query = `DELETE FROM ${tableName} WHERE id = $1 RETURNING id`;
     const result = await this.client.query(query, [id]);
     if (!result || result.rows.length === 0) {
