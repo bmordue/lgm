@@ -13,13 +13,10 @@ import { Hex } from '../Hex';
 import { getConfig } from '../config/GameConfig';
 import { getDefaultWeapon, getWeaponDamage } from '../config/WeaponsConfig';
 import * as RangeValidation from './RangeValidation';
-import { calculateDamage } from './CombatMath';
+import { calculateDamage, applyDamage } from './CombatMath';
 
 const config = getConfig();
 export const TIMESTEP_MAX = config.timestepMax;
-
-// Store the original world state that processGameTurn loads.
-let currentTurnWorldTerrain: Terrain[][] | undefined;
 
 function findOrdersForTurn(gameId: number, turn: number) {
     logger.debug("rules.ordersForTurn");
@@ -85,16 +82,13 @@ export function applyDirection(oldPos: GridPosition, direction: Direction): Grid
     return newPos;
 }
 
-export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, world: World, timestep: number, allActorsInWorld: Actor[]): Promise<Actor> {
-    const actorIndex = allActorsInWorld.findIndex(a => a.id === actorOrders.actorId);
-    if (actorIndex === -1) {
-        throw new Error(`Actor with ID ${actorOrders.actorId} not found in world`);
+export function applyMovementOrders(actor: Actor, actorOrders: ActorOrders, world: World, timestep: number): Actor {
+    if (actor.id !== actorOrders.actorId) {
+        throw new Error(`Actor ID mismatch: actor.id=${actor.id}, actorOrders.actorId=${actorOrders.actorId}`);
     }
 
     if (actorOrders.orderType !== OrderType.MOVE || !actorOrders.ordersList || actorOrders.ordersList.length === 0) {
-        // If not a move order, or no directions, or empty directions list, return actor unchanged.
-        // Explicitly checking ordersList.length === 0 as empty array might pass !actorOrders.ordersList if it's just an empty array vs undefined/null.
-        return allActorsInWorld[actorIndex];
+        return actor;
     }
 
     const moveDirections: Array<Direction> = actorOrders.ordersList;
@@ -102,7 +96,11 @@ export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, 
         ? moveDirections[timestep]
         : Direction.NONE;
 
-    const newGridPos = applyDirection(allActorsInWorld[actorIndex].pos, moveDirection as Direction); // Use actor.pos directly
+    if (moveDirection === Direction.NONE) {
+        return actor;
+    }
+
+    const newGridPos = applyDirection(actor.pos, moveDirection);
 
     // check against world.terrain boundaries
     if (newGridPos.x < 0
@@ -111,72 +109,63 @@ export async function applyMovementOrders(actorOrders: ActorOrders, game: Game, 
         || newGridPos.y >= world.terrain[newGridPos.x].length) {
 
         logger.debug(util.format("Actor ID %s attempted to move outside world.terrain to (%s,%s); remained at (%s,%s) instead",
-            allActorsInWorld[actorIndex].id, newGridPos.x, newGridPos.y, allActorsInWorld[actorIndex].pos.x, allActorsInWorld[actorIndex].pos.y));
-        return allActorsInWorld[actorIndex];
+            actor.id, newGridPos.x, newGridPos.y, actor.pos.x, actor.pos.y));
+        return actor;
     }
 
     const newPosTerrain = world.terrain[newGridPos.x][newGridPos.y];
 
-    switch (newPosTerrain) {
-        case Terrain.EMPTY: {
-            // Update the actor directly in the array
-            allActorsInWorld[actorIndex].pos = newGridPos;
-            break;
-        }
-
-        case Terrain.BLOCKED: {
-            logger.debug(util.format("Actor ID %s attempted to move to blocked position at (%s,%s); remained at (%s,%s) instead",
-                allActorsInWorld[actorIndex].id, newGridPos.x, newGridPos.y, allActorsInWorld[actorIndex].pos.x, allActorsInWorld[actorIndex].pos.y));
-            break;
-        }
-        default: {
-            logger.error(util.format("Unrecognised terrain type: %s", newPosTerrain));
-        }
+    if (newPosTerrain === Terrain.EMPTY) {
+        return {
+            ...actor,
+            pos: newGridPos
+        };
+    } else if (newPosTerrain === Terrain.BLOCKED) {
+        logger.debug(util.format("Actor ID %s attempted to move to blocked position at (%s,%s); remained at (%s,%s) instead",
+            actor.id, newGridPos.x, newGridPos.y, actor.pos.x, actor.pos.y));
+        return actor;
+    } else {
+        logger.error(util.format("Unrecognised terrain type: %s", newPosTerrain));
+        return actor;
     }
-
-    return allActorsInWorld[actorIndex];
 }
 
-async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: World, allActorsInWorld: Actor[], timestep: number): Promise<Actor> {
-    const attackerIndex = allActorsInWorld.findIndex(a => a.id === actorOrders.actorId);
-    if (attackerIndex === -1) {
-        throw new Error(`Attacker actor with ID ${actorOrders.actorId} not found in world`);
+async function applyFiringRules(actorOrders: ActorOrders, world: World, allActorsInWorld: Actor[]): Promise<Actor[]> {
+    if (actorOrders.orderType !== OrderType.ATTACK) {
+        return []; // No actors updated by this rule
     }
 
-    if (actorOrders.orderType !== OrderType.ATTACK) {
-        return allActorsInWorld[attackerIndex]; // Not an attack order
+    const attacker = allActorsInWorld.find(a => a.id === actorOrders.actorId);
+    if (!attacker) {
+        logger.warn(`Attacker actor with ID ${actorOrders.actorId} not found in world`);
+        return [];
     }
 
     if (typeof actorOrders.targetId === 'undefined') {
-        logger.debug(`Actor ${allActorsInWorld[attackerIndex].id} has ATTACK order but no targetId.`);
-        return allActorsInWorld[attackerIndex]; // No target specified
+        logger.debug(`Actor ${attacker.id} has ATTACK order but no targetId.`);
+        return [];
     }
-
-    const attacker = allActorsInWorld[attackerIndex];
 
     if (!attacker.weapon) {
         logger.error(`Actor ${attacker.id} has no weapon, cannot execute ATTACK order.`);
-        return attacker;
+        return [];
     }
 
-    const targetIndex = allActorsInWorld.findIndex(a => a.id === actorOrders.targetId);
-
-    if (targetIndex === -1) {
+    const target = allActorsInWorld.find(a => a.id === actorOrders.targetId);
+    if (!target) {
         logger.warn(`ATTACK order: Target actor with ID ${actorOrders.targetId} not found for attacker ${attacker.id}.`);
-        return attacker;
+        return [];
     }
 
-    const target = allActorsInWorld[targetIndex];
-
-    // Use new RangeValidation service for comprehensive validation
+    // Use RangeValidation service for comprehensive validation
     const validation = await RangeValidation.validateAttack(attacker, target, world, allActorsInWorld);
     
     if (!validation.valid) {
         logger.info(`ATTACK order invalid: ${validation.errors.join(', ')}`);
-        return attacker;
+        return [];
     }
 
-    // Validation passed - apply damage using CombatMath for full calculation
+    // Validation passed - calculate damage using CombatMath for full calculation
     const attackerTerrain = world.terrain[attacker.pos.x][attacker.pos.y];
     const targetTerrain = world.terrain[target.pos.x][target.pos.y];
     const damageResult = calculateDamage(
@@ -188,58 +177,37 @@ async function applyFiringRules(actorOrders: ActorOrders, game: Game, world: Wor
         validation.hasLineOfSight
     );
 
-    target.health = (target.health || 100) - damageResult.finalDamage;
+    const updatedTarget = applyDamage(target, damageResult.finalDamage);
     
     logger.info(`Actor ${attacker.id} attacked Actor ${target.id} with ${attacker.weapon.name}. ${damageResult.breakdown}`);
 
-    if (target.health <= 0) {
-        target.health = 0; // Ensure health doesn't go negative
-        target.state = ActorState.DEAD;
+    if (updatedTarget.state === ActorState.DEAD && target.state !== ActorState.DEAD) {
         logger.info(`Actor ${target.id} has been defeated.`);
     }
 
-    return attacker;
+    return [updatedTarget];
 }
 
-// update actors based on turn orders
-export async function applyRulesToActorOrders(game: Game, world: World, allActorOrders: Array<ActorOrders>, allActorsInWorld: Actor[]): Promise<Array<Actor>> {
-    if (!allActorOrders || allActorOrders.length === 0) {
-        logger.warn("applyRulesToActorOrders: did not receive any orders");
-        return []; // Return empty array when no orders
-    }
+/**
+ * Core game turn simulation logic.
+ * Pure function that takes current state and orders and returns updated state.
+ */
+export async function simulateTurn(
+    game: Game,
+    world: World,
+    orders: Array<ActorOrders>,
+    actors: Array<Actor>
+): Promise<{ updatedActors: Array<Actor>, turnResults: Array<TurnResult> }> {
+    // 1. Apply rules to get updated actors
+    const updatedActors = await applyRulesToActorOrders(game, world, orders, actors);
 
-    // iterate over timesteps!
-    for (let ts = 0; ts < TIMESTEP_MAX; ts++) {
-        for (let i = 0; i < allActorOrders.length; i++) {
-            const ao = allActorOrders[i];
-            // applyMovementOrders might also need allActorsInWorld if it checks for collisions with other actors,
-            // or it might just need the terrain from the world object.
-            await applyMovementOrders(ao, game, world, ts, allActorsInWorld); // Pass allActorsInWorld as well
-            await applyFiringRules(ao, game, world, allActorsInWorld, ts);
-        }
-    }
-
-    // Return all actors in the world (modified actors have updated state)
-    // The actors in allActorOrders are references to objects in allActorsInWorld,
-    // so modifications are already applied to allActorsInWorld
-    return allActorsInWorld;
-}
-
-function turnResultsPerPlayer(game: Game, allUpdatedActorsThisTurn: Array<Actor>): Array<TurnResult> {
-    if (!currentTurnWorldTerrain) {
-        logger.error("turnResultsPerPlayer: currentTurnWorldTerrain is not set. Cannot generate player-specific worlds.");
-        // Potentially return empty results or throw, depending on desired error handling
-        return [];
-    }
-    const fullWorldStateForThisTurn: { terrain: number[][], actors: Actor[] } = {
-        // id: game.worldId, // The world itself doesn't change ID, but its content does.
-        actors: allUpdatedActorsThisTurn.map(a => ({ ...a })), // Use all actors after turn resolution
-        terrain: currentTurnWorldTerrain // Use the terrain from the start of processGameTurn
-    };
-
-    return game.players.map((playerId) => {
-        // For each player, filter the full world state to what they can see
-        const visibleWorld = getVisibleWorldForPlayer(fullWorldStateForThisTurn, playerId);
+    // 2. Generate turn results for each player based on updated actors and terrain
+    const turnResults = game.players.map((playerId) => {
+        const fullWorldState = {
+            terrain: world.terrain,
+            actors: updatedActors
+        };
+        const visibleWorld = getVisibleWorldForPlayer(fullWorldState, playerId);
         return {
             gameId: game.id,
             playerId: playerId,
@@ -247,11 +215,59 @@ function turnResultsPerPlayer(game: Game, allUpdatedActorsThisTurn: Array<Actor>
             world: {
                 terrain: visibleWorld.terrain,
                 actorIds: visibleWorld.actorIds,
-                actors: visibleWorld.actors // Populate actors for API response
+                actors: visibleWorld.actors
             }
         };
     });
+
+    return { updatedActors, turnResults };
 }
+
+// update actors based on turn orders
+export async function applyRulesToActorOrders(game: Game, world: World, allActorOrders: Array<ActorOrders>, allActorsInWorld: Actor[]): Promise<Array<Actor>> {
+    if (!allActorOrders || allActorOrders.length === 0) {
+        logger.warn("applyRulesToActorOrders: did not receive any orders");
+        return allActorsInWorld; // Return actors unchanged
+    }
+
+    let currentActors = [...allActorsInWorld];
+
+    // iterate over timesteps!
+    for (let ts = 0; ts < TIMESTEP_MAX; ts++) {
+        let nextActors = [...currentActors];
+
+        for (let i = 0; i < allActorOrders.length; i++) {
+            const ao = allActorOrders[i];
+
+            const actor = nextActors.find(a => a.id === ao.actorId);
+            if (!actor) continue;
+
+            // Apply movement
+            if (ao.orderType === OrderType.MOVE) {
+                const updatedActor = applyMovementOrders(actor, ao, world, ts);
+                if (updatedActor !== actor) {
+                    const idx = nextActors.findIndex(a => a.id === updatedActor.id);
+                    nextActors[idx] = updatedActor;
+                }
+            }
+
+            // Apply firing
+            if (ao.orderType === OrderType.ATTACK) {
+                const updatedActors = await applyFiringRules(ao, world, nextActors);
+                for (const updated of updatedActors) {
+                    const idx = nextActors.findIndex(a => a.id === updated.id);
+                    if (idx !== -1) {
+                        nextActors[idx] = updated;
+                    }
+                }
+            }
+        }
+        currentActors = nextActors;
+    }
+
+    return currentActors;
+}
+
 
 function filterOrdersForGameTurn(o: TurnOrders, gameId: number, turn: number) {
     return o.gameId == gameId && o.turn == turn;
@@ -272,7 +288,7 @@ export function unique(arr: Array<unknown>) {
 }
 
 async function processGameTurn(gameId: number): Promise<TurnStatus> {
-    // load in relevant objects and do some rearranging
+    // 1. Load state
     let game: Game;
     let world: World;
     let gameTurnOrders: Array<TurnOrders>;
@@ -282,9 +298,6 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         world = await store.read<World>(store.keys.worlds, game.worldId);
         allActorsInWorld = await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
 
-        // Store the terrain at the start of the turn for use in turnResultsPerPlayer
-        currentTurnWorldTerrain = world.terrain;
-
         gameTurnOrders = await store.readAll<TurnOrders>(store.keys.turnOrders, (o: TurnOrders) => {
             return filterOrdersForGameTurn(o, gameId, game.turn);
         });
@@ -293,59 +306,38 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
         return Promise.reject(e);
     }
 
-    // No need to map actor IDs to objects anymore since ActorOrders now only uses IDs
-    const actorOrdersLists = gameTurnOrders.map((to: TurnOrders) => {
-        return to.orders;
-    });
-    const flattenedActorOrders: Array<ActorOrders> = flatten(actorOrdersLists);
+    const flattenedActorOrders: Array<ActorOrders> = flatten(gameTurnOrders.map(to => to.orders));
 
-    // apply rules
+    // 2. Simulate turn (pure logic)
     let updatedActors: Array<Actor>;
-    logger.debug("processGameTurn: about to apply rules");
-    try {
-        // Pass allActorsInWorld to applyRulesToActorOrders
-        updatedActors = await applyRulesToActorOrders(game, world, flattenedActorOrders, allActorsInWorld);
-    } catch (e) {
-        logger.error("processGameTurn: exception thrown by applyRulesToActorOrders()");
-        return Promise.reject(e.message);
-    }
-
-    // record results
-    logger.debug("processGameTurn: record results");
     let playerTurnResults: TurnResult[];
+    logger.debug("processGameTurn: about to simulate turn");
     try {
-        playerTurnResults = turnResultsPerPlayer(game, updatedActors);
+        const result = await simulateTurn(game, world, flattenedActorOrders, allActorsInWorld);
+        updatedActors = result.updatedActors;
+        playerTurnResults = result.turnResults;
     } catch (e) {
-        logger.error("processGameTurn: failed to record results");
+        logger.error(`processGameTurn: exception during simulation: ${e.message}`);
         return Promise.reject(e.message);
     }
 
-    logger.debug(util.format("playerTurnResults length: %s", playerTurnResults.length));
+    // 3. Persist results
+    logger.debug("processGameTurn: record results");
     try {
         await Promise.all(playerTurnResults.map((turnResult: TurnResult) => {
             return store.create<TurnResult>(store.keys.turnResults, turnResult);
         }));
-    } catch (e) {
-        logger.error("processGameTurn: failed to store turnResults");
-        return Promise.reject(e.message);
-    }
 
-    // Save updated actors back to the store
-    try {
         await Promise.all(updatedActors.map((actor: Actor) => {
             return store.replace(store.keys.actors, actor.id, actor);
         }));
+
+        await store.update(store.keys.games, game.id, { turn: game.turn + 1 });
     } catch (e) {
-        logger.error("processGameTurn: failed to update actors");
+        logger.error(`processGameTurn: failed to persist results: ${e.message}`);
         return Promise.reject(e.message);
     }
 
-    try {
-        await store.update(store.keys.games, game.id, { turn: game.turn + 1 });
-    } catch (e) {
-        logger.error("processGameTurn: failed to update game object");
-        return Promise.reject(e.message);
-    }
     logger.debug("rules.processGameTurn: resolve with turn status");
     return Promise.resolve(<TurnStatus>{ complete: true, msg: "Turn complete", turn: game.turn + 1 });
 }
