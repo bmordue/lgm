@@ -66,6 +66,18 @@
 **Learning:** Inconsistent focus indicators (or their absence via `outline: none`) significantly hinder keyboard accessibility. Implementing a standardized, brand-aligned `:focus-visible` pattern (using `hsla(160, 100%, 37%, 1)`) across all interactive elements (buttons, list items, SVG groups) ensures a clear, predictable, and professional experience for keyboard users without cluttering the UI for mouse users.
 **Action:** Always replace `outline: none` on interactive elements with a `:focus-visible` brand-green outline and appropriate offset (e.g., 2px-4px) to ensure multi-modal accessibility.
 
+## 2026-05-21 - Synchronized Spatial-Textual Selection and Scrolling
+**Learning:** When a user selects an entity in a spatial view (like a map), automatically scrolling the corresponding item into view in a textual list (sidebar) drastically reduces cognitive load. It ensures that the detailed information the user is seeking remains visible even in long lists.
+**Action:** Implement a watcher on selection state that calls `scrollIntoView` with `behavior: 'smooth'` and `block: 'nearest'` on the target list item.
+
+## 2026-05-21 - Visual Affordance for Active Selection
+**Learning:** A static highlight for a selected item can sometimes get lost in complex tactical maps. A subtle pulsing animation on the selection border adds a layer of "delight" while making the active entity immediately identifiable.
+**Action:** Use a `@keyframes` animation to subtly cycle the `stroke-width` of the selected entity's highlight.
+
+## 2026-05-21 - Accessible Map Legend Pattern
+**Learning:** In Map Legends where color swatches are purely decorative and accompanied by text labels, marking the swatches with `aria-hidden="true"` reduces screen reader noise. Sighted users get the visual link, while screen reader users get the clear, uncluttered information.
+**Action:** Always apply `aria-hidden="true"` to decorative color/icon swatches in legends and lists.
+
 ## 2026-04-29 - Logic-Aware UI Feedback Positioning
 **Learning:** Success messages and other high-priority feedback should be positioned at the top of the viewport or container to remain visible regardless of list length or scroll position. Shared layout styling between success and error messages improves visual consistency and code maintainability.
 **Action:** Always place global feedback messages at the top of the page/container and use a shared CSS base for all status alerts.
