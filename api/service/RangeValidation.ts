@@ -84,12 +84,12 @@ export function canAttackTarget(
 /**
  * Comprehensive attack validation including range, LOS, and other checks
  */
-export async function validateAttack(
+export function validateAttack(
     attacker: Actor,
     target: Actor,
     world: World,
     allActors?: Actor[] // Optional: pass all actors for proper LOS blocking check
-): Promise<AttackValidation> {
+): AttackValidation {
     const errors: string[] = [];
 
     // Check attacker has weapon
@@ -154,11 +154,11 @@ export async function validateAttack(
  * Get all actors that this actor can attack
  * Filters by range, line of sight, and ownership
  */
-export async function getValidTargets(
+export function getValidTargets(
     actor: Actor,
     allActors: Actor[],
     terrain: Terrain[][]
-): Promise<Actor[]> {
+): Actor[] {
     if (!actor.weapon) {
         return [];
     }

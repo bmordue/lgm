@@ -130,7 +130,7 @@ export function applyMovementOrders(actor: Actor, actorOrders: ActorOrders, worl
     }
 }
 
-async function applyFiringRules(actorOrders: ActorOrders, world: World, allActorsInWorld: Actor[]): Promise<Actor[]> {
+function applyFiringRules(actorOrders: ActorOrders, world: World, allActorsInWorld: Actor[]): Actor[] {
     if (actorOrders.orderType !== OrderType.ATTACK) {
         return []; // No actors updated by this rule
     }
@@ -158,7 +158,7 @@ async function applyFiringRules(actorOrders: ActorOrders, world: World, allActor
     }
 
     // Use RangeValidation service for comprehensive validation
-    const validation = await RangeValidation.validateAttack(attacker, target, world, allActorsInWorld);
+    const validation = RangeValidation.validateAttack(attacker, target, world, allActorsInWorld);
     
     if (!validation.valid) {
         logger.info(`ATTACK order invalid: ${validation.errors.join(', ')}`);
@@ -192,14 +192,14 @@ async function applyFiringRules(actorOrders: ActorOrders, world: World, allActor
  * Core game turn simulation logic.
  * Pure function that takes current state and orders and returns updated state.
  */
-export async function simulateTurn(
+export function simulateTurn(
     game: Game,
     world: World,
     orders: Array<ActorOrders>,
     actors: Array<Actor>
-): Promise<{ updatedActors: Array<Actor>, turnResults: Array<TurnResult> }> {
+): { updatedActors: Array<Actor>, turnResults: Array<TurnResult> } {
     // 1. Apply rules to get updated actors
-    const updatedActors = await applyRulesToActorOrders(game, world, orders, actors);
+    const updatedActors = applyRulesToActorOrders(game, world, orders, actors);
 
     // 2. Generate turn results for each player based on updated actors and terrain
     const turnResults = game.players.map((playerId) => {
@@ -224,7 +224,7 @@ export async function simulateTurn(
 }
 
 // update actors based on turn orders
-export async function applyRulesToActorOrders(game: Game, world: World, allActorOrders: Array<ActorOrders>, allActorsInWorld: Actor[]): Promise<Array<Actor>> {
+export function applyRulesToActorOrders(game: Game, world: World, allActorOrders: Array<ActorOrders>, allActorsInWorld: Actor[]): Array<Actor> {
     if (!allActorOrders || allActorOrders.length === 0) {
         logger.warn("applyRulesToActorOrders: did not receive any orders");
         return allActorsInWorld; // Return actors unchanged
@@ -253,7 +253,7 @@ export async function applyRulesToActorOrders(game: Game, world: World, allActor
 
             // Apply firing
             if (ao.orderType === OrderType.ATTACK) {
-                const updatedActors = await applyFiringRules(ao, world, nextActors);
+                const updatedActors = applyFiringRules(ao, world, nextActors);
                 for (const updated of updatedActors) {
                     const idx = nextActors.findIndex(a => a.id === updated.id);
                     if (idx !== -1) {
@@ -313,7 +313,7 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
     let playerTurnResults: TurnResult[];
     logger.debug("processGameTurn: about to simulate turn");
     try {
-        const result = await simulateTurn(game, world, flattenedActorOrders, allActorsInWorld);
+        const result = simulateTurn(game, world, flattenedActorOrders, allActorsInWorld);
         updatedActors = result.updatedActors;
         playerTurnResults = result.turnResults;
     } catch (e) {
