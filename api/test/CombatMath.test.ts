@@ -163,31 +163,43 @@ describe('CombatMath', () => {
 
     describe('calculateDamage - Cover and Armor', () => {
         it('should reduce damage for defender in cover', () => {
-            const attacker = createTestActor(1, { x: 0, y: 0 }, 1, 'RIFLE');
-            const defender = createTestActor(2, { x: 5, y: 0 }, 2);
-            
-            const noCover = calculateDamage(
-                attacker,
-                defender,
-                5,
-                Terrain.EMPTY,
-                Terrain.EMPTY,
-                true,
-                { hasLineOfSight: true }
-            );
-            
-            const withCover = calculateDamage(
-                attacker,
-                defender,
-                5,
-                Terrain.EMPTY,
-                Terrain.BLOCKED, // Full cover
-                true,
-                { hasLineOfSight: true }
-            );
-            
-            assert.ok(withCover.finalDamage < noCover.finalDamage, `Final damage should be reduced by cover: ${withCover.finalDamage} vs ${noCover.finalDamage}`);
-            assert.ok(withCover.coverModifier < 1.0);
+            const original = getCombatConfig();
+            overrideCombatConfig({
+                damageVariance: { min: 1.0, max: 1.0 },
+                criticalHitChance: 0
+            });
+            try {
+                const attacker = createTestActor(1, { x: 0, y: 0 }, 1, 'RIFLE');
+                const defender = createTestActor(2, { x: 5, y: 0 }, 2);
+                
+                const noCover = calculateDamage(
+                    attacker,
+                    defender,
+                    5,
+                    Terrain.EMPTY,
+                    Terrain.EMPTY,
+                    true,
+                    { hasLineOfSight: true }
+                );
+                
+                const withCover = calculateDamage(
+                    attacker,
+                    defender,
+                    5,
+                    Terrain.EMPTY,
+                    Terrain.BLOCKED, // Full cover
+                    true,
+                    { hasLineOfSight: true }
+                );
+                
+                assert.ok(withCover.finalDamage < noCover.finalDamage, `Final damage should be reduced by cover: ${withCover.finalDamage} vs ${noCover.finalDamage}`);
+                assert.ok(withCover.coverModifier < 1.0);
+            } finally {
+                overrideCombatConfig({
+                    damageVariance: original.damageVariance,
+                    criticalHitChance: original.criticalHitChance
+                });
+            }
         });
 
         it('should reduce damage based on armor', () => {
