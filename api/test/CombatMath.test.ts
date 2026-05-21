@@ -195,10 +195,7 @@ describe('CombatMath', () => {
                 assert.ok(withCover.finalDamage < noCover.finalDamage, `Final damage should be reduced by cover: ${withCover.finalDamage} vs ${noCover.finalDamage}`);
                 assert.ok(withCover.coverModifier < 1.0);
             } finally {
-                overrideCombatConfig({
-                    damageVariance: original.damageVariance,
-                    criticalHitChance: original.criticalHitChance
-                });
+                overrideCombatConfig(original);
             }
         });
 
