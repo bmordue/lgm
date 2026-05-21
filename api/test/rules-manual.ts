@@ -158,7 +158,7 @@ describe("rules tests", function () {
 
     describe("applyRulesToActorOrders", () => {
 
-        it("handles a single updated actor with empty orders list", async () => {
+        it("handles a single updated actor with empty orders list", () => {
             const allActorOrders: Array<ActorOrders> = [];
             const singleActorOrders: ActorOrders = {
                 actorId: theActor.id,
@@ -166,11 +166,11 @@ describe("rules tests", function () {
                 orderType: OrderType.MOVE
             };
             allActorOrders.push(singleActorOrders);
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
+            const updatedActors = rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
             assert.equal(updatedActors.length, actorsList.length); // Returns all actors when orders are provided
         });
 
-        it("handles a single updated actor with partial orders list", async () => {
+        it("handles a single updated actor with partial orders list", () => {
             const allActorOrders: Array<ActorOrders> = [];
             const singleActorOrders: ActorOrders = {
                 actorId: theActor.id,
@@ -178,11 +178,11 @@ describe("rules tests", function () {
                 orderType: OrderType.MOVE
             };
             allActorOrders.push(singleActorOrders);
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
+            const updatedActors = rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
             assert.equal(updatedActors.length, actorsList.length); // Returns all actors when orders are provided
         });
 
-        it("handles a single updated actor with complete orders list", async () => {
+        it("handles a single updated actor with complete orders list", () => {
             const allActorOrders: Array<ActorOrders> = [];
             const singleActorOrders: ActorOrders = {
                 actorId: theActor.id,
@@ -190,22 +190,22 @@ describe("rules tests", function () {
                 orderType: OrderType.MOVE
             };
             allActorOrders.push(singleActorOrders);
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
+            const updatedActors = rules.applyRulesToActorOrders(game, world, allActorOrders, actorsList);
             assert.equal(updatedActors.length, actorsList.length); // Returns all actors when orders are provided
         });
 
-        it("handles several updated actors", async () => {
+        it("handles several updated actors", () => {
             const actorTwo: Actor = { id: 1, pos: { x: 0, y: 1 }, state: ActorState.ALIVE, owner: 0 };
             const allActorOrders: Array<ActorOrders> = [
                 { actorId: actorTwo.id, ordersList: [Direction.UP_RIGHT, Direction.DOWN_LEFT], orderType: OrderType.MOVE },
                 { actorId: theActor.id, ordersList: [Direction.UP_RIGHT, Direction.UP_LEFT], orderType: OrderType.MOVE }
             ];
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, allActorOrders, [actorTwo, theActor]);
+            const updatedActors = rules.applyRulesToActorOrders(game, world, allActorOrders, [actorTwo, theActor]);
             assert.equal(updatedActors.length, 2); // Returns all provided actors
         });
 
-        it("handles empty orders list", async () => {
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, [], actorsList);
+        it("handles empty orders list", () => {
+            const updatedActors = rules.applyRulesToActorOrders(game, world, [], actorsList);
             assert.equal(updatedActors.length, actorsList.length); // Empty orders means original actors returned
         });
     });
@@ -367,73 +367,73 @@ describe("rules tests", function () {
         });
 
         // --- Test Cases for Weapon Range ---
-        it("should allow attack if target is within range and LoS is clear", async () => {
+        it("should allow attack if target is within range and LoS is clear", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 }; // Distance 1, range 5
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            const updatedActors = rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
             const updatedTarget = updatedActors.find(a => a.id === target.id)!;
 
             assert.ok(updatedTarget.health < 100, "Target health should be reduced after attack within range");
         });
 
-        it("should not apply damage if target is out of range", async () => {
+        it("should not apply damage if target is out of range", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 6 }; // Distance 6, range 5
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if out of range");
         });
 
-        it("should allow attack at exact maximum range", async () => {
+        it("should allow attack at exact maximum range", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 5 }; // Distance 5, range 5
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            const updatedActors = rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
             const updatedTarget = updatedActors.find(a => a.id === target.id)!;
 
             assert.ok(updatedTarget.health < 100, "Target health should be reduced after attack at maximum range");
         });
 
         // --- Test Cases for Damage Calculation ---
-        it("should reduce target health by weapon damage", async () => {
+        it("should reduce target health by weapon damage", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 };
             attacker.weapon.damage = 25;
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            const updatedActors = rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
             const updatedTarget = updatedActors.find(a => a.id === target.id)!;
 
             assert.strictEqual(updatedTarget.health, 0, "Target health should be 0 after 10 timesteps (25 damage * 10 steps)");
         });
 
-        it("should set target state to DEAD if health drops to 0", async () => {
+        it("should set target state to DEAD if health drops to 0", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 };
             target.health = 5;
             attacker.weapon.damage = 10;
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            const updatedActors = rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
             const updatedTarget = updatedActors.find(a => a.id === target.id)!;
 
             assert.strictEqual(updatedTarget.health, 0, "Target health should be 0");
             assert.strictEqual(updatedTarget.state, ActorState.DEAD, "Target state should be DEAD");
         });
 
-        it("should set target health to 0 if damage exceeds current health (not negative)", async () => {
+        it("should set target health to 0 if damage exceeds current health (not negative)", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 };
             target.health = 5;
             attacker.weapon.damage = 100;
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            const updatedActors = rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
             const updatedTarget = updatedActors.find(a => a.id === target.id)!;
 
             assert.strictEqual(updatedTarget.health, 0, "Target health should be capped at 0");
@@ -441,18 +441,18 @@ describe("rules tests", function () {
         });
 
         // --- Test Cases for Line of Sight (LoS) ---
-        it("should not apply damage if LoS is blocked by terrain", async () => {
+        it("should not apply damage if LoS is blocked by terrain", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 2 }; // Distance 2, range 5
             world.terrain[0][1] = Terrain.BLOCKED; // Block LoS between (0,0) and (0,2)
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if LoS blocked by terrain");
         });
 
-        it("should not apply damage if LoS is blocked by another actor", async () => {
+        it("should not apply damage if LoS is blocked by another actor", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 2 }; // Distance 2, range 5
             const blocker: Actor = {
@@ -467,12 +467,12 @@ describe("rules tests", function () {
             world.actorIds.push(blocker.id);
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target, blocker]);
+            rules.applyRulesToActorOrders(game, world, [order], [attacker, target, blocker]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if LoS blocked by another actor");
         });
 
-        it("should allow attack if LoS is clear (even with other actors not in path)", async () => {
+        it("should allow attack if LoS is clear (even with other actors not in path)", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 };
             const otherActor: Actor = { id: 3, pos: {x: 5, y: 5}, state: ActorState.ALIVE, owner: 3, health: 100, weapon: defaultWeapon};
@@ -480,70 +480,70 @@ describe("rules tests", function () {
             world.actorIds.push(otherActor.id);
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            const updatedActors = await rules.applyRulesToActorOrders(game, world, [order], [attacker, target, otherActor]);
+            const updatedActors = rules.applyRulesToActorOrders(game, world, [order], [attacker, target, otherActor]);
             const updatedTarget = updatedActors.find(a => a.id === target.id)!;
 
             assert.ok(updatedTarget.health < 100, "Target health should be reduced with clear LoS after attack");
         });
 
         // --- Test Cases for Attack Orders ---
-        it("should not do anything if orderType is not ATTACK", async () => {
+        it("should not do anything if orderType is not ATTACK", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 };
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.MOVE, ordersList: [Direction.NONE], targetId: target.id }; // MOVE order
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change for MOVE order");
         });
 
-        it("should not attack if targetId is missing", async () => {
+        it("should not attack if targetId is missing", () => {
             attacker.pos = { x: 0, y: 0 };
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK }; // No targetId
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if targetId is missing");
         });
 
-        it("should not attack if attacker has no weapon", async () => {
+        it("should not attack if attacker has no weapon", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 };
             (attacker as any).weapon = undefined; // Remove weapon
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 100, "Target health should not change if attacker has no weapon");
         });
 
-        it("should not attack if target actor does not exist", async () => {
+        it("should not attack if target actor does not exist", () => {
             attacker.pos = { x: 0, y: 0 };
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: 999 }; // Non-existent target
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
             // No direct assertion on health of a non-existent target, but code should not crash.
             // We can check attacker's state or if any error was logged if needed, but for now, just graceful execution.
             assert.ok(true, "Execution should complete without error for non-existent target.");
         });
 
-        it("should not attack if target is already DEAD", async () => {
+        it("should not attack if target is already DEAD", () => {
             attacker.pos = { x: 0, y: 0 };
             target.pos = { x: 0, y: 1 };
             target.state = ActorState.DEAD;
             target.health = 0;
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: target.id };
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(target.health, 0, "Dead target's health should remain 0");
         });
 
-        it("should not allow actor to attack itself", async () => {
+        it("should not allow actor to attack itself", () => {
             attacker.pos = { x: 0, y: 0 };
             const order: ActorOrders = { actorId: attacker.id, orderType: OrderType.ATTACK, targetId: attacker.id }; // Target self
 
-            await rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
+            rules.applyRulesToActorOrders(game, world, [order], [attacker, target]);
 
             assert.strictEqual(attacker.health, 100, "Attacker health should not change when targeting self");
         });

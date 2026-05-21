@@ -220,7 +220,7 @@ describe('RangeValidation', () => {
             };
         }
 
-        it('should validate successful attack', async () => {
+        it('should validate successful attack', () => {
             const attacker: Actor = {
                 id: 1,
                 pos: { x: 0, y: 0 },
@@ -239,7 +239,7 @@ describe('RangeValidation', () => {
             };
 
             const world = createEmptyWorld();
-            const validation = await validateAttack(attacker, target, world);
+            const validation = validateAttack(attacker, target, world);
 
             assert.ok(validation.valid);
             assert.ok(validation.inRange);
@@ -247,7 +247,7 @@ describe('RangeValidation', () => {
             assert.strictEqual(validation.errors.length, 0);
         });
 
-        it('should fail validation for no weapon', async () => {
+        it('should fail validation for no weapon', () => {
             const attacker: Actor = {
                 id: 1,
                 pos: { x: 0, y: 0 },
@@ -265,13 +265,13 @@ describe('RangeValidation', () => {
                 health: 100
             };
 
-            const validation = await validateAttack(attacker, target, createEmptyWorld());
+            const validation = validateAttack(attacker, target, createEmptyWorld());
 
             assert.ok(!validation.valid);
             assert.ok(validation.errors.some(e => e.includes('no weapon')));
         });
 
-        it('should fail validation for out of range', async () => {
+        it('should fail validation for out of range', () => {
             const attacker: Actor = {
                 id: 1,
                 pos: { x: 0, y: 0 },
@@ -289,14 +289,14 @@ describe('RangeValidation', () => {
                 health: 100
             };
 
-            const validation = await validateAttack(attacker, target, createEmptyWorld());
+            const validation = validateAttack(attacker, target, createEmptyWorld());
 
             assert.ok(!validation.valid);
             assert.ok(!validation.inRange);
             assert.ok(validation.errors.some(e => e.includes('too far')));
         });
 
-        it('should fail validation for attacking own unit', async () => {
+        it('should fail validation for attacking own unit', () => {
             const attacker: Actor = {
                 id: 1,
                 pos: { x: 0, y: 0 },
@@ -314,13 +314,13 @@ describe('RangeValidation', () => {
                 health: 100
             };
 
-            const validation = await validateAttack(attacker, target, createEmptyWorld());
+            const validation = validateAttack(attacker, target, createEmptyWorld());
 
             assert.ok(!validation.valid);
             assert.ok(validation.errors.some(e => e.includes('own units')));
         });
 
-        it('should fail validation for attacking dead target', async () => {
+        it('should fail validation for attacking dead target', () => {
             const attacker: Actor = {
                 id: 1,
                 pos: { x: 0, y: 0 },
@@ -338,13 +338,13 @@ describe('RangeValidation', () => {
                 health: 0
             };
 
-            const validation = await validateAttack(attacker, target, createEmptyWorld());
+            const validation = validateAttack(attacker, target, createEmptyWorld());
 
             assert.ok(!validation.valid);
             assert.ok(validation.errors.some(e => e.includes('dead')));
         });
 
-        it('should fail validation for self-attack', async () => {
+        it('should fail validation for self-attack', () => {
             const attacker: Actor = {
                 id: 1,
                 pos: { x: 0, y: 0 },
@@ -354,7 +354,7 @@ describe('RangeValidation', () => {
                 weapon: { ...WEAPON_TYPES.RIFLE }
             };
 
-            const validation = await validateAttack(attacker, attacker, createEmptyWorld());
+            const validation = validateAttack(attacker, attacker, createEmptyWorld());
 
             assert.ok(!validation.valid);
             assert.ok(validation.errors.some(e => e.includes('self')));
@@ -414,7 +414,7 @@ describe('RangeValidation', () => {
         it('should return only valid targets', async () => {
             const { attacker, allActors, terrain } = await createTestScenario();
             
-            const targets = await getValidTargets(attacker, allActors, terrain);
+            const targets = getValidTargets(attacker, allActors, terrain);
             
             assert.strictEqual(targets.length, 1);
             assert.strictEqual(targets[0].id, 2); // Only inRangeEnemy
@@ -423,7 +423,7 @@ describe('RangeValidation', () => {
         it('should exclude dead actors', async () => {
             const { attacker, allActors, terrain } = await createTestScenario();
             
-            const targets = await getValidTargets(attacker, allActors, terrain);
+            const targets = getValidTargets(attacker, allActors, terrain);
             
             assert.ok(!targets.some(t => t.state === ActorState.DEAD));
         });
@@ -431,7 +431,7 @@ describe('RangeValidation', () => {
         it('should exclude friendly units', async () => {
             const { attacker, allActors, terrain } = await createTestScenario();
             
-            const targets = await getValidTargets(attacker, allActors, terrain);
+            const targets = getValidTargets(attacker, allActors, terrain);
             
             assert.ok(!targets.some(t => t.owner === attacker.owner));
         });
@@ -440,7 +440,7 @@ describe('RangeValidation', () => {
             const { attacker, allActors, terrain } = await createTestScenario();
             attacker.weapon = undefined;
             
-            const targets = await getValidTargets(attacker, allActors, terrain);
+            const targets = getValidTargets(attacker, allActors, terrain);
             
             assert.strictEqual(targets.length, 0);
         });
