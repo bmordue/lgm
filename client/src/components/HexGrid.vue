@@ -406,10 +406,17 @@ g:focus-visible .hex-polygon {
 }
 
 /* Specific selection and hover states take priority */
+@keyframes pulse-selection {
+  0% { stroke-width: 2.5; }
+  50% { stroke-width: 4; }
+  100% { stroke-width: 2.5; }
+}
+
 .hex-polygon.selected {
     stroke: #c0392b;
     stroke-width: 2.5;
     fill: rgba(192, 57, 43, 0.1);
+    animation: pulse-selection 2s infinite ease-in-out;
 }
 
 .hex-polygon.is-hovered-destination {

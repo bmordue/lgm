@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watchEffect, onMounted, onUnmounted, computed } from 'vue'
+import { ref, watchEffect, watch, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue'; // Import OrderSubmission
 import { useGamesStore, type Actor, type PlannedMove, type Order } from '../stores/Games.store' // Import PlannedMove and Order
@@ -29,6 +29,16 @@ const gamesStore = useGamesStore();
 
 watchEffect(async () => {
   game.value = gamesStore.getCurrentGame();
+});
+
+watch(selectedActorId, async (newId) => {
+  if (newId !== null) {
+    await nextTick();
+    const selectedElement = document.querySelector('.actor-item.is-selected');
+    if (selectedElement) {
+      selectedElement.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
 });
 
 const isSelectedActorOwned = computed(() => {
@@ -326,13 +336,13 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         <div class="legend">
           <h4>Map Legend</h4>
           <ul class="legend-list">
-            <li><span class="swatch terrain-empty"></span> Empty</li>
-            <li><span class="swatch terrain-blocked"></span> Blocked</li>
-            <li><span class="swatch terrain-unexplored"></span> Unexplored</li>
-            <li><span class="swatch is-own"></span> Your Unit</li>
-            <li><span class="swatch is-enemy"></span> Enemy Unit</li>
-            <li><span class="swatch is-selected"></span> Selected</li>
-            <li><span class="swatch is-planned"></span> Planned Move</li>
+            <li><span class="swatch terrain-empty" aria-hidden="true"></span> Empty</li>
+            <li><span class="swatch terrain-blocked" aria-hidden="true"></span> Blocked</li>
+            <li><span class="swatch terrain-unexplored" aria-hidden="true"></span> Unexplored</li>
+            <li><span class="swatch is-own" aria-hidden="true"></span> Your Unit</li>
+            <li><span class="swatch is-enemy" aria-hidden="true"></span> Enemy Unit</li>
+            <li><span class="swatch is-selected" aria-hidden="true"></span> Selected</li>
+            <li><span class="swatch is-planned" aria-hidden="true"></span> Planned Move</li>
           </ul>
         </div>
       </div>
@@ -500,6 +510,9 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 .actors-list {
   font-family: monospace;
   font-size: 0.9em;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 
 .actor-item {
