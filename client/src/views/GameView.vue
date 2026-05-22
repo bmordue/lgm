@@ -20,6 +20,11 @@ const plannedMoves = ref<PlannedMove[]>([]); // Reactive state for planned moves
 const hoveredMove = ref<PlannedMove | null>(null); // State for hovered move
 const hoveredActorId = ref<number | null>(null); // New state for hovered actor
 const hoveredPlayerId = ref<number | null>(null); // New state for hovered player
+const hoveredActorOwnerId = computed(() => {
+  if (hoveredActorId.value === null) return null;
+  const actor = game.value.world?.actors?.find((a: Actor) => a.id === hoveredActorId.value);
+  return actor ? actor.owner : null;
+});
 const isSubmitting = ref(false);
 const submissionError = ref('');
 const submissionSuccess = ref('');
@@ -298,7 +303,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             class="player-item"
             :class="{
               'is-self': player.id === gamesStore.getCurrentPlayerId(),
-              'is-hovered': player.id === hoveredPlayerId
+              'is-hovered': player.id === hoveredPlayerId || player.id === hoveredActorOwnerId
             }"
             @mouseenter="hoveredPlayerId = player.id"
             @mouseleave="hoveredPlayerId = null"
@@ -384,7 +389,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             class="actor-item"
             :class="{
               'is-self': actor.owner === gamesStore.getCurrentPlayerId(),
-              'is-hovered': actor.id === hoveredActorId,
+              'is-hovered': actor.id === hoveredActorId || (hoveredPlayerId !== null && actor.owner === hoveredPlayerId),
               'is-selected': actor.id === selectedActorId
             }"
             @mouseenter="hoveredActorId = actor.id"
