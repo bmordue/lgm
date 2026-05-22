@@ -130,12 +130,12 @@ export function applyMovementOrders(actor: Actor, actorOrders: ActorOrders, worl
     }
 }
 
-function applyFiringRules(actorOrders: ActorOrders, world: World, allActorsInWorld: Actor[]): Actor[] {
+function applyFiringRules(actorOrders: ActorOrders, world: World, actorsAtStartOfTimestep: Actor[], currentActorsInTimestep: Actor[]): Actor[] {
     if (actorOrders.orderType !== OrderType.ATTACK) {
         return []; // No actors updated by this rule
     }
 
-    const attacker = allActorsInWorld.find(a => a.id === actorOrders.actorId);
+    const attacker = actorsAtStartOfTimestep.find(a => a.id === actorOrders.actorId);
     if (!attacker) {
         logger.warn(`Attacker actor with ID ${actorOrders.actorId} not found in world`);
         return [];
@@ -151,14 +151,14 @@ function applyFiringRules(actorOrders: ActorOrders, world: World, allActorsInWor
         return [];
     }
 
-    const target = allActorsInWorld.find(a => a.id === actorOrders.targetId);
-    if (!target) {
+    const targetAtStart = actorsAtStartOfTimestep.find(a => a.id === actorOrders.targetId);
+    if (!targetAtStart) {
         logger.warn(`ATTACK order: Target actor with ID ${actorOrders.targetId} not found for attacker ${attacker.id}.`);
         return [];
     }
 
-    // Use RangeValidation service for comprehensive validation
-    const validation = RangeValidation.validateAttack(attacker, target, world, allActorsInWorld);
+    // Use RangeValidation service for comprehensive validation - based on positions at start of timestep
+    const validation = RangeValidation.validateAttack(attacker, targetAtStart, world, actorsAtStartOfTimestep);
     
     if (!validation.valid) {
         logger.info(`ATTACK order invalid: ${validation.errors.join(', ')}`);
@@ -167,22 +167,28 @@ function applyFiringRules(actorOrders: ActorOrders, world: World, allActorsInWor
 
     // Validation passed - calculate damage using CombatMath for full calculation
     const attackerTerrain = world.terrain[attacker.pos.x][attacker.pos.y];
-    const targetTerrain = world.terrain[target.pos.x][target.pos.y];
+    const targetTerrain = world.terrain[targetAtStart.pos.x][targetAtStart.pos.y];
     const damageResult = calculateDamage(
         attacker,
-        target,
+        targetAtStart,
         validation.distance,
         attackerTerrain,
         targetTerrain,
         validation.hasLineOfSight
     );
 
-    const updatedTarget = applyDamage(target, damageResult.finalDamage);
-    
-    logger.info(`Actor ${attacker.id} attacked Actor ${target.id} with ${attacker.weapon.name}. ${damageResult.breakdown}`);
+    // Apply damage to the target as it exists in the current timestep (accumulating damage)
+    const targetInTimestep = currentActorsInTimestep.find(a => a.id === actorOrders.targetId);
+    if (!targetInTimestep) {
+        return [];
+    }
 
-    if (updatedTarget.state === ActorState.DEAD && target.state !== ActorState.DEAD) {
-        logger.info(`Actor ${target.id} has been defeated.`);
+    const updatedTarget = applyDamage(targetInTimestep, damageResult.finalDamage);
+    
+    logger.info(`Actor ${attacker.id} attacked Actor ${targetInTimestep.id} with ${attacker.weapon.name}. ${damageResult.breakdown}`);
+
+    if (updatedTarget.state === ActorState.DEAD && targetInTimestep.state !== ActorState.DEAD) {
+        logger.info(`Actor ${targetInTimestep.id} has been defeated.`);
     }
 
     return [updatedTarget];
@@ -230,30 +236,31 @@ export function applyRulesToActorOrders(game: Game, world: World, allActorOrders
         return allActorsInWorld; // Return actors unchanged
     }
 
-    let currentActors = [...allActorsInWorld];
+    let currentActors = allActorsInWorld.map(a => ({ ...a }));
 
     // iterate over timesteps!
     for (let ts = 0; ts < TIMESTEP_MAX; ts++) {
-        let nextActors = [...currentActors];
+        let nextActors = currentActors.map(a => ({ ...a }));
 
         for (let i = 0; i < allActorOrders.length; i++) {
             const ao = allActorOrders[i];
 
-            const actor = nextActors.find(a => a.id === ao.actorId);
-            if (!actor) continue;
-
-            // Apply movement
+            // Apply movement - based on position at start of timestep
             if (ao.orderType === OrderType.MOVE) {
-                const updatedActor = applyMovementOrders(actor, ao, world, ts);
-                if (updatedActor !== actor) {
+                const actorAtStart = currentActors.find(a => a.id === ao.actorId);
+                if (!actorAtStart) continue;
+
+                const updatedActor = applyMovementOrders(actorAtStart, ao, world, ts);
+                if (updatedActor !== actorAtStart) {
                     const idx = nextActors.findIndex(a => a.id === updatedActor.id);
-                    nextActors[idx] = updatedActor;
+                    // Update only position to preserve other changes (like damage) in this TS
+                    nextActors[idx].pos = { ...updatedActor.pos };
                 }
             }
 
-            // Apply firing
+            // Apply firing - based on positions at start of timestep
             if (ao.orderType === OrderType.ATTACK) {
-                const updatedActors = applyFiringRules(ao, world, nextActors);
+                const updatedActors = applyFiringRules(ao, world, currentActors, nextActors);
                 for (const updated of updatedActors) {
                     const idx = nextActors.findIndex(a => a.id === updated.id);
                     if (idx !== -1) {
