@@ -104,7 +104,7 @@ async function join(game: GameSummary) {
     </div>
   </Transition>
   <div class="header-container">
-    <h1>Games</h1>
+    <h1>Games ({{ gameList?.length || 0 }})</h1>
     <button
       type="button"
       class="refresh-btn"
@@ -130,7 +130,10 @@ async function join(game: GameSummary) {
       </svg>
     </button>
   </div>
-  <div v-if="isLoading" class="no-games" role="status">
+  <div v-if="isLoading" class="no-games" role="status" aria-live="polite">
+    <svg class="btn-spinner spinning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+    </svg>
     Loading games...
   </div>
   <div class="game-list" :aria-busy="isLoading" aria-live="polite">
