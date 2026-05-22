@@ -254,7 +254,12 @@ export function applyRulesToActorOrders(game: Game, world: World, allActorOrders
                 if (updatedActor !== actorAtStart) {
                     const idx = nextActors.findIndex(a => a.id === updatedActor.id);
                     // Update only position to preserve other changes (like damage) in this TS
-                    nextActors[idx].pos = { ...updatedActor.pos };
+                    if (idx !== -1) {
+                        nextActors[idx] = {
+                            ...nextActors[idx],
+                            pos: { ...updatedActor.pos }
+                        };
+                    }
                 }
             }
 

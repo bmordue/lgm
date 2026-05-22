@@ -48,6 +48,10 @@ describe("Order independence in applyRulesToActorOrders", () => {
 
         const updatedTarget = result.find(a => a.id === 2)!;
 
+        // Target should have moved to (3,0), confirming the MOVE order was applied.
+        assert.strictEqual(updatedTarget.pos.x, 3, "Target should have moved to x=3");
+        assert.strictEqual(updatedTarget.pos.y, 0, "Target should have remained at y=0");
+
         // Target should have been hit because it was in range at start of TS
         assert.ok(updatedTarget.health < 100, "Target should have been hit because it was in range at start of TS");
     });
