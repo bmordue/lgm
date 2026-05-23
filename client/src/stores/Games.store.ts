@@ -110,7 +110,9 @@ export interface World {
 export interface Actor {
   id: number,
   owner: number,
-  pos: Coord
+  pos: Coord,
+  health?: number,
+  maxHealth?: number
 }
 
 export interface Coord {

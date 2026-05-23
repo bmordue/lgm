@@ -26,6 +26,15 @@
         dy=".3em"
         :font-size="getHexFontSize()">{{ getHexText(hex) }}</text>
     </g>
+      <g v-for="(hex, index) in hexes" :key="'hp-' + index" style="pointer-events: none">
+        <rect v-if="getActorForHex(hex)"
+          :x="getHPBarPos(hex).x" :y="getHPBarPos(hex).y"
+          :width="40" :height="4" fill="rgba(0,0,0,0.3)" rx="1" />
+        <rect v-if="getActorForHex(hex)"
+          :x="getHPBarPos(hex).x" :y="getHPBarPos(hex).y"
+          :width="getHPWidth(getActorForHex(hex)!)" :height="4"
+          :fill="getHPColor(getActorForHex(hex)!)" rx="1" />
+      </g>
   </svg>
 </template>
 
@@ -282,7 +291,9 @@ export default defineComponent({
 
         if (actorOnHex) {
             const isOwn = actorOnHex.owner === currentPlayerId.value;
-            label += `, Actor ${actorOnHex.id} (${isOwn ? 'Yours' : 'Enemy'})`;
+            const health = actorOnHex.health ?? 100;
+            const maxHealth = actorOnHex.maxHealth ?? 100;
+            label += `, Actor ${actorOnHex.id} (${isOwn ? 'Yours' : 'Enemy'}), Health ${health} of ${maxHealth}`;
             if (props.plannedMoves.some(m => m.actorId === actorOnHex.id)) {
                 label += ", Planned move";
             }
@@ -327,6 +338,19 @@ export default defineComponent({
     };
 
     const currentPlayerId = computed(() => gamesStore.getCurrentPlayerId());
+    const getActorForHex = (hex: Hex) => {
+      const p = OffsetCoord.roffsetFromCube(offsetType, hex);
+      return props.actors.find(a => a.pos.x === p.row && a.pos.y === p.col);
+    };
+    const getHPBarPos = (hex: Hex) => {
+      const c = layout.hexToPixel(hex);
+      return new Point(c.x - 20, c.y + 25);
+    };
+    const getHPWidth = (a: Actor) => (40 * Math.min(100, (a.health ?? 100) / (a.maxHealth ?? 100) * 100)) / 100;
+    const getHPColor = (a: Actor) => {
+      const p = ((a.health ?? 100) / (a.maxHealth ?? 100)) * 100;
+      return p > 60 ? '#2ecc71' : p > 25 ? '#f39c12' : '#e74c3c';
+    };
 
     return {
       hexes,
@@ -344,6 +368,10 @@ export default defineComponent({
       handleKeyDown,
       handleMouseEnter,
       handleMouseLeave,
+      getActorForHex,
+      getHPBarPos,
+      getHPWidth,
+      getHPColor,
     };
   },
 });
