@@ -8,6 +8,7 @@ coverage/
 .nyc_output/
 .env
 reports/
+**/test-results/
 
 # stryker temp files
 .stryker-tmp
