@@ -18,7 +18,7 @@ onMounted(() => {
     </RouterLink>
 
     <div class="wrapper">
-      <nav>
+      <nav aria-label="Main navigation">
         <span v-if="userStore.user" class="user-greeting">Welcome, {{ userStore.user.name }}!</span>
         <RouterLink v-if="userStore.isAuthenticated" to="/dashboard">Dashboard</RouterLink>
         <RouterLink v-if="!userStore.isAuthenticated" to="/login">Login</RouterLink>

@@ -1,5 +1,5 @@
 <template>
-  <svg :viewBox="viewBox" @click="handleSvgClick"> <!-- Changed click handler to svg specific -->
+  <svg :viewBox="viewBox" @click="handleSvgClick" role="application" aria-label="Tactical world map"> <!-- Changed click handler to svg specific -->
     <g
       v-for="(hex, index) in hexes"
       :key="index"

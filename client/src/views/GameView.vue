@@ -15,6 +15,10 @@ interface GameData {
 
 const game = ref<GameData>({})
 const isRefreshing = ref(false);
+const lastRefreshed = ref('');
+const updateRefreshedTime = () => {
+  lastRefreshed.value = new Date().toLocaleTimeString();
+};
 const selectedActorId = ref<number | null>(null);
 const plannedMoves = ref<PlannedMove[]>([]); // Reactive state for planned moves
 const hoveredMove = ref<PlannedMove | null>(null); // State for hovered move
@@ -60,6 +64,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown);
+  updateRefreshedTime();
 });
 
 onUnmounted(() => {
@@ -86,6 +91,7 @@ const refreshGame = async () => {
     try {
       await gamesStore.fetchGameDetails(game.value.gameId);
       game.value = gamesStore.getCurrentGame();
+      updateRefreshedTime();
     } finally {
       isRefreshing.value = false;
     }
@@ -228,6 +234,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         // A more robust solution would be an explicit fetch action.
         await gamesStore.fetchGameDetails(currentGameId); // Hypothetical method
         game.value = gamesStore.getCurrentGame();
+        updateRefreshedTime();
       }
     } else {
       const errorData = await response.json().catch(() => ({ message: "Failed to parse error response" }));
@@ -290,6 +297,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     <div class="game-info" v-if="game.gameId !== undefined && game.gameId !== null">
       <span class="turn-info">Turn {{ game.turn }}</span>
       <span class="player-info">Players: {{ game.playerCount }}/{{ game.maxPlayers }}</span>
+      <span class="last-refreshed" v-if="lastRefreshed">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clock-icon" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        Last refreshed: {{ lastRefreshed }}
+      </span>
     </div>
     
     <div class="game-content">
@@ -418,6 +429,19 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 .turn-info, .player-info {
   font-weight: bold;
   color: #333;
+}
+
+.last-refreshed {
+  font-size: 0.85em;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.clock-icon {
+  color: hsla(160, 100%, 37%, 1);
 }
 
 .game-content {
