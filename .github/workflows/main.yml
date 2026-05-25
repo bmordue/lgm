@@ -8,6 +8,11 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  checks: write
+  pull-requests: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,7 +38,7 @@ jobs:
 
       - name: Run tests
         working-directory: ./api
-        run: npm test
+        run: npm run test:ci
 
       - name: Start server for E2E tests
         working-directory: ./api
@@ -55,7 +60,7 @@ jobs:
 
       - name: Run E2E tests
         working-directory: ./api
-        run: npm run test:e2e
+        run: npm run test:e2e:ci
 
       - name: Stop server after E2E tests
         if: always()
@@ -63,6 +68,22 @@ jobs:
           if [ -f /tmp/server.pid ]; then
             kill $(cat /tmp/server.pid) || true
           fi
+
+      - name: Install client dependencies
+        working-directory: ./client
+        run: npm install
+
+      - name: Run client unit tests
+        working-directory: ./client
+        run: npm run test:unit -- --run --reporter=default --reporter=junit --outputFile.junit=test-results/client-results.xml
+
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Test Results
+          path: '**/test-results/*.xml'
+          reporter: java-junit
 
       - name: Run Stryker.js mutation testing
         working-directory: ./api
