@@ -136,8 +136,9 @@ const handleSubmitOrders = async (movesToSubmit: PlannedMove[]) => {
 };
 // --- End Event Handlers ---
 
-function actorToString(actor :Actor) {
-  return `Actor ${actor.id} at (${actor.pos.x}, ${actor.pos.y})`;
+function actorToString(actor: Actor) {
+  const hp = `HP: ${actor.health ?? 100}/${actor.maxHealth ?? 100}`;
+  return `Actor ${actor.id} at (${actor.pos.x}, ${actor.pos.y}) - ${hp}`;
 }
 
 function getPlayerList() {
@@ -341,6 +342,8 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           :hovered-move="hoveredMove"
           :selected-actor-id="selectedActorId"
           :selected-actor-owned="isSelectedActorOwned"
+          :selected-actor-health="game.world?.actors?.find((a: Actor) => a.id === selectedActorId)?.health ?? 100"
+          :selected-actor-max-health="game.world?.actors?.find((a: Actor) => a.id === selectedActorId)?.maxHealth ?? 100"
           @remove-move="handleRemoveMove"
           @clear-all="handleClearAll"
           @submit-orders="handleSubmitOrders"

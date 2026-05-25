@@ -5,10 +5,16 @@
     <div v-if="selectedActorId !== null" class="selection-guidance" :class="{ 'is-enemy': !selectedActorOwned }">
       <p v-if="selectedActorOwned">
         <strong>Unit Selected:</strong> Actor {{ selectedActorId }} (Yours)
+        <span style="display: block; font-size: 0.9em; font-weight: bold; margin-top: 4px">
+          HP: {{ selectedActorHealth }}/{{ selectedActorMaxHealth }}
+        </span>
         <span class="guidance-hint">Click an empty hex on the map to plan a move.</span>
       </p>
       <p v-else>
         <strong>Tactical Insight:</strong> Actor {{ selectedActorId }} (Enemy)
+        <span style="display: block; font-size: 0.9em; font-weight: bold; margin-top: 4px">
+          HP: {{ selectedActorHealth }}/{{ selectedActorMaxHealth }}
+        </span>
         <span class="guidance-hint">Enemy units cannot receive orders.</span>
       </p>
       <button type="button" @click="$emit('deselect-actor')" class="cancel-selection-btn" :aria-label="`Cancel selection of Actor ${selectedActorId}`">Cancel selection</button>
@@ -132,6 +138,14 @@ const props = defineProps({
   selectedActorOwned: {
     type: Boolean,
     default: true,
+  },
+  selectedActorHealth: {
+    type: Number,
+    default: 100,
+  },
+  selectedActorMaxHealth: {
+    type: Number,
+    default: 100,
   },
 });
 
