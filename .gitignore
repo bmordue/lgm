@@ -12,6 +12,10 @@ reports/
 # stryker temp files
 .stryker-tmp
 
+# test results
+api/test-results/
+client/test-results/
+
 # bv (beads viewer) local config and caches
 .bv/
 .direnv/
