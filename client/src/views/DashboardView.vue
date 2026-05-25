@@ -17,6 +17,7 @@ const isLoading = ref(false)
 const successMessage = ref('')
 const errorMessage = ref('')
 const joiningGameId = ref<number | null>(null)
+const lastRefreshed = ref<string | null>(null)
 
 async function fetchGameList() {
   isLoading.value = true;
@@ -24,6 +25,7 @@ async function fetchGameList() {
     const response = await fetch(`${API_URL}/games`);
     const data = await response.json();
     gameList.value = data.games || [];
+    lastRefreshed.value = new Date().toLocaleTimeString();
   } finally {
     isLoading.value = false;
   }
@@ -105,30 +107,36 @@ async function join(game: GameSummary) {
   </Transition>
   <div class="header-container">
     <h1>Games ({{ gameList?.length || 0 }})</h1>
-    <button
-      type="button"
-      class="refresh-btn"
-      @click="fetchGameList"
-      :disabled="isLoading"
-      aria-label="Refresh game list"
-      title="Refresh game list"
-    >
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="20"
-        height="20"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        :class="{ 'spinning': isLoading }"
+    <div class="refresh-container">
+      <span v-if="lastRefreshed" class="last-refreshed">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clock-icon" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        Last Refreshed: {{ lastRefreshed }}
+      </span>
+      <button
+        type="button"
+        class="refresh-btn"
+        @click="fetchGameList"
+        :disabled="isLoading"
+        aria-label="Refresh game list"
+        title="Refresh game list"
       >
-        <path d="M23 4v6h-6"></path>
-        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-      </svg>
-    </button>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          :class="{ 'spinning': isLoading }"
+        >
+          <path d="M23 4v6h-6"></path>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+    </div>
   </div>
   <div v-if="isLoading" class="no-games" role="status" aria-live="polite">
     <svg class="btn-spinner spinning" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -206,6 +214,24 @@ async function join(game: GameSummary) {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+}
+
+.refresh-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.last-refreshed {
+  font-size: 0.85em;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.clock-icon {
+  color: hsla(160, 100%, 37%, 1);
 }
 
 .refresh-btn {

@@ -142,6 +142,10 @@
 **Learning:** In Vue templates, using `v-if="id"` is dangerous if `id` can be `0`, as it will be treated as falsy. This leads to broken UI states where the first item in a list (often ID 0) doesn't trigger the expected conditional rendering.
 **Action:** Always use explicit null/undefined checks (e.g., `v-if="id !== null"`) when dealing with numeric IDs in conditional logic.
 
+## 2026-05-23 - Data Freshness Transparency via 'Last Refreshed' Indicators
+**Learning:** Providing a 'Last Refreshed' timestamp next to manual refresh actions or in dynamic game status bars significantly increases user confidence in the displayed data. Using a consistent brand-aligned icon (like the green clock) and right-aligning it in status bars (via `margin-left: auto`) creates a balanced and professional layout.
+**Action:** Always include a 'Last Refreshed' timestamp (formatted via `toLocaleTimeString()`) for views with dynamic or frequently changing data, and synchronize its update with both manual refreshes and automatic state updates (like form submissions).
+
 ## 2026-05-18 - "Tactical Insight" Inspection Pattern
 **Learning:** In tactical interfaces, users instinctively want to "select" all entities to gather information. Restricting selection only to owned units feels broken and frustrating. Allowing universal selection while clearly labeling non-owned units as "Tactical Insight" provides a satisfying information-gathering experience without confusing the user about their available actions.
 **Action:** Implement universal selection for all entities on a map, but use distinct visual themes (e.g., orange for enemy, green for own) and clear instructional text to differentiate between informative and actionable selections.

@@ -29,11 +29,15 @@ const isSubmitting = ref(false);
 const submissionError = ref('');
 const submissionSuccess = ref('');
 const copySuccess = ref(false);
+const lastRefreshed = ref<string | null>(null);
 
 const gamesStore = useGamesStore();
 
 watchEffect(async () => {
   game.value = gamesStore.getCurrentGame();
+  if (game.value.gameId !== null && game.value.gameId !== undefined && !lastRefreshed.value) {
+    lastRefreshed.value = new Date().toLocaleTimeString();
+  }
 });
 
 watch(selectedActorId, async (newId) => {
@@ -86,6 +90,7 @@ const refreshGame = async () => {
     try {
       await gamesStore.fetchGameDetails(game.value.gameId);
       game.value = gamesStore.getCurrentGame();
+      lastRefreshed.value = new Date().toLocaleTimeString();
     } finally {
       isRefreshing.value = false;
     }
@@ -214,6 +219,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
       }
 
       submissionSuccess.value = "Orders submitted successfully!";
+      lastRefreshed.value = new Date().toLocaleTimeString();
       setTimeout(() => {
         submissionSuccess.value = '';
       }, 3000);
@@ -290,6 +296,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     <div class="game-info" v-if="game.gameId !== undefined && game.gameId !== null">
       <span class="turn-info">Turn {{ game.turn }}</span>
       <span class="player-info">Players: {{ game.playerCount }}/{{ game.maxPlayers }}</span>
+      <span v-if="lastRefreshed" class="last-refreshed">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clock-icon" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+        Last Refreshed: {{ lastRefreshed }}
+      </span>
     </div>
     
     <div class="game-content">
@@ -418,6 +428,19 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 .turn-info, .player-info {
   font-weight: bold;
   color: #333;
+}
+
+.last-refreshed {
+  font-size: 0.9em;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.clock-icon {
+  color: hsla(160, 100%, 37%, 1);
 }
 
 .game-content {
