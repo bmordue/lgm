@@ -149,3 +149,7 @@
 ## 2026-05-18 - "Tactical Insight" Inspection Pattern
 **Learning:** In tactical interfaces, users instinctively want to "select" all entities to gather information. Restricting selection only to owned units feels broken and frustrating. Allowing universal selection while clearly labeling non-owned units as "Tactical Insight" provides a satisfying information-gathering experience without confusing the user about their available actions.
 **Action:** Implement universal selection for all entities on a map, but use distinct visual themes (e.g., orange for enemy, green for own) and clear instructional text to differentiate between informative and actionable selections.
+
+## 2026-05-25 - Ubiquitous Tactile Feedback for Core Navigation
+**Learning:** Extending the project-standard tactile feedback pattern (transform: scale(0.98) on :active) to the root layout's navigation and branding elements creates a sense of holistic polish. It reinforces the application's interactive personality from the moment the user first engages with the logo or primary links.
+**Action:** When implementing tactile feedback, always ensure it is applied consistently across all primary interactive containers, including global headers and branding, to avoid "dead zones" where the UI feels unexpectedly static.

@@ -73,6 +73,10 @@ header {
   outline-offset: 4px;
 }
 
+.logo-link:active {
+  transform: scale(0.98);
+}
+
 .logo {
   display: block;
   margin: 0;
@@ -117,6 +121,10 @@ nav > * + * {
 nav > *:focus-visible {
   outline: 2px solid hsla(160, 100%, 37%, 1);
   outline-offset: 2px;
+}
+
+nav > *:active:not(.user-greeting) {
+  transform: scale(0.98);
 }
 
 nav button {
