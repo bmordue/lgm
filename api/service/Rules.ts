@@ -451,12 +451,14 @@ export async function filterGameForPlayer(gameId: number, playerId: number): Pro
 
         const playerCount = game.players ? game.players.length : 0;
         return Promise.resolve({ 
-            gameId: game.id, 
+            gameId: game.id!,
             playerId: playerId, 
             turn: game.turn, 
             world: filteredWorld,
             playerCount: playerCount,
-            maxPlayers: config.players.maxPlayers
+            maxPlayers: game.maxPlayers || config.players.maxPlayers,
+            hostPlayerId: game.hostPlayerId,
+            gameState: game.gameState
         });
     } catch (e) {
         return Promise.reject(e);

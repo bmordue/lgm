@@ -1,6 +1,7 @@
 import assert = require("assert");
 import * as GameService from "../service/GameService";
 import * as store from "../service/Store";
+import * as databaseStore from "../service/DatabaseStore";
 
 const GameController = require("../controllers/GameController");
 
@@ -198,6 +199,159 @@ describe("GameController", function () {
       // When no turn results are available yet, should return message
       assert(result.message !== undefined, "Should have message property");
       assert.equal(result.message, "turn results not available");
+    });
+  });
+
+  describe("getPlayerGameState", function () {
+    beforeEach(() => {
+      store.deleteAll();
+    });
+
+    it("should return player game state for authorized player", async function () {
+      const game = await GameService.createGame();
+      const player = await GameService.joinGame(game.id, "testuser", "session123");
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: game.id,
+            playerId: player.playerId
+          },
+          query: {}
+        },
+        user: { email: "testuser", id: "session123" },
+        res: {
+          status: function() { return this; },
+          json: function() { return this; }
+        }
+      };
+
+      const result = await GameController.getPlayerGameState(mockContext);
+      assert.equal(result.gameId, game.id);
+      assert.equal(result.playerId, player.playerId);
+      assert(result.world !== undefined);
+      assert(result.hostPlayerId !== undefined);
+      assert(result.gameState !== undefined);
+    });
+
+    it("should return 403 for unauthorized player", async function () {
+      const game = await GameService.createGame();
+      const player = await GameService.joinGame(game.id, "testuser", "session123");
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: game.id,
+            playerId: player.playerId
+          },
+          query: {}
+        },
+        user: { email: "otheruser", id: "othersession" },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 200
+        }
+      };
+
+      const result = await GameController.getPlayerGameState(mockContext);
+      assert.equal(mockContext.res.statusCode, 403);
+      assert.equal(result.message, "You can only access your own game state");
+    });
+
+    it("should return 404 for non-existent player", async function () {
+      const game = await GameService.createGame();
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: game.id,
+            playerId: 9999
+          },
+          query: {}
+        },
+        user: { email: "testuser", id: "session123" },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 200
+        }
+      };
+
+      const result = await GameController.getPlayerGameState(mockContext);
+      assert.equal(mockContext.res.statusCode, 404);
+      assert.equal(result.message, "Player not found");
+    });
+
+    it("should return 404 when the player belongs to another game", async function () {
+      const game1 = await GameService.createGame();
+      const game2 = await GameService.createGame();
+      const player = await GameService.joinGame(game1.id, "testuser", "session123");
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: game2.id,
+            playerId: player.playerId
+          },
+          query: {}
+        },
+        user: { email: "testuser", id: "session123" },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 200
+        }
+      };
+
+      const result = await GameController.getPlayerGameState(mockContext);
+      assert.equal(mockContext.res.statusCode, 404);
+      assert.equal(result.message, "Player not found");
+    });
+
+    it("should rethrow unexpected store errors", async function () {
+      const mutableDatabaseStore = databaseStore as any;
+      const originalRead = mutableDatabaseStore.read;
+      mutableDatabaseStore.read = async function () {
+        throw new Error("Unexpected store failure");
+      };
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: 1,
+            playerId: 1
+          },
+          query: {}
+        },
+        user: { email: "testuser", id: "session123" },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 200
+        }
+      };
+
+      try {
+        await assert.rejects(
+          async () => GameController.getPlayerGameState(mockContext),
+          /Unexpected store failure/
+        );
+      } finally {
+        mutableDatabaseStore.read = originalRead;
+      }
     });
   });
 });

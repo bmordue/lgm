@@ -1,6 +1,10 @@
 import { ExegesisContext } from "exegesis";
+import * as store from "../service/DatabaseStore";
 import GameService = require("../service/GameService");
 import GameLifecycleService = require("../service/GameLifecycleService");
+import { RuntimeUser } from "../middleware/auth";
+import { Player } from "../service/Models";
+import { NotFoundError } from "../utils/Errors";
 
 module.exports.createGame = async function createGame(context: ExegesisContext) {
   const maxPlayers = context.requestBody?.maxPlayers; // Optional parameter
@@ -95,11 +99,27 @@ module.exports.transferHost = async function transferHost(context: ExegesisConte
 
 module.exports.getPlayerGameState = async function getPlayerGameState(context: ExegesisContext) {
     const { gameId, playerId } = context.params.path;
-    const requestingPlayerId = context.user?.playerId;
 
-    if (playerId !== requestingPlayerId) {
-        context.res.status(403);
-        return { message: "You can only access your own game state." };
+    // Authorization check
+    try {
+        const player = await store.read<Player>(store.keys.players, playerId);
+        const authenticatedUser = context.user as RuntimeUser;
+
+        if (player.gameId !== gameId) {
+            context.res.status(404);
+            return { message: "Player not found" };
+        }
+
+        if (player.sessionId !== authenticatedUser.id && player.username !== authenticatedUser.email) {
+            context.res.status(403);
+            return { message: "You can only access your own game state" };
+        }
+    } catch (err) {
+        if (!(err instanceof NotFoundError)) {
+            throw err;
+        }
+        context.res.status(404);
+        return { message: "Player not found" };
     }
 
     return await GameLifecycleService.getPlayerGameState(gameId, playerId);

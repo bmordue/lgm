@@ -286,4 +286,42 @@ describe("GameLifecycleService", function () {
       }
     });
   });
+
+  describe("getPlayerGameState", function () {
+    it("should return the filtered game state for a player", async function () {
+      const createResponse = await GameLifecycleService.createGame(4);
+      const gameId = createResponse.gameId;
+      const joinResponse = await GameLifecycleService.joinGame(gameId, "testuser");
+      const playerId = joinResponse.playerId;
+
+      const result = await GameLifecycleService.getPlayerGameState(gameId, playerId);
+
+      assert.equal(result.gameId, gameId);
+      assert.equal(result.playerId, playerId);
+      assert.equal(result.turn, 1);
+      assert(result.world !== undefined);
+      assert.equal(result.playerCount, 1);
+      assert.equal(result.maxPlayers, 4);
+      assert.equal(result.hostPlayerId, playerId);
+      assert.equal(result.gameState, GameState.LOBBY);
+    });
+
+    it("should fail if player does not belong to the game", async function () {
+      const createResponse1 = await GameLifecycleService.createGame(4);
+      const gameId1 = createResponse1.gameId;
+
+      const createResponse2 = await GameLifecycleService.createGame(4);
+      const gameId2 = createResponse2.gameId;
+
+      const joinResponse = await GameLifecycleService.joinGame(gameId1, "testuser");
+      const playerId = joinResponse.playerId;
+
+      try {
+        await GameLifecycleService.getPlayerGameState(gameId2, playerId);
+        assert.fail("Expected getPlayerGameState to throw an error");
+      } catch (error) {
+        assert.equal(error.message, "Player does not belong to this game");
+      }
+    });
+  });
 });
