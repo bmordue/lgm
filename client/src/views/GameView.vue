@@ -3,6 +3,7 @@ import { ref, watchEffect, watch, nextTick, onMounted, onUnmounted, computed } f
 import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue'; // Import OrderSubmission
 import { useGamesStore, type Actor, type PlannedMove, type Order } from '../stores/Games.store' // Import PlannedMove and Order
+import { useUserStore } from '../stores/User.store';
 import { API_URL } from '@/config';
 
 interface GameData {
@@ -32,6 +33,16 @@ const copySuccess = ref(false);
 const lastRefreshed = ref<string | null>(null);
 
 const gamesStore = useGamesStore();
+const userStore = useUserStore();
+
+const getHPColor = (health: number, max: number) => {
+  const p = (health / max) * 100;
+  return p > 60 ? '#2ecc71' : p > 25 ? '#f39c12' : '#e74c3c';
+};
+
+const getHPPercent = (health: number, max: number) => {
+  return Math.min(100, Math.max(0, (health / max) * 100));
+};
 
 watchEffect(async () => {
   game.value = gamesStore.getCurrentGame();
@@ -136,16 +147,18 @@ const handleSubmitOrders = async (movesToSubmit: PlannedMove[]) => {
 };
 // --- End Event Handlers ---
 
-function actorToString(actor: Actor) {
-  const hp = `HP: ${actor.health ?? 100}/${actor.maxHealth ?? 100}`;
-  return `Actor ${actor.id} at (${actor.pos.x}, ${actor.pos.y}) - ${hp}`;
-}
-
 function getPlayerList() {
   if (!game.value.world?.actors) return [];
   const actors = game.value.world.actors as Actor[];
   const playerIds = [...new Set(actors.map((actor: Actor) => actor.owner))];
-  return playerIds.map(id => ({ id, name: `Player ${id}` }));
+  const currentPlayerId = gamesStore.getCurrentPlayerId();
+  return playerIds.map(id => {
+    let name = `Player ${id}`;
+    if (id === currentPlayerId && userStore.user?.name) {
+      name = userStore.user.name;
+    }
+    return { id, name };
+  });
 }
 
 async function postOrders(moves: PlannedMove[]) { // Modified signature
@@ -405,13 +418,30 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
               'is-hovered': actor.id === hoveredActorId || (hoveredPlayerId !== null && actor.owner === hoveredPlayerId),
               'is-selected': actor.id === selectedActorId
             }"
+            :aria-label="'Actor ' + actor.id + ' at ' + actor.pos.x + ',' + actor.pos.y + ', Health ' + (actor.health ?? 100) + ' of ' + (actor.maxHealth ?? 100)"
             @mouseenter="hoveredActorId = actor.id"
             @mouseleave="hoveredActorId = null"
             @focus="hoveredActorId = actor.id"
             @blur="hoveredActorId = null"
             @click="selectActor(actor.id)"
           >
-            {{ actorToString(actor) }}{{ actor.owner === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}{{ plannedMoves.some(m => m.actorId === actor.id) ? ' (Planned)' : '' }}
+            <div class="actor-header">
+              <span>Actor {{ actor.id }}</span>
+              <span class="actor-pos">({{ actor.pos.x }}, {{ actor.pos.y }})</span>
+            </div>
+            <div class="status-tags">
+              <span v-if="actor.owner === gamesStore.getCurrentPlayerId()" class="tag you-tag">You</span>
+              <span v-if="plannedMoves.some(m => m.actorId === actor.id)" class="tag planned-tag">Planned</span>
+            </div>
+            <div class="hp-container">
+              <div
+                class="hp-bar"
+                :style="{
+                  width: getHPPercent(actor.health ?? 100, actor.maxHealth ?? 100) + '%',
+                  backgroundColor: getHPColor(actor.health ?? 100, actor.maxHealth ?? 100)
+                }"
+              ></div>
+            </div>
           </button>
         </div>
       </div>
@@ -591,6 +621,54 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   background: hsla(160, 100%, 37%, 0.2);
 }
 
+.actor-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.actor-pos {
+  font-size: 0.8em;
+  color: #666;
+}
+
+.status-tags {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.tag {
+  font-size: 0.75em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.you-tag {
+  background-color: hsla(160, 100%, 37%, 1);
+  color: white;
+}
+
+.planned-tag {
+  background-color: #ff9800;
+  color: white;
+}
+
+.hp-container {
+  width: 100%;
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.hp-bar {
+  height: 100%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+}
+
 .loading-state {
   text-align: center;
   color: #666;
@@ -763,6 +841,24 @@ button:hover {
 .refresh-btn:focus-visible {
   outline: 2px solid hsla(160, 100%, 37%, 1);
   outline-offset: 2px;
+}
+
+@media (max-width: 1024px) {
+  .game-content {
+    flex-direction: column;
+  }
+
+  .left-panel, .main-panel {
+    width: 100%;
+  }
+
+  .left-panel {
+    order: 2; /* Move sidebar below map on mobile if desired */
+  }
+
+  .main-panel {
+    order: 1;
+  }
 }
 
 </style>
