@@ -1,4 +1,5 @@
 import { ExegesisContext } from "exegesis";
+import * as store from "../service/DatabaseStore";
 import GameService = require("../service/GameService");
 import GameLifecycleService = require("../service/GameLifecycleService");
 
@@ -95,11 +96,24 @@ module.exports.transferHost = async function transferHost(context: ExegesisConte
 
 module.exports.getPlayerGameState = async function getPlayerGameState(context: ExegesisContext) {
     const { gameId, playerId } = context.params.path;
-    const requestingPlayerId = context.user?.playerId;
 
-    if (playerId !== requestingPlayerId) {
-        context.res.status(403);
-        return { message: "You can only access your own game state." };
+    // Authorization check
+    try {
+        const player = await store.read<any>(store.keys.players, playerId);
+        const authenticatedUser = context.user;
+
+        if (player.gameId !== gameId) {
+            context.res.status(400);
+            return { message: "Player does not belong to this game" };
+        }
+
+        if (player.sessionId !== authenticatedUser.id && player.username !== authenticatedUser.email) {
+            context.res.status(403);
+            return { message: "You can only access your own game state" };
+        }
+    } catch (err) {
+        context.res.status(404);
+        return { message: "Player not found" };
     }
 
     return await GameLifecycleService.getPlayerGameState(gameId, playerId);

@@ -316,6 +316,8 @@ components:
           type: integer
         hostPlayerId:
           type: integer
+        gameState:
+          $ref: '#/components/schemas/GameState'
     ErrorMessageResponse:
       required:
       - message
@@ -389,6 +391,9 @@ components:
       type: integer
       description: "0: DEAD, 1: ALIVE"
       enum: [0, 1]
+    GameState:
+      type: string
+      enum: [LOBBY, IN_PROGRESS, COMPLETED]
     Weapon:
       type: object
       required:

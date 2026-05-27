@@ -200,4 +200,92 @@ describe("GameController", function () {
       assert.equal(result.message, "turn results not available");
     });
   });
+
+  describe("getPlayerGameState", function () {
+    beforeEach(() => {
+      store.deleteAll();
+    });
+
+    it("should return player game state for authorized player", async function () {
+      const game = await GameService.createGame();
+      const player = await GameService.joinGame(game.id, "testuser", "session123");
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: game.id,
+            playerId: player.playerId
+          },
+          query: {}
+        },
+        user: { email: "testuser", id: "session123" },
+        res: {
+          status: function() { return this; },
+          json: function() { return this; }
+        }
+      };
+
+      const result = await GameController.getPlayerGameState(mockContext);
+      assert.equal(result.gameId, game.id);
+      assert.equal(result.playerId, player.playerId);
+      assert(result.world !== undefined);
+      assert(result.hostPlayerId !== undefined);
+      assert(result.gameState !== undefined);
+    });
+
+    it("should return 403 for unauthorized player", async function () {
+      const game = await GameService.createGame();
+      const player = await GameService.joinGame(game.id, "testuser", "session123");
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: game.id,
+            playerId: player.playerId
+          },
+          query: {}
+        },
+        user: { email: "otheruser", id: "othersession" },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 200
+        }
+      };
+
+      const result = await GameController.getPlayerGameState(mockContext);
+      assert.equal(mockContext.res.statusCode, 403);
+      assert.equal(result.message, "You can only access your own game state");
+    });
+
+    it("should return 404 for non-existent player", async function () {
+      const game = await GameService.createGame();
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: game.id,
+            playerId: 9999
+          },
+          query: {}
+        },
+        user: { email: "testuser", id: "session123" },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 200
+        }
+      };
+
+      const result = await GameController.getPlayerGameState(mockContext);
+      assert.equal(mockContext.res.statusCode, 404);
+      assert.equal(result.message, "Player not found");
+    });
+  });
 });

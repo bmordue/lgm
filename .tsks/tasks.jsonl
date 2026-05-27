@@ -10,7 +10,7 @@
 {"id":"10","title":"Fix game list refresh and add live game state updates","status":"blocked","dependencies":["7"],"created_at":"2026-03-30T17:44:40.206145479Z","doc_hash":"3f519c3f6d5f83e187f622c154a06558f08cd2b3a26b8db2007072a6724e9cad"}
 {"id":"11","title":"Standardize API response formats","status":"todo","created_at":"2026-03-30T17:45:01.030139153Z","doc_hash":"96b460cddc28fcca6bf4cfa7ec0ba21fcad11589aa5cf9de10f8c334f63a4989"}
 {"id":"12","title":"Replace actor placement algorithm","status":"todo","created_at":"2026-03-30T17:45:01.051134555Z","doc_hash":"e22f0a1d2a75a797d1303fcc58254d6a452432896b0d137ce911ebb6a49fa59a"}
-{"id":"13","title":"Add API endpoint for player-specific world state","status":"todo","created_at":"2026-03-30T17:45:01.063991054Z","doc_hash":"b0370594a45ba79f8e8be603556a73dc41b036a2f18c2d550f558e9cdd8e6bcc"}
+{"id":"13","title":"Add API endpoint for player-specific world state","status":"done","created_at":"2026-03-30T17:45:01.063991054Z","doc_hash":"b0370594a45ba79f8e8be603556a73dc41b036a2f18c2d550f558e9cdd8e6bcc"}
 {"id":"14","title":"Improve actor visibility information","status":"todo","created_at":"2026-03-30T17:45:01.08507694Z","doc_hash":"21ff5b6d4007ea7d2f36c0275d34107830ac614478a94da3c01b5a3b2a163d9a"}
 {"id":"15","title":"Add actor indication to hex grid","status":"todo","created_at":"2026-03-30T17:45:01.097621324Z","doc_hash":"c8e5b254aaee7471148369a6b3b503fd8fdfa08c771f3cb1df8ad675ff48aeeb"}
 {"id":"16","title":"Standardize error handling patterns","status":"todo","created_at":"2026-03-30T17:45:01.111440509Z","doc_hash":"d8f8921db40fc11ec103c9610d5d3ecf2f8bbfe11bc37d171b37f2bec5fb57af"}
