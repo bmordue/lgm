@@ -153,3 +153,15 @@
 ## 2026-05-25 - Ubiquitous Tactile Feedback for Core Navigation
 **Learning:** Extending the project-standard tactile feedback pattern (transform: scale(0.98) on :active) to the root layout's navigation and branding elements creates a sense of holistic polish. It reinforces the application's interactive personality from the moment the user first engages with the logo or primary links.
 **Action:** When implementing tactile feedback, always ensure it is applied consistently across all primary interactive containers, including global headers and branding, to avoid "dead zones" where the UI feels unexpectedly static.
+
+## 2026-05-26 - Structured Information Cards for Tactical Entities
+**Learning:** Replacing plain-text lists of game entities (like actors) with structured cards that use visual cues (health bars, status tags) and distinct headers significantly improves the scannability of the game state. Pairing these visual cues with descriptive `aria-label` ensures that the improved experience remains accessible to screen reader users.
+**Action:** Always prefer structured, semantic containers over flat text for entity lists, and use visual indicators (like color-coded bars) to represent critical numeric data like health.
+
+## 2026-05-26 - Context-Aware Personalization in Multi-player Views
+**Learning:** Using the authenticated user's actual name in player lists and unit markers, rather than generic placeholders like "Player [ID]", creates a stronger sense of ownership and presence. This reduces the mental distance between the user and their in-game persona.
+**Action:** Always synchronize the frontend's user identity store with game-specific player lists to provide personalized "You" markers.
+
+## 2026-05-26 - Responsive Spatial and Tactical Layouts
+**Learning:** Tactical games often rely on a sidebar-and-map layout which fails on narrow viewports. Implementing a responsive shift to a vertical stack (`flex-direction: column`) with strategic re-ordering (e.g., placing the map above the unit list) ensures the core spatial experience remains primary even on mobile devices.
+**Action:** For all spatial/tactical layouts, implement a breakpoint-based vertical stack that prioritizes the map/grid view while keeping interactive list controls accessible below.

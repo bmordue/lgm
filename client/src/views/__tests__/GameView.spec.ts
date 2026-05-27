@@ -5,9 +5,11 @@ import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue';
 import type { PlannedMove, Order, Actor, World } from '@/stores/Games.store'; // Assuming World is also needed for store mock
 import { useGamesStore } from '@/stores/Games.store';
+import { useUserStore } from '@/stores/User.store';
 
 // Mock Pinia stores
 vi.mock('@/stores/Games.store');
+vi.mock('@/stores/User.store');
 
 // Mock global fetch
 global.fetch = vi.fn();
@@ -28,6 +30,7 @@ const sampleWorld: World = { id: 1, terrain: [[0]], actors: [sampleActor] };
 describe('GameView.vue', () => {
   let wrapper: VueWrapper<any>;
   let mockGamesStore: any;
+  let mockUserStore: any;
 
   // Helper to mount the component with fresh mocks for props
   const mountComponent = () => {
@@ -66,6 +69,11 @@ describe('GameView.vue', () => {
     };
     (useGamesStore as any).mockReturnValue(mockGamesStore);
 
+    mockUserStore = {
+      user: { name: 'Test User' },
+    };
+    (useUserStore as any).mockReturnValue(mockUserStore);
+
     // Default successful fetch mock
     (global.fetch as any).mockResolvedValue({
       ok: true,
@@ -95,8 +103,9 @@ describe('GameView.vue', () => {
     it('highlights the current player in the player list', () => {
       wrapper = mountComponent();
       const playerItems = wrapper.findAll('.player-item');
-      // sampleActor has owner: 1, so Player 1 should be in the list
-      const selfPlayerItem = playerItems.find(item => item.text().includes('Player 1 (You)'));
+      // sampleActor has owner: 1, and mockUserStore has name 'Test User'
+      // so 'Test User (You)' should be in the list
+      const selfPlayerItem = playerItems.find(item => item.text().includes('Test User (You)'));
       expect(selfPlayerItem).toBeTruthy();
       expect(selfPlayerItem?.classes()).toContain('is-self');
     });
