@@ -1,6 +1,7 @@
 import assert = require("assert");
 import * as GameService from "../service/GameService";
 import * as store from "../service/Store";
+import * as databaseStore from "../service/DatabaseStore";
 
 const GameController = require("../controllers/GameController");
 
@@ -286,6 +287,71 @@ describe("GameController", function () {
       const result = await GameController.getPlayerGameState(mockContext);
       assert.equal(mockContext.res.statusCode, 404);
       assert.equal(result.message, "Player not found");
+    });
+
+    it("should return 404 when the player belongs to another game", async function () {
+      const game1 = await GameService.createGame();
+      const game2 = await GameService.createGame();
+      const player = await GameService.joinGame(game1.id, "testuser", "session123");
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: game2.id,
+            playerId: player.playerId
+          },
+          query: {}
+        },
+        user: { email: "testuser", id: "session123" },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 200
+        }
+      };
+
+      const result = await GameController.getPlayerGameState(mockContext);
+      assert.equal(mockContext.res.statusCode, 404);
+      assert.equal(result.message, "Player not found");
+    });
+
+    it("should rethrow unexpected store errors", async function () {
+      const mutableDatabaseStore = databaseStore as any;
+      const originalRead = mutableDatabaseStore.read;
+      mutableDatabaseStore.read = async function () {
+        throw new Error("Unexpected store failure");
+      };
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: 1,
+            playerId: 1
+          },
+          query: {}
+        },
+        user: { email: "testuser", id: "session123" },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 200
+        }
+      };
+
+      try {
+        await assert.rejects(
+          async () => GameController.getPlayerGameState(mockContext),
+          /Unexpected store failure/
+        );
+      } finally {
+        mutableDatabaseStore.read = originalRead;
+      }
     });
   });
 });
