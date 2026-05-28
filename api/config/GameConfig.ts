@@ -98,6 +98,7 @@ export const SERVER_CONFIG = {
 
 /**
  * Security configuration
+ * Read once per server creation; restart the process to apply env changes.
  */
 export function getSecurityConfig() {
   return {

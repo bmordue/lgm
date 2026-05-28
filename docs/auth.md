@@ -136,7 +136,7 @@ auth_request_set $remote_name  $upstream_http_x_auth_request_user;
 | `DEV_STUB_USER`      | (unset)       | Dev-only fake identity. Format: `email:Display Name:group1,group2`. Ignored in production. |
 | `ADMIN_GROUP`        | `admins`      | Group name granting admin privileges. |
 | `LGM_PORT`           | `3000`        | TCP port the API listens on. |
-| `LGM_MAX_BODY_SIZE_BYTES` | `16384`  | Maximum request payload size accepted by the API parser and OpenAPI middleware. |
+| `LGM_MAX_BODY_SIZE_BYTES` | `16384`  | Maximum request payload size accepted by the API parser and OpenAPI middleware. The default 16 KB is intended to cover normal turn submissions while still bounding abuse; increase it if you add larger request bodies. |
 | `LGM_RATE_LIMIT_MAX_REQUESTS` | `100` | Maximum requests per client IP within the rate-limit window. |
 | `LGM_RATE_LIMIT_WINDOW_MS` | `900000` | Rolling rate-limit window in milliseconds (default 15 minutes). |
 

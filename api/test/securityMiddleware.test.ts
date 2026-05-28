@@ -6,15 +6,8 @@ describe('API security middleware', function () {
   let server: http.Server;
   let baseUrl: string;
 
-  beforeEach(async function () {
-    process.env.NODE_ENV = 'test';
-    delete process.env.LGM_RATE_LIMIT_MAX_REQUESTS;
-    delete process.env.LGM_RATE_LIMIT_WINDOW_MS;
-
-    const modulePath = require.resolve('../index');
-    delete require.cache[modulePath];
+  async function startTestServer() {
     const { createServer } = require('../index');
-
     server = await createServer();
     await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
     const address = server.address();
@@ -22,9 +15,28 @@ describe('API security middleware', function () {
       throw new Error('Expected server to listen on a TCP port');
     }
     baseUrl = `http://127.0.0.1:${address.port}`;
+  }
+
+  async function restartServer() {
+    if (server) {
+      await new Promise<void>((resolve, reject) => {
+        server.close((err) => err ? reject(err) : resolve());
+      });
+    }
+    await startTestServer();
+  }
+
+  beforeEach(async function () {
+    process.env.NODE_ENV = 'test';
+    delete process.env.LGM_RATE_LIMIT_MAX_REQUESTS;
+    delete process.env.LGM_RATE_LIMIT_WINDOW_MS;
+    await startTestServer();
   });
 
   afterEach(async function () {
+    delete process.env.LGM_RATE_LIMIT_MAX_REQUESTS;
+    delete process.env.LGM_RATE_LIMIT_WINDOW_MS;
+
     if (!server) {
       return;
     }
@@ -71,22 +83,7 @@ describe('API security middleware', function () {
   it('enforces request rate limiting', async function () {
     process.env.LGM_RATE_LIMIT_MAX_REQUESTS = '1';
     process.env.LGM_RATE_LIMIT_WINDOW_MS = '60000';
-
-    await new Promise<void>((resolve, reject) => {
-      server.close((err) => err ? reject(err) : resolve());
-    });
-
-    const modulePath = require.resolve('../index');
-    delete require.cache[modulePath];
-    const { createServer } = require('../index');
-
-    server = await createServer();
-    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
-    const address = server.address();
-    if (!address || typeof address === 'string') {
-      throw new Error('Expected server to listen on a TCP port');
-    }
-    baseUrl = `http://127.0.0.1:${address.port}`;
+    await restartServer();
 
     await superagent.get(`${baseUrl}/users/me`);
 

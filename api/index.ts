@@ -1,10 +1,10 @@
 import * as bodyParser from 'body-parser';
 import * as express from 'express';
 import * as exegesisExpress from 'exegesis-express';
+import { rateLimit } from 'express-rate-limit';
+import helmet from 'helmet';
 import * as path from 'path';
 import * as http from "http";
-const helmet = require('helmet');
-const { rateLimit } = require('express-rate-limit');
 import { loadUser, RuntimeUser } from './middleware/auth';
 import { inspect } from 'util';
 import { getSecurityConfig, SERVER_CONFIG } from './config/GameConfig';
@@ -17,9 +17,9 @@ const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 /* */
 
-const FORBIDDEN_REQUEST_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
-function createHttpError(status: number, message: string): Error & { status: number } {
+function createValidationError(status: number, message: string): Error & { status: number } {
     return Object.assign(new Error(message), { status });
 }
 
@@ -34,14 +34,14 @@ function validateRequestBody(value: unknown): void {
     }
 
     for (const [key, nestedValue] of Object.entries(value)) {
-        if (FORBIDDEN_REQUEST_KEYS.has(key)) {
-            throw createHttpError(400, `Request body contains forbidden property: ${key}`);
+        if (FORBIDDEN_KEYS.has(key)) {
+            throw createValidationError(400, `Request body contains forbidden property: ${key}`);
         }
         validateRequestBody(nestedValue);
     }
 }
 
-function createSanitizingJsonParser(maxBodySize: number) {
+function createSecureJsonParser(maxBodySize: number) {
     const jsonParser = bodyParser.json({
         inflate: true,
         limit: maxBodySize,
@@ -51,28 +51,39 @@ function createSanitizingJsonParser(maxBodySize: number) {
 
     return {
         parseString(value: string) {
-            const parsed = JSON.parse(value);
-            validateRequestBody(parsed);
-            return parsed;
+            try {
+                const parsed = JSON.parse(value);
+                validateRequestBody(parsed);
+                return parsed;
+            } catch (err) {
+                if (err instanceof SyntaxError) {
+                    throw createValidationError(400, 'Invalid JSON in request body');
+                }
+                throw err;
+            }
         },
-        parseReq(req: express.Request, res: express.Response, done: (err?: Error | null, body?: unknown) => void) {
-            jsonParser(req, res, (err: unknown) => {
+        parseReq(req: express.Request, res: express.Response, callback: (err?: Error | null, body?: unknown) => void) {
+            jsonParser(req, res, (err: Error | null | undefined) => {
                 if (err) {
-                    done(err as Error);
+                    callback(err);
                     return;
                 }
 
                 try {
                     validateRequestBody(req.body);
-                    done(null, req.body);
+                    callback(null, req.body);
                 } catch (validationErr) {
-                    done(validationErr as Error);
+                    callback(validationErr as Error);
                 }
             });
         }
     };
 }
 
+/**
+ * Create and configure the HTTP server without starting it.
+ * Used by the runtime entrypoint and integration tests.
+ */
 export async function createServer() {
     const securityConfig = getSecurityConfig();
 
@@ -91,13 +102,14 @@ export async function createServer() {
     const options = {
         controllers: path.resolve(__dirname, 'controllers'),
         allowMissingControllers: false,
+        // Return complete OpenAPI validation feedback instead of only the first error.
         allErrors: true,
         authenticators: {
             bearerAuth: sessionAuthenticator,
         },
         defaultMaxBodySize: securityConfig.maxBodySizeBytes,
         mimeTypeParsers: {
-            'application/json': createSanitizingJsonParser(securityConfig.maxBodySizeBytes),
+            'application/json': createSecureJsonParser(securityConfig.maxBodySizeBytes),
         },
         strictValidation: true,
     };
@@ -116,7 +128,6 @@ export async function createServer() {
     app.disable('x-powered-by');
 
     app.use(helmet({
-        contentSecurityPolicy: false,
         referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
     }));
 
@@ -147,6 +158,7 @@ export async function createServer() {
             ? err.status
             : typeof err?.statusCode === 'number'
                 ? err.statusCode
+            // body-parser sets err.type='entity.too.large' when payload limits are exceeded.
             : err?.type === 'entity.too.large'
                 ? 413
                 : 500;
