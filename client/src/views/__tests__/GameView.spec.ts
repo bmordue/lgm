@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushPromises, VueWrapper } from '@vue/test-utils';
 import GameView from '../GameView.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue';
-import type { PlannedMove, Actor, World } from '@/stores/Games.store'; // Assuming World is also needed for store mock
+import type { PlannedMove, World } from '@/stores/Games.store'; // Assuming World is also needed for store mock
 import { useGamesStore } from '@/stores/Games.store';
 import { useUserStore } from '@/stores/User.store';
 

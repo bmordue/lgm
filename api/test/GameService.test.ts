@@ -150,9 +150,11 @@ describe("DefaultService", function () {
       const game = await lgm.createGame();
       const hostJoin = await lgm.joinGame(game.id, "host@example.com", "session-host");
       const resp = await lgm.listGames();
+      const summary = resp.games.find((entry) => entry.id === game.id);
 
-      assert.equal(resp.games[0].hostPlayerId, hostJoin.playerId);
-      assert.equal(resp.games[0].gameState, "LOBBY");
+      assert(summary);
+      assert.equal(summary!.hostPlayerId, hostJoin.playerId);
+      assert.equal(summary!.gameState, "LOBBY");
     });
   });
 });
