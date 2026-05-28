@@ -3,14 +3,33 @@ import * as store from "../service/DatabaseStore";
 import GameService = require("../service/GameService");
 import GameLifecycleService = require("../service/GameLifecycleService");
 import { RuntimeUser } from "../middleware/auth";
-import { Player } from "../service/Models";
+import { Game, Player } from "../service/Models";
 import { NotFoundError } from "../utils/Errors";
+
+async function resolvePlayerIdForUser(gameId: number, user?: RuntimeUser): Promise<number> {
+  if (!user || user.isGuest) {
+    const err: any = new Error("Authentication required");
+    err.status = 401;
+    throw err;
+  }
+
+  const game = await store.read<Game>(store.keys.games, gameId);
+  for (const existingPlayerId of game.players || []) {
+    const player = await store.read<Player>(store.keys.players, existingPlayerId);
+    if (player.sessionId === user.id || player.username === user.email) {
+      return existingPlayerId;
+    }
+  }
+
+  const err: any = new Error("You must join this game before performing player management actions");
+  err.status = 403;
+  throw err;
+}
 
 module.exports.createGame = async function createGame(context: ExegesisContext) {
   const maxPlayers = context.requestBody?.maxPlayers; // Optional parameter
   const result = await GameLifecycleService.createGame(maxPlayers);
-  // Return with 'id' property to match API expectations
-  return { id: result.gameId };
+  return { id: result.gameId, gameId: result.gameId };
 };
 
 module.exports.joinGame = async function joinGame(context: ExegesisContext) {
@@ -64,37 +83,52 @@ module.exports.listGames = async function listGames() {
 
 module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) {
     const { gameId, playerId } = context.params.path;
-    const requestingPlayerId = context.user?.playerId;
 
-    await GameLifecycleService.kickPlayer(
-        gameId,
-        playerId,
-        requestingPlayerId
-    );
+    try {
+      const requestingPlayerId = await resolvePlayerIdForUser(gameId, context.user as RuntimeUser | undefined);
+      await GameLifecycleService.kickPlayer(
+          gameId,
+          playerId,
+          requestingPlayerId
+      );
 
-    return { success: true };
+      return { success: true };
+    } catch (err: any) {
+      context.res.status(err.status || 500);
+      return { message: err.message || "An unexpected error occurred while trying to kick the player." };
+    }
 }
 
 module.exports.startGame = async function startGame(context: ExegesisContext) {
     const { gameId } = context.params.path;
-    const requestingPlayerId = context.user?.playerId;
 
-    await GameLifecycleService.startGame(gameId, requestingPlayerId);
-    return { success: true };
+    try {
+      const requestingPlayerId = await resolvePlayerIdForUser(gameId, context.user as RuntimeUser | undefined);
+      await GameLifecycleService.startGame(gameId, requestingPlayerId);
+      return { success: true };
+    } catch (err: any) {
+      context.res.status(err.status || 500);
+      return { message: err.message || "An unexpected error occurred while trying to start the game." };
+    }
 }
 
 module.exports.transferHost = async function transferHost(context: ExegesisContext) {
     const { gameId } = context.params.path;
     const { newHostPlayerId } = context.requestBody;
-    const requestingPlayerId = context.user?.playerId;
 
-    await GameLifecycleService.transferHost(
-        gameId,
-        newHostPlayerId,
-        requestingPlayerId
-    );
+    try {
+      const requestingPlayerId = await resolvePlayerIdForUser(gameId, context.user as RuntimeUser | undefined);
+      await GameLifecycleService.transferHost(
+          gameId,
+          newHostPlayerId,
+          requestingPlayerId
+      );
 
-    return { success: true };
+      return { success: true };
+    } catch (err: any) {
+      context.res.status(err.status || 500);
+      return { message: err.message || "An unexpected error occurred while trying to transfer host." };
+    }
 }
 
 module.exports.getPlayerGameState = async function getPlayerGameState(context: ExegesisContext) {

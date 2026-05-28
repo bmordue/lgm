@@ -9,6 +9,8 @@ interface GameSummary {
   playerCount: number;
   maxPlayers: number;
   isFull: boolean;
+  hostPlayerId?: number;
+  gameState?: 'LOBBY' | 'IN_PROGRESS' | 'COMPLETED';
 }
 
 const gameList = ref<GameSummary[]>([])
@@ -18,6 +20,7 @@ const successMessage = ref('')
 const errorMessage = ref('')
 const joiningGameId = ref<number | null>(null)
 const lastRefreshed = ref<string | null>(null)
+const selectedMaxPlayers = ref(4)
 
 async function fetchGameList() {
   isLoading.value = true;
@@ -42,6 +45,10 @@ async function callCreate() {
     const response = await fetch(`${API_URL}/games`, {
       method: "post",
       credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ maxPlayers: selectedMaxPlayers.value }),
     });
 
     if (response.ok) {
@@ -81,7 +88,7 @@ async function join(game: GameSummary) {
       return;
     }
 
-    const joinBody = await resp.json() as {gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number};
+    const joinBody = await resp.json() as {gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number, hostPlayerId?: number, gameState?: 'LOBBY' | 'IN_PROGRESS' | 'COMPLETED'};
     const gamesStore = useGamesStore();
     gamesStore.updateJoinResponse(joinBody);
     router.push('/game');
@@ -206,6 +213,12 @@ async function join(game: GameSummary) {
     </svg>
     {{ isCreating ? 'Creating...' : 'Create New Game' }}
   </button>
+  <label class="player-limit-label" for="max-players">Player limit</label>
+  <select id="max-players" v-model.number="selectedMaxPlayers" class="player-limit-select">
+    <option v-for="count in [2, 3, 4, 5, 6, 7, 8]" :key="count" :value="count">
+      {{ count }} players
+    </option>
+  </select>
 </template>
 
 <style scoped>
@@ -359,6 +372,21 @@ async function join(game: GameSummary) {
   transition: background-color 0.2s, transform 0.1s;
   width: 100%;
   font-size: 1em;
+}
+
+.player-limit-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.player-limit-select {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
 }
 
 .create-game-btn:hover:not(:disabled) {

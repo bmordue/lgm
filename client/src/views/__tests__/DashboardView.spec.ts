@@ -34,7 +34,7 @@ describe('DashboardView.vue', () => {
 
   it('renders "Create New Game" button', () => {
     const wrapper = mount(DashboardView);
-    const button = wrapper.find('button');
+    const button = wrapper.find('.create-game-btn');
     expect(button.text()).toBe('Create New Game');
   });
 
@@ -59,7 +59,7 @@ describe('DashboardView.vue', () => {
     });
 
     const wrapper = mount(DashboardView);
-    const button = wrapper.find('button');
+    const button = wrapper.find('.create-game-btn');
 
     await button.trigger('click');
 
@@ -90,10 +90,19 @@ describe('DashboardView.vue', () => {
     });
 
     const wrapper = mount(DashboardView);
-    const button = wrapper.find('button');
+    const select = wrapper.find('#max-players');
+    await select.setValue('6');
+    const button = wrapper.find('.create-game-btn');
 
     await button.trigger('click');
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Game created successfully!'), { timeout: 200 });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/games'),
+      expect.objectContaining({
+        method: 'post',
+        body: JSON.stringify({ maxPlayers: 6 }),
+      })
+    );
   });
 });

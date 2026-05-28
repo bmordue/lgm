@@ -2,7 +2,7 @@
 import { ref, watchEffect, watch, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue'; // Import OrderSubmission
-import { useGamesStore, type Actor, type PlannedMove, type Order } from '../stores/Games.store' // Import PlannedMove and Order
+import { useGamesStore, type Actor, type PlannedMove, type Order, type GameState } from '../stores/Games.store' // Import PlannedMove and Order
 import { useUserStore } from '../stores/User.store';
 import { API_URL } from '@/config';
 
@@ -12,6 +12,8 @@ interface GameData {
   world?: any;
   playerCount?: number;
   maxPlayers?: number;
+  hostPlayerId?: number | null;
+  gameState?: GameState;
 }
 
 const game = ref<GameData>({})
@@ -32,9 +34,15 @@ const submissionError = ref('');
 const submissionSuccess = ref('');
 const copySuccess = ref(false);
 const lastRefreshed = ref<string | null>(null);
+const lobbyActionError = ref('');
+const lobbyActionSuccess = ref('');
+const activeLobbyPlayerId = ref<number | null>(null);
+const isStartingGame = ref(false);
 
 const gamesStore = useGamesStore();
 const userStore = useUserStore();
+const isHost = computed(() => game.value.hostPlayerId === gamesStore.getCurrentPlayerId());
+const isLobby = computed(() => game.value.gameState === 'LOBBY');
 
 const getHPColor = (health: number, max: number) => {
   const p = (health / max) * 100;
@@ -106,6 +114,77 @@ const refreshGame = async () => {
     } finally {
       isRefreshing.value = false;
     }
+  }
+};
+
+const setLobbySuccess = (message: string) => {
+  lobbyActionSuccess.value = message;
+  setTimeout(() => {
+    if (lobbyActionSuccess.value === message) {
+      lobbyActionSuccess.value = '';
+    }
+  }, 3000);
+};
+
+const runLobbyAction = async (action: () => Promise<void>, successMessage: string, playerId?: number) => {
+  lobbyActionError.value = '';
+  lobbyActionSuccess.value = '';
+  activeLobbyPlayerId.value = playerId ?? null;
+
+  try {
+    await action();
+    game.value = gamesStore.getCurrentGame();
+    lastRefreshed.value = new Date().toLocaleTimeString();
+    setLobbySuccess(successMessage);
+  } catch (error) {
+    lobbyActionError.value = error instanceof Error ? error.message : 'Lobby action failed';
+  } finally {
+    activeLobbyPlayerId.value = null;
+  }
+};
+
+const handleKickPlayer = async (playerId: number) => {
+  if (!game.value.gameId) {
+    return;
+  }
+
+  await runLobbyAction(
+    () => gamesStore.kickPlayer(game.value.gameId!, playerId),
+    'Player removed from the lobby.',
+    playerId
+  );
+};
+
+const handleTransferHost = async (playerId: number) => {
+  if (!game.value.gameId) {
+    return;
+  }
+
+  await runLobbyAction(
+    () => gamesStore.transferHost(game.value.gameId!, playerId),
+    'Host transferred successfully.',
+    playerId
+  );
+};
+
+const handleStartGame = async () => {
+  if (!game.value.gameId) {
+    return;
+  }
+
+  lobbyActionError.value = '';
+  lobbyActionSuccess.value = '';
+  isStartingGame.value = true;
+
+  try {
+    await gamesStore.startGame(game.value.gameId);
+    game.value = gamesStore.getCurrentGame();
+    lastRefreshed.value = new Date().toLocaleTimeString();
+    setLobbySuccess('Game started successfully.');
+  } catch (error) {
+    lobbyActionError.value = error instanceof Error ? error.message : 'Failed to start game';
+  } finally {
+    isStartingGame.value = false;
   }
 };
 
@@ -311,6 +390,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     <div class="game-info" v-if="game.gameId !== undefined && game.gameId !== null">
       <span class="turn-info">Turn {{ game.turn }}</span>
       <span class="player-info">Players: {{ game.playerCount }}/{{ game.maxPlayers }}</span>
+      <span class="player-info">State: {{ game.gameState }}</span>
       <span v-if="lastRefreshed" class="last-refreshed">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clock-icon" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
         Last Refreshed: {{ lastRefreshed }}
@@ -321,8 +401,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
       <div class="left-panel">
         <h3>Players</h3>
         <div class="player-list">
-          <button
-            type="button"
+          <div
             v-for="player in getPlayerList()"
             :key="`player-${player.id}`"
             class="player-item"
@@ -334,11 +413,62 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             @mouseleave="hoveredPlayerId = null"
             @focus="hoveredPlayerId = player.id"
             @blur="hoveredPlayerId = null"
+            tabindex="0"
           >
-            {{ player.name }}{{ player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
+            <span>
+              {{ player.name }}{{ player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
+              <span v-if="player.id === game.hostPlayerId" class="player-badge">Host</span>
+            </span>
+            <div
+              v-if="isHost && isLobby && player.id !== gamesStore.getCurrentPlayerId()"
+              class="player-actions"
+            >
+              <button
+                type="button"
+                class="player-action-btn transfer-host-btn"
+                :disabled="activeLobbyPlayerId === player.id || isStartingGame"
+                @click="handleTransferHost(player.id)"
+              >
+                Make Host
+              </button>
+              <button
+                type="button"
+                class="player-action-btn kick-player-btn"
+                :disabled="activeLobbyPlayerId === player.id || isStartingGame"
+                @click="handleKickPlayer(player.id)"
+              >
+                Kick
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <Transition name="fade">
+          <div v-if="lobbyActionError" class="error-message" role="alert" aria-live="assertive">
+            {{ lobbyActionError }}
+          </div>
+        </Transition>
+        <Transition name="fade">
+          <div v-if="lobbyActionSuccess" class="success-message" role="status" aria-live="polite">
+            {{ lobbyActionSuccess }}
+          </div>
+        </Transition>
+
+        <div v-if="isLobby" class="lobby-controls">
+          <p class="lobby-message">
+            Waiting in the lobby for the host to start the game.
+          </p>
+          <button
+            v-if="isHost"
+            type="button"
+            class="start-game-btn"
+            :disabled="isStartingGame || (game.playerCount || 0) < 2"
+            @click="handleStartGame"
+          >
+            {{ isStartingGame ? 'Starting...' : 'Start Game' }}
           </button>
         </div>
-        
+
         <!-- Order Submission Component -->
         <Transition name="fade">
           <div v-if="submissionError" class="error-message" role="alert" aria-live="assertive">
@@ -351,6 +481,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           </div>
         </Transition>
         <order-submission
+          v-if="!isLobby"
           :planned-moves="plannedMoves"
           :is-submitting="isSubmitting"
           :hovered-move="hoveredMove"
@@ -512,7 +643,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 }
 
 .player-item {
-  display: block;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
   width: 100%;
   text-align: left;
   font-family: inherit;
@@ -523,7 +657,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   border-radius: 4px;
   border: none;
   border-left: 3px solid #2196f3;
-  cursor: pointer;
+  cursor: default;
   transition: background-color 0.2s;
 }
 
@@ -549,6 +683,63 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 
 .player-item.is-self:hover, .player-item.is-self:focus, .player-item.is-self.is-hovered {
   background: hsla(160, 100%, 37%, 0.2);
+}
+
+.player-badge {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: hsla(160, 100%, 37%, 0.15);
+  color: hsla(160, 100%, 20%, 1);
+  font-size: 0.75em;
+  font-weight: 700;
+}
+
+.player-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.player-action-btn,
+.start-game-btn {
+  border: none;
+  border-radius: 6px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.transfer-host-btn {
+  background: #eef7ff;
+  color: #0b5394;
+}
+
+.kick-player-btn {
+  background: #fff0f0;
+  color: #b00020;
+}
+
+.start-game-btn {
+  width: 100%;
+  background: hsla(160, 100%, 37%, 1);
+  color: white;
+}
+
+.player-action-btn:disabled,
+.start-game-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.lobby-controls {
+  margin-bottom: 16px;
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.lobby-message {
+  margin-bottom: 12px;
 }
 
 .error-message {

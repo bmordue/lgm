@@ -75,6 +75,28 @@ describe("DefaultService", function () {
       }
     });
 
+    it("should reject duplicate joins with same session in the same game", async () => {
+      const gameId = (await lgm.createGame()).id;
+      await lgm.joinGame(gameId, "testuser@example.com", "session-1");
+
+      try {
+        await lgm.joinGame(gameId, "other@example.com", "session-1");
+        assert.fail("Expected error for duplicate session join");
+      } catch (error) {
+        assert.equal(error.message, "Player with this session has already joined the game");
+      }
+    });
+
+    it("should allow the same session to join different games", async () => {
+      const gameOneId = (await lgm.createGame()).id;
+      const gameTwoId = (await lgm.createGame()).id;
+
+      const firstJoin = await lgm.joinGame(gameOneId, "testuser@example.com", "session-1");
+      const secondJoin = await lgm.joinGame(gameTwoId, "testuser@example.com", "session-1");
+
+      assert.notEqual(firstJoin.playerId, secondJoin.playerId);
+    });
+
     it("should reject joining full game", async () => {
       const gameId = (await lgm.createGame()).id;
       
@@ -89,6 +111,20 @@ describe("DefaultService", function () {
         assert.fail("Expected error for full game");
       } catch (error) {
         assert.equal(error.message, "Game is full");
+      }
+    });
+
+    it("should reject joining a game after it has started", async () => {
+      const gameId = (await lgm.createGame()).id;
+      const hostJoin = await lgm.joinGame(gameId, "host@example.com", "session-host");
+      await lgm.joinGame(gameId, "guest@example.com", "session-guest");
+      await lgm.startGame(gameId, hostJoin.playerId);
+
+      try {
+        await lgm.joinGame(gameId, "late@example.com", "session-late");
+        assert.fail("Expected error for joining started game");
+      } catch (error) {
+        assert.equal(error.message, "Cannot join game: Game already started");
       }
     });
   });
@@ -108,6 +144,15 @@ describe("DefaultService", function () {
       await lgm.createGame();
       const resp = await lgm.listGames();
       assert.equal(resp.gameIds.length, 2);
+    });
+
+    it("should include host and state metadata in game summaries", async () => {
+      const game = await lgm.createGame();
+      const hostJoin = await lgm.joinGame(game.id, "host@example.com", "session-host");
+      const resp = await lgm.listGames();
+
+      assert.equal(resp.games[0].hostPlayerId, hostJoin.playerId);
+      assert.equal(resp.games[0].gameState, "LOBBY");
     });
   });
 });
