@@ -5,6 +5,8 @@ export interface SpawnZone {
     origin: GridPosition;
 }
 
+const DISTANCE_WEIGHT = 10;
+
 export function getSpawnZonesForPlayerCount(
     playerCount: number,
     worldSize: { width: number; height: number },
@@ -114,7 +116,7 @@ export function findSpawnOrigin(
             const preferredZonePenalty = preferredZone
                 ? squaredDistance(preferredZone.origin, origin)
                 : 0;
-            const score = distanceScore * 10 - preferredZonePenalty;
+            const score = distanceScore * DISTANCE_WEIGHT - preferredZonePenalty;
 
             if (!bestOrigin
                 || score > bestScore

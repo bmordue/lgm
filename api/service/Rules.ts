@@ -478,10 +478,11 @@ export async function setupActors(game: Game, playerId: number) {
     const existingActorObjects = await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
 
     const ACTOR_GRID_SIZE = config.actors.formationWidth; // Formation grid size for actor placement
+    const effectivePlayerCount = Math.max(game.maxPlayers ?? game.players?.length ?? 2, 2);
     const existingPlayerOrigins = ActorPlacement.getPlayerSpawnOrigins(existingActorObjects);
     const playerIndex = game.players ? game.players.indexOf(playerId) : -1;
     const spawnZones = ActorPlacement.getSpawnZonesForPlayerCount(
-        Math.max(game.maxPlayers || game.players?.length || 2, 2),
+        effectivePlayerCount,
         { width: world.terrain.length, height: world.terrain[0].length },
         ACTOR_GRID_SIZE
     );

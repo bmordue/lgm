@@ -80,10 +80,10 @@ describe("ActorPlacement", function () {
       { name: "NW", origin: { x: 0, y: 0 } }
     );
 
-    assert.notDeepEqual(origin, { x: 0, y: 0 });
     if (!origin) {
       assert.fail("Expected a fallback origin");
     }
+    assert.notDeepEqual(origin, { x: 0, y: 0 });
     assert.equal(ActorPlacement.isValidSpawnArea(origin.x, origin.y, 3, terrain, []), true);
   });
 });
