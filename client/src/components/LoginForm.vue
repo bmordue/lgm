@@ -21,6 +21,7 @@ const alternateRoute = computed(() => (isRegisterMode.value ? '/login' : '/regis
 const alternateLabel = computed(() =>
   isRegisterMode.value ? 'Already have an account? Login' : 'Need an account? Register',
 )
+const passwordAutocomplete = computed(() => (isRegisterMode.value ? 'new-password' : 'current-password'))
 
 async function submitForm() {
   errorMessage.value = ''
@@ -61,7 +62,7 @@ async function submitForm() {
         v-model="password"
         name="password"
         type="password"
-        autocomplete="current-password"
+        :autocomplete="passwordAutocomplete"
         required
       />
     </label>

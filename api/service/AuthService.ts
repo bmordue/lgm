@@ -2,6 +2,7 @@ import * as bcrypt from 'bcrypt';
 import * as jwt from 'jsonwebtoken';
 import { randomBytes } from 'crypto';
 import type { RuntimeUser } from '../middleware/auth';
+import * as logger from '../utils/Logger';
 
 interface RegisteredUser {
   passwordHash: string;
@@ -17,10 +18,24 @@ interface AuthTokenPayload extends jwt.JwtPayload {
 
 const registeredUsers = new Map<string, RegisteredUser>();
 const passwordRounds = 12;
-const tokenSecret =
-  process.env.AUTH_TOKEN_SECRET || process.env.JWT_SECRET || randomBytes(32).toString('hex');
 const tokenIssuer = 'lgm-api';
 const tokenAudience = 'lgm-client';
+
+function getTokenSecret(): string {
+  const configuredSecret = process.env.AUTH_TOKEN_SECRET || process.env.JWT_SECRET;
+  if (configuredSecret) {
+    return configuredSecret;
+  }
+
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('AUTH_TOKEN_SECRET or JWT_SECRET must be configured in production');
+  }
+
+  logger.warn({ message: '[auth] using an ephemeral token secret; tokens will reset on restart' });
+  return randomBytes(32).toString('hex');
+}
+
+const tokenSecret = getTokenSecret();
 
 function createAuthError(status: number, message: string): Error & { status: number } {
   const error = new Error(message) as Error & { status: number };
@@ -51,6 +66,10 @@ function toRuntimeUser(username: string): RuntimeUser {
     groups: [],
     isGuest: false,
   };
+}
+
+function sanitizeGroups(groups: unknown): string[] {
+  return Array.isArray(groups) ? groups.filter((group): group is string => typeof group === 'string') : [];
 }
 
 function issueToken(user: RuntimeUser): string {
@@ -134,7 +153,7 @@ export function verifyToken(token: string): RuntimeUser {
     id: payload.sub,
     email: payload.email,
     name: payload.name || payload.email,
-    groups: Array.isArray(payload.groups) ? payload.groups.filter((group): group is string => typeof group === 'string') : [],
+    groups: sanitizeGroups(payload.groups),
     isGuest: false,
   };
 }

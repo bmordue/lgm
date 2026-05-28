@@ -3,7 +3,7 @@ import * as express from 'express';
 import * as exegesisExpress from 'exegesis-express';
 import * as path from 'path';
 import * as http from "http";
-import { loadUser, RuntimeUser } from './middleware/auth';
+import { limitAuthAttempts, loadUser, RuntimeUser } from './middleware/auth';
 import { inspect } from 'util';
 import { SERVER_CONFIG } from './config/GameConfig';
 
@@ -57,7 +57,9 @@ async function createServer() {
         next();
     });
 
-    // Load user identity from proxy headers (or DEV_STUB_USER in dev)
+    app.use(limitAuthAttempts);
+
+    // Load user identity from bearer tokens, proxy headers, or DEV_STUB_USER in dev
     app.use(loadUser);
 
     // If you have any body parsers, this should go before them.
@@ -96,4 +98,3 @@ createServer()
         console.error('Failed to start server:', err);
         process.exit(1);
     });
-

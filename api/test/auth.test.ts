@@ -6,10 +6,11 @@ import { clearAuthStore, register } from "../service/AuthService";
 
 describe("auth middleware", function () {
   let loadUser: any;
+  let limitAuthAttempts: any;
   let requireAuth: any;
   let requireProxyAuth: any;
 
-  function makeReqRes(headers: Record<string, string> = {}) {
+  function makeReqRes(headers: Record<string, string> = {}, method = 'GET', path = '/') {
     const locals: Record<string, any> = {};
     const res: any = {
       locals,
@@ -23,8 +24,11 @@ describe("auth middleware", function () {
         this._jsonData = data;
         return this;
       },
+      setHeader(name: string, value: string) {
+        this[name] = value;
+      },
     };
-    const req: any = { headers };
+    const req: any = { headers, method, path, ip: '127.0.0.1' };
     return { req, res };
   }
 
@@ -35,6 +39,7 @@ describe("auth middleware", function () {
     delete require.cache[modulePath];
     const mod = require('../middleware/auth');
     loadUser = mod.loadUser;
+    limitAuthAttempts = mod.limitAuthAttempts;
     requireAuth = mod.requireAuth;
     requireProxyAuth = mod.requireProxyAuth;
   }
@@ -50,6 +55,8 @@ describe("auth middleware", function () {
   afterEach(function () {
     delete process.env.DEV_STUB_USER;
     delete process.env.REQUIRE_PROXY_AUTH;
+    delete process.env.AUTH_RATE_LIMIT_MAX_ATTEMPTS;
+    delete process.env.AUTH_RATE_LIMIT_WINDOW_MS;
   });
 
   describe("loadUser", function () {
@@ -217,6 +224,35 @@ describe("auth middleware", function () {
       requireAuth(req, res, () => { nextCalled = true; });
       assert.equal(nextCalled, false, "next should not be called");
       assert.equal(res.statusCode, 401);
+    });
+  });
+
+  describe("limitAuthAttempts", function () {
+    it("should allow non-auth routes through", function (done) {
+      const { req, res } = makeReqRes({}, 'GET', '/games');
+      limitAuthAttempts(req, res, done);
+    });
+
+    it("should return 429 after too many login attempts", function () {
+      process.env.AUTH_RATE_LIMIT_MAX_ATTEMPTS = '1';
+      process.env.AUTH_RATE_LIMIT_WINDOW_MS = '60000';
+      loadModule();
+
+      const first = makeReqRes({}, 'POST', '/users/login');
+      let nextCalled = false;
+      limitAuthAttempts(first.req, first.res, () => {
+        nextCalled = true;
+      });
+      assert.equal(nextCalled, true);
+
+      const second = makeReqRes({}, 'POST', '/users/login');
+      nextCalled = false;
+      limitAuthAttempts(second.req, second.res, () => {
+        nextCalled = true;
+      });
+
+      assert.equal(nextCalled, false);
+      assert.equal(second.res.statusCode, 429);
     });
   });
 

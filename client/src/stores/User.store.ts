@@ -17,7 +17,9 @@ interface AuthResponse {
 }
 
 async function parseJsonResponse<T>(response: Response): Promise<T> {
-  const data = await response.json().catch(() => ({ message: 'Unexpected server response' }))
+  const data = await response
+    .json()
+    .catch(() => ({ message: response.ok ? 'Unexpected server response' : 'Authentication request failed' }))
 
   if (!response.ok) {
     throw new Error(data.message || 'Authentication failed')

@@ -20,6 +20,7 @@ const GUEST_USER: RuntimeUser = {
 
 // In-memory registry of provisioned users (email -> RuntimeUser)
 const usersByEmail: Map<string, RuntimeUser> = new Map();
+const authAttemptBuckets: Map<string, { count: number; resetAt: number }> = new Map();
 
 function parseDevStubUser(stub: string): RuntimeUser | null {
   // Format: email:Display Name:group1,group2
@@ -70,6 +71,38 @@ function resolveBearerToken(authHeader: string): string | null {
   return token || null;
 }
 
+function isAuthMutation(req: Request): boolean {
+  return req.method === 'POST' && (req.path === '/users/login' || req.path === '/users/register');
+}
+
+export function limitAuthAttempts(req: Request, res: Response, next: NextFunction): void {
+  if (!isAuthMutation(req)) {
+    next();
+    return;
+  }
+
+  const windowMs = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 60_000);
+  const maxAttempts = Number(process.env.AUTH_RATE_LIMIT_MAX_ATTEMPTS || 10);
+  const bucketKey = `${req.ip}:${req.path}`;
+  const now = Date.now();
+  const existingBucket = authAttemptBuckets.get(bucketKey);
+
+  if (!existingBucket || existingBucket.resetAt <= now) {
+    authAttemptBuckets.set(bucketKey, { count: 1, resetAt: now + windowMs });
+    next();
+    return;
+  }
+
+  existingBucket.count += 1;
+  if (existingBucket.count > maxAttempts) {
+    res.setHeader('Retry-After', Math.max(1, Math.ceil((existingBucket.resetAt - now) / 1000)).toString());
+    res.status(429).json({ message: 'Too many authentication attempts. Please try again shortly.' });
+    return;
+  }
+
+  next();
+}
+
 /**
  * Express middleware that reads identity headers injected by an upstream
  * nginx + Authelia reverse proxy and provisions a RuntimeUser on res.locals.user.
@@ -106,7 +139,11 @@ export function loadUser(req: Request, res: Response, next: NextFunction): void 
     } catch (_err) {
       res.locals.authError = 'Invalid authentication token';
       res.locals.user = GUEST_USER;
-      logger.info({ message: '[auth] invalid bearer token' });
+      if (process.env.NODE_ENV !== 'production' && _err instanceof Error) {
+        logger.warn({ message: `[auth] invalid bearer token: ${_err.message}` });
+      } else {
+        logger.info({ message: '[auth] invalid bearer token' });
+      }
       return next();
     }
   }
