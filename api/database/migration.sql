@@ -4,6 +4,7 @@
 
 CREATE TABLE IF NOT EXISTS games (
     "id" SERIAL PRIMARY KEY,
+    "players" JSONB DEFAULT '[]'::jsonb,
     "hostPlayerId" INTEGER,
     "maxPlayers" INTEGER,
     "gameState" VARCHAR(20) DEFAULT 'LOBBY',
@@ -12,6 +13,8 @@ CREATE TABLE IF NOT EXISTS games (
     "createdAt" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     "startedAt" TIMESTAMP WITH TIME ZONE
 );
+
+ALTER TABLE games ADD COLUMN IF NOT EXISTS "players" JSONB DEFAULT '[]'::jsonb;
 
 CREATE TABLE IF NOT EXISTS players (
     "id" SERIAL PRIMARY KEY,
@@ -33,11 +36,19 @@ CREATE TABLE IF NOT EXISTS worlds (
 CREATE TABLE IF NOT EXISTS actors (
     "id" SERIAL PRIMARY KEY,
     "pos" JSONB NOT NULL, -- Will store x, y coordinates as JSON
-    "state" VARCHAR(10) DEFAULT 'ALIVE', -- 'ALIVE' or 'DEAD'
+    "state" INTEGER DEFAULT 1, -- ActorState enum value (1 = ALIVE)
     "owner" INTEGER NOT NULL, -- References player id
     "health" INTEGER,
     "weapon" JSONB -- Store weapon properties as JSON
 );
+
+ALTER TABLE actors
+  ALTER COLUMN "state" TYPE INTEGER
+  USING CASE
+    WHEN "state"::text IN ('ALIVE', '1') THEN 1
+    WHEN "state"::text IN ('DEAD', '0') THEN 0
+    ELSE 1
+  END;
 
 CREATE TABLE IF NOT EXISTS "turnOrders" (
     "id" SERIAL PRIMARY KEY,

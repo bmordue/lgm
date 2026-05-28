@@ -4,59 +4,69 @@ import { Client } from 'pg';
 import { Store, keys as StoreKeys } from './StoreInterface';
 import { MemoryStore } from './MemoryStore';
 import { PostgresStore } from './PostgresStore';
+import { runDatabaseMigrations } from './DatabaseMigrations';
 
 export import keys = StoreKeys;
 
-let storeInstance: Store;
+let storePromise: Promise<Store> | undefined;
+let operationQueue: Promise<unknown> = Promise.resolve();
+
+async function createStore(): Promise<Store> {
+  if (!process.env.DATABASE_URL) {
+    return new MemoryStore();
+  }
+
+  const dbClient = new Client({
+    connectionString: process.env.DATABASE_URL,
+  });
+  await dbClient.connect();
+  await runDatabaseMigrations(dbClient);
+  return new PostgresStore(dbClient);
+}
 
 async function getStore(): Promise<Store> {
-  if (storeInstance) {
-    return storeInstance;
-  }
-
-  if (!process.env.DATABASE_URL) {
-    storeInstance = new MemoryStore();
-  } else {
-    const dbClient = new Client({
-      connectionString: process.env.DATABASE_URL,
+  if (!storePromise) {
+    storePromise = createStore().catch((error) => {
+      storePromise = undefined;
+      throw error;
     });
-    await dbClient.connect();
-    storeInstance = new PostgresStore(dbClient);
   }
-  return storeInstance;
+  return storePromise;
+}
+
+function queueStoreOperation<T>(operation: (store: Store) => Promise<T>): Promise<T> {
+  const queuedOperation = operationQueue.then(async () => {
+    const store = await getStore();
+    return operation(store);
+  });
+  operationQueue = queuedOperation.then(() => undefined, () => undefined);
+  return queuedOperation;
 }
 
 export async function deleteAll(): Promise<void> {
-  const store = await getStore();
-  return store.deleteAll();
+  return queueStoreOperation((store) => store.deleteAll());
 }
 
 export async function create<T>(key: StoreKeys, obj: T): Promise<number> {
-  const store = await getStore();
-  return store.create(key, obj);
+  return queueStoreOperation((store) => store.create(key, obj));
 }
 
 export async function read<T>(key: StoreKeys, id: number): Promise<T> {
-  const store = await getStore();
-  return store.read(key, id);
+  return queueStoreOperation((store) => store.read(key, id));
 }
 
 export async function readAll<T>(key: StoreKeys, filterFunc: (item: T) => boolean): Promise<Array<T>> {
-  const store = await getStore();
-  return store.readAll(key, filterFunc);
+  return queueStoreOperation((store) => store.readAll(key, filterFunc));
 }
 
 export async function replace<T>(key: StoreKeys, id: number, newObj: T): Promise<T> {
-  const store = await getStore();
-  return store.replace(key, id, newObj);
+  return queueStoreOperation((store) => store.replace(key, id, newObj));
 }
 
 export async function update<T>(key: StoreKeys, id: number, diffObj: T): Promise<T> {
-  const store = await getStore();
-  return store.update(key, id, diffObj);
+  return queueStoreOperation((store) => store.update(key, id, diffObj));
 }
 
 export async function remove<T>(key: StoreKeys, id: number): Promise<boolean> {
-  const store = await getStore();
-  return store.remove(key, id);
+  return queueStoreOperation((store) => store.remove(key, id));
 }
