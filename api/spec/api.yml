@@ -6,6 +6,8 @@ info:
     LGM API. Authentication is handled by an upstream reverse-proxy (nginx + Authelia).
     The proxy injects identity headers (Remote-User, Remote-Name, Remote-Email, Remote-Groups)
     which the service uses for ownership and permission checks.
+  license:
+    name: Unlicense
 servers:
 - url: /
 paths:
@@ -35,6 +37,7 @@ paths:
     get:
       summary: list games
       operationId: listGames
+      security: []
       x-exegesis-controller: GameController
       responses:
         "200":
@@ -197,6 +200,7 @@ paths:
         This endpoint is deprecated. Authentication is handled by the upstream reverse proxy.
         Always returns 410 Gone.
       operationId: loginUser
+      security: []
       x-exegesis-controller: UsersController
       x-swagger-router-controller: UsersController
       requestBody:
@@ -224,6 +228,7 @@ paths:
         Returns the current user as resolved from proxy identity headers.
         Guest users (no proxy headers) receive the guest sentinel object.
       operationId: getCurrentUser
+      security: []
       x-exegesis-controller: UsersController
       x-swagger-router-controller: UsersController
       responses:
