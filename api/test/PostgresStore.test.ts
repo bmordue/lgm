@@ -70,4 +70,14 @@ describe('PostgresStore', () => {
     assert.strictEqual(queries[0].values?.[1], ActorState.DEAD);
     assert.strictEqual(queries[0].values?.[3], 0);
   });
+
+  it('returns numeric actor states on read', async () => {
+    const fakeClient = {
+      query: async () => ({ rows: [{ id: 11, state: ActorState.DEAD }] })
+    } as any;
+    const store = new PostgresStore(fakeClient);
+
+    const actor = await store.read<any>(keys.actors, 11);
+    assert.strictEqual(actor.state, ActorState.DEAD);
+  });
 });

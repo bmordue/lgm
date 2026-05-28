@@ -39,6 +39,7 @@ function queueStoreOperation<T>(operation: (store: Store) => Promise<T>): Promis
     const store = await getStore();
     return operation(store);
   });
+  // Keep queue progress independent from individual operation failures so later operations can retry.
   operationQueue = queuedOperation.then(() => undefined, () => undefined);
   return queuedOperation;
 }

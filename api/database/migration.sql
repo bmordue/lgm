@@ -4,7 +4,6 @@
 
 CREATE TABLE IF NOT EXISTS games (
     "id" SERIAL PRIMARY KEY,
-    "players" JSONB DEFAULT '[]'::jsonb,
     "hostPlayerId" INTEGER,
     "maxPlayers" INTEGER,
     "gameState" VARCHAR(20) DEFAULT 'LOBBY',
@@ -14,7 +13,9 @@ CREATE TABLE IF NOT EXISTS games (
     "startedAt" TIMESTAMP WITH TIME ZONE
 );
 
+-- Backfill for existing databases created before the players column existed.
 ALTER TABLE games ADD COLUMN IF NOT EXISTS "players" JSONB DEFAULT '[]'::jsonb;
+UPDATE games SET "players" = '[]'::jsonb WHERE "players" IS NULL;
 
 CREATE TABLE IF NOT EXISTS players (
     "id" SERIAL PRIMARY KEY,
@@ -47,6 +48,7 @@ ALTER TABLE actors
   USING CASE
     WHEN "state"::text IN ('ALIVE', '1') THEN 1
     WHEN "state"::text IN ('DEAD', '0') THEN 0
+    -- Fallback for legacy or malformed data to preserve playability.
     ELSE 1
   END;
 
