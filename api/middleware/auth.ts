@@ -75,32 +75,51 @@ function isAuthMutation(req: Request): boolean {
   return req.method === 'POST' && (req.path === '/users/login' || req.path === '/users/register');
 }
 
+function shouldRateLimit(req: Request): boolean {
+  return isAuthMutation(req) || Boolean(req.headers.authorization);
+}
+
+function pruneExpiredAuthAttemptBuckets(now: number): void {
+  for (const [bucketKey, bucket] of authAttemptBuckets.entries()) {
+    if (bucket.resetAt <= now) {
+      authAttemptBuckets.delete(bucketKey);
+    }
+  }
+}
+
 export function limitAuthAttempts(req: Request, res: Response, next: NextFunction): void {
-  if (!isAuthMutation(req)) {
-    next();
+  if (enforceAuthRateLimit(req, res)) {
     return;
+  }
+
+  next();
+}
+
+function enforceAuthRateLimit(req: Request, res: Response): boolean {
+  if (!shouldRateLimit(req)) {
+    return false;
   }
 
   const windowMs = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 60_000);
   const maxAttempts = Number(process.env.AUTH_RATE_LIMIT_MAX_ATTEMPTS || 10);
   const bucketKey = `${req.ip}:${req.path}`;
   const now = Date.now();
+  pruneExpiredAuthAttemptBuckets(now);
   const existingBucket = authAttemptBuckets.get(bucketKey);
 
   if (!existingBucket || existingBucket.resetAt <= now) {
     authAttemptBuckets.set(bucketKey, { count: 1, resetAt: now + windowMs });
-    next();
-    return;
+    return false;
   }
 
   existingBucket.count += 1;
   if (existingBucket.count > maxAttempts) {
     res.setHeader('Retry-After', Math.max(1, Math.ceil((existingBucket.resetAt - now) / 1000)).toString());
     res.status(429).json({ message: 'Too many authentication attempts. Please try again shortly.' });
-    return;
+    return true;
   }
 
-  next();
+  return false;
 }
 
 /**

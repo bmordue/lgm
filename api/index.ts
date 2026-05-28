@@ -57,10 +57,10 @@ async function createServer() {
         next();
     });
 
-    app.use(limitAuthAttempts);
-
-    // Load user identity from bearer tokens, proxy headers, or DEV_STUB_USER in dev
-    app.use(loadUser);
+    // Rate-limit auth-sensitive requests before resolving the active user.
+    app.use((req, res, next) => {
+        limitAuthAttempts(req, res, () => loadUser(req, res, next));
+    });
 
     // If you have any body parsers, this should go before them.
     app.use(exegesisMiddleware);

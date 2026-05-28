@@ -16,6 +16,7 @@ interface AuthTokenPayload extends jwt.JwtPayload {
   groups: string[];
 }
 
+// Temporary in-memory credential store until persistent user storage is wired in.
 const registeredUsers = new Map<string, RegisteredUser>();
 const passwordRounds = 12;
 const tokenIssuer = 'lgm-api';
@@ -83,7 +84,7 @@ function issueToken(user: RuntimeUser): string {
     tokenSecret,
     {
       audience: tokenAudience,
-      expiresIn: '12h',
+      expiresIn: '2h',
       issuer: tokenIssuer,
     },
   );
