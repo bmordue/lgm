@@ -3,9 +3,8 @@ info:
   title: Lgm
   version: 0.0.1
   description: |
-    LGM API. Authentication is handled by an upstream reverse-proxy (nginx + Authelia).
-    The proxy injects identity headers (Remote-User, Remote-Name, Remote-Email, Remote-Groups)
-    which the service uses for ownership and permission checks.
+    LGM API. Authentication supports JWT bearer tokens for client sessions and
+    legacy proxy identity headers for compatibility.
 servers:
 - url: /
 paths:
@@ -177,29 +176,62 @@ paths:
           description: host transferred
         "400":
           description: bad request
+  /users/register:
+    post:
+      summary: Register a new user
+      description: |
+        Creates a new user with a hashed password and returns a bearer token.
+      operationId: registerUser
+      x-exegesis-controller: UsersController
+      x-swagger-router-controller: UsersController
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRequest'
+      responses:
+        "201":
+          description: User registered
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "409":
+          description: Username already exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
   /users/login:
     post:
-      summary: User login (deprecated — returns 410 Gone)
+      summary: User login
       description: |
-        This endpoint is deprecated. Authentication is handled by the upstream reverse proxy.
-        Always returns 410 Gone.
+        Authenticates a user and returns a bearer token for subsequent requests.
       operationId: loginUser
       x-exegesis-controller: UsersController
       x-swagger-router-controller: UsersController
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                username:
-                  type: string
-                password:
-                  type: string
+              $ref: '#/components/schemas/AuthRequest'
       responses:
-        "410":
-          description: Login no longer supported; authentication handled by proxy
+        "200":
+          description: Authenticated user session
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        "401":
+          description: Invalid credentials
           content:
             application/json:
               schema:
@@ -208,8 +240,8 @@ paths:
     get:
       summary: Get current user identity
       description: |
-        Returns the current user as resolved from proxy identity headers.
-        Guest users (no proxy headers) receive the guest sentinel object.
+        Returns the current user as resolved from a bearer token or legacy proxy
+        identity headers. Guest users receive the guest sentinel object.
       operationId: getCurrentUser
       x-exegesis-controller: UsersController
       x-swagger-router-controller: UsersController
@@ -220,6 +252,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserIdentity'
+        "401":
+          description: Invalid bearer token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
   /games/{gameId}/turns/{turn}/players/{playerId}:
     get:
       summary: get turn results
@@ -336,6 +374,21 @@ components:
       properties:
         message:
           type: string
+    AuthRequest:
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+    AuthResponse:
+      properties:
+        token:
+          type: string
+        user:
+          $ref: '#/components/schemas/UserIdentity'
     TurnOrders:
       properties:
         orders:
@@ -468,10 +521,6 @@ components:
   #   bearerAuth:
   #     type: http
   #     scheme: bearer
-    LoginResponse:
-      properties:
-        token:
-          type: string
     UserIdentity:
       type: object
       properties:
@@ -490,10 +539,9 @@ components:
   securitySchemes:
     bearerAuth:
       description: |
-        Authentication is handled by an upstream reverse proxy that injects
-        Remote-User, Remote-Name, Remote-Email, and Remote-Groups headers.
-        This scheme name is retained for internal routing only; no bearer tokens
-        are issued or accepted by this service.
-      type: apiKey
-      in: header
-      name: Remote-User
+        Authenticate using a JWT bearer token issued by the API.
+        Legacy proxy identity headers are still accepted when no bearer token
+        is supplied.
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

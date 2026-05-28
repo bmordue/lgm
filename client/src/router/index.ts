@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { getStoredAuthToken } from '@/utils/auth'
 
 const router = createRouter({
   history: createWebHistory(import.meta.BASE_URL),
@@ -17,10 +18,25 @@ const router = createRouter({
       component: () => import('../views/AboutView.vue')
     },
     {path: '/login', name: 'login', component: () => import('../views/LoginView.vue')},
+    {path: '/register', name: 'register', component: () => import('../views/RegisterView.vue')},
     {path: '/reset', name: 'reset', component: () => import('../views/ResetView.vue')},
-    {path: '/dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue')},
-    {path: '/game', name: 'game', component: () => import('../views/GameView.vue')}
+    {path: '/dashboard', name: 'dashboard', component: () => import('../views/DashboardView.vue'), meta: { requiresAuth: true }},
+    {path: '/game', name: 'game', component: () => import('../views/GameView.vue'), meta: { requiresAuth: true }}
   ]
+})
+
+router.beforeEach((to) => {
+  const isAuthenticated = Boolean(getStoredAuthToken())
+
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    return { name: 'login' }
+  }
+
+  if (isAuthenticated && (to.name === 'login' || to.name === 'register')) {
+    return { name: 'dashboard' }
+  }
+
+  return true
 })
 
 export default router

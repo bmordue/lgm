@@ -7,15 +7,40 @@ const BASE_URL = "http://localhost:3000";
 process.env.RUN_E2E_TESTS &&
 describe('e2e tests', () => {
   describe("authentication", () => {
-    it("should return 410 for POST /users/login (login is deprecated)", async () => {
-      try {
-        await superagent
-          .post(`${BASE_URL}/users/login`)
-          .send({ username: "e2e_auth_user", password: "testpassword" });
-        assert.fail("Expected 410 for deprecated login endpoint");
-      } catch (err: any) {
-        assert.equal(err.status, 410, "Deprecated login should return 410 Gone");
-      }
+    it("should register, login, and authenticate protected routes with a bearer token", async () => {
+      const username = 'e2e_auth_user';
+      const password = 'testpassword';
+
+      const registerResponse = await superagent
+        .post(`${BASE_URL}/users/register`)
+        .send({ username, password });
+
+      assert.equal(registerResponse.statusCode, 201);
+      assert.equal(registerResponse.body.user.email, username);
+      assert.equal(typeof registerResponse.body.token, 'string');
+
+      const loginResponse = await superagent
+        .post(`${BASE_URL}/users/login`)
+        .send({ username, password });
+
+      assert.equal(loginResponse.statusCode, 200);
+      assert.equal(typeof loginResponse.body.token, 'string');
+
+      const meResponse = await superagent
+        .get(`${BASE_URL}/users/me`)
+        .set('Authorization', 'Bearer ' + loginResponse.body.token);
+
+      assert.equal(meResponse.statusCode, 200);
+      assert.equal(meResponse.body.email, username);
+      assert.equal(meResponse.body.isGuest, false);
+
+      const createGameResponse = await superagent
+        .post(`${BASE_URL}/games`)
+        .set('Authorization', 'Bearer ' + loginResponse.body.token)
+        .send();
+
+      assert.equal(createGameResponse.statusCode, 200);
+      assert(typeof createGameResponse.body.id === 'number', 'Authenticated bearer token should create a game');
     });
 
     it("should return guest user from GET /users/me without proxy headers", async () => {
@@ -34,6 +59,17 @@ describe('e2e tests', () => {
       assert.equal(response.body.email, 'alice@example.com');
       assert.equal(response.body.name, 'Alice');
       assert.equal(response.body.isGuest, false);
+    });
+
+    it("should return 401 from GET /users/me with an invalid bearer token", async () => {
+      try {
+        await superagent
+          .get(`${BASE_URL}/users/me`)
+          .set('Authorization', 'Bearer ' + 'invalid-token');
+        assert.fail("Expected invalid bearer token to be rejected");
+      } catch (err: any) {
+        assert.equal(err.status, 401);
+      }
     });
   });
 

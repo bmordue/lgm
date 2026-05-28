@@ -1,4 +1,5 @@
 import assert = require("assert");
+import { clearAuthStore, register } from "../service/AuthService";
 
 // We need to reset module state between tests since the usersByEmail map is module-level.
 // We do this by clearing NODE_ENV and DEV_STUB_USER env vars and re-requiring the module.
@@ -42,6 +43,7 @@ describe("auth middleware", function () {
     delete process.env.DEV_STUB_USER;
     delete process.env.REQUIRE_PROXY_AUTH;
     process.env.NODE_ENV = 'test';
+    clearAuthStore();
     loadModule();
   });
 
@@ -58,6 +60,29 @@ describe("auth middleware", function () {
         assert.equal(res.locals.user.email, 'alice@example.com');
         assert.equal(res.locals.user.id, 'alice@example.com');
         assert.equal(res.locals.user.isGuest, false);
+        done();
+      });
+    });
+
+    it("should set user from a valid bearer token", async function () {
+      const registration = await register('token-user', 'super-secret');
+      const { req, res } = makeReqRes({ authorization: 'Bearer ' + registration.token });
+
+      await new Promise<void>((resolve) => {
+        loadUser(req, res, () => {
+          assert.equal(res.locals.user.email, 'token-user');
+          assert.equal(res.locals.user.isGuest, false);
+          resolve();
+        });
+      });
+    });
+
+    it("should flag invalid bearer tokens", function (done) {
+      const { req, res } = makeReqRes({ authorization: 'Bearer ' + 'invalid-token' });
+
+      loadUser(req, res, () => {
+        assert.equal(res.locals.user.isGuest, true);
+        assert.equal(res.locals.authError, 'Invalid authentication token');
         done();
       });
     });

@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { verifyToken } from '../service/AuthService';
 import * as logger from '../utils/Logger';
 
 export interface RuntimeUser {
@@ -49,6 +50,15 @@ function provisionUser(email: string, name: string, groups: string[]): RuntimeUs
   if (existing) {
     return existing;
   }
+
+  function resolveBearerToken(authHeader: string): string | null {
+    if (!authHeader.startsWith('Bearer ')) {
+      return null;
+    }
+
+    const token = authHeader.slice('Bearer '.length).trim();
+    return token || null;
+  }
   const user: RuntimeUser = {
     id: email,
     email,
@@ -75,6 +85,31 @@ function provisionUser(email: string, name: string, groups: string[]): RuntimeUs
 export function loadUser(req: Request, res: Response, next: NextFunction): void {
   const isProduction = process.env.NODE_ENV === 'production';
   const requireProxyAuthEnv = process.env.REQUIRE_PROXY_AUTH === 'true';
+  const authorizationHeader = req.headers.authorization;
+
+  if (authorizationHeader) {
+    const token = resolveBearerToken(authorizationHeader);
+    if (!token) {
+      res.locals.authError = 'Invalid authorization header';
+      res.locals.user = GUEST_USER;
+      logger.info({ message: '[auth] invalid authorization header' });
+      return next();
+    }
+
+    try {
+      const decodedUser = verifyToken(token);
+      const user = provisionUser(decodedUser.email, decodedUser.name, decodedUser.groups);
+      res.locals.user = user;
+      delete res.locals.authError;
+      logger.info({ message: `[auth] principal="${user.email}" (bearer)` });
+      return next();
+    } catch (_err) {
+      res.locals.authError = 'Invalid authentication token';
+      res.locals.user = GUEST_USER;
+      logger.info({ message: '[auth] invalid bearer token' });
+      return next();
+    }
+  }
 
   const rawEmail =
     (req.headers['remote-user'] as string | undefined) ||

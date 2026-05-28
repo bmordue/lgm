@@ -5,6 +5,7 @@ import OrderSubmission from '@/components/OrderSubmission.vue'; // Import OrderS
 import { useGamesStore, type Actor, type PlannedMove, type Order } from '../stores/Games.store' // Import PlannedMove and Order
 import { useUserStore } from '../stores/User.store';
 import { API_URL } from '@/config';
+import { createAuthHeaders } from '@/utils/auth';
 
 interface GameData {
   gameId?: number | null;
@@ -192,9 +193,9 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     const response = await fetch(`${API_URL}/games/${g.gameId}/turns/${g.turn}/players/${playerId}`, {
       method: "POST",
       credentials: 'include',
-      headers: {
+      headers: createAuthHeaders({
         'Content-Type': 'application/json'
-      },
+      }),
       // Body updated: orders array wrapped in an object { orders: orders }
       body: JSON.stringify({ orders: orders })
     });

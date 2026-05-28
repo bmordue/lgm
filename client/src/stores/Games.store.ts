@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import { createAuthHeaders } from '@/utils/auth';
 
 export const useGamesStore = defineStore('games', {
   state: () => {
@@ -68,6 +69,7 @@ export const useGamesStore = defineStore('games', {
       try {
         const response = await fetch(`${apiUrlModule.API_URL}/games/${gameId}/players/${playerId}`, {
           credentials: 'include',
+          headers: createAuthHeaders(),
         });
         if (!response.ok) {
           const error = await response.json().catch(() => ({ message: "Failed to fetch game details and parse error" }));
@@ -87,7 +89,6 @@ export const useGamesStore = defineStore('games', {
 }
 );
 
-// Make sure API_URL is imported if not already globally available
 import { API_URL } from '@/config';
 
 // Interface for the expected response from the turn results endpoint

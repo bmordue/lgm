@@ -1,23 +1,44 @@
 import { ExegesisContext } from "exegesis";
+import * as AuthService from "../service/AuthService";
 
 /**
- * POST /users/login — deprecated.
- * Authentication is now handled by an upstream reverse proxy via identity headers.
- * This endpoint is kept for backward compatibility but always returns 410 Gone.
+ * POST /users/register — create a new user and issue a bearer token.
+ */
+export async function registerUser(context: ExegesisContext) {
+  const { username, password } = context.requestBody || {};
+
+  try {
+    const result = await AuthService.register(username, password);
+    context.res.status(201).json(result);
+  } catch (error: any) {
+    context.res.status(error.status || 500).json({ message: error.message || 'Failed to register user' });
+  }
+}
+
+/**
+ * POST /users/login — authenticate a user and issue a bearer token.
  */
 export async function loginUser(context: ExegesisContext) {
-  context.res.status(410).json({
-    message: 'Login is no longer supported. Authentication is handled by the upstream proxy.',
-  });
+  const { username, password } = context.requestBody || {};
+
+  try {
+    const result = await AuthService.login(username, password);
+    context.res.status(200).json(result);
+  } catch (error: any) {
+    context.res.status(error.status || 500).json({ message: error.message || 'Failed to authenticate user' });
+  }
 }
 
 /**
  * GET /users/me — returns the current user from res.locals.user.
- * Returns the guest sentinel for unauthenticated requests.
- * The user is set by the loadUser middleware on the Express response locals,
- * accessible via req.res.locals in Exegesis controllers.
  */
 export function getCurrentUser(context: ExegesisContext) {
+  const authError = (context.req as any).res?.locals?.authError;
+  if (authError) {
+    context.res.status(401).json({ message: authError });
+    return;
+  }
+
   const user = (context.req as any).res?.locals?.user ?? {
     id: 'guest',
     email: '',

@@ -22,6 +22,7 @@ onMounted(() => {
         <span v-if="userStore.user" class="user-greeting">Welcome, {{ userStore.user.name }}!</span>
         <RouterLink v-if="userStore.isAuthenticated" to="/dashboard">Dashboard</RouterLink>
         <RouterLink v-if="!userStore.isAuthenticated" to="/login">Login</RouterLink>
+        <RouterLink v-if="!userStore.isAuthenticated" to="/register">Register</RouterLink>
         <RouterLink v-if="!userStore.isAuthenticated" to="/reset">Reset</RouterLink>
         <button
           v-if="userStore.isAuthenticated"

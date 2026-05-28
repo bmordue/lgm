@@ -3,6 +3,7 @@ import { ref, watchEffect } from 'vue'
 import  router  from '../router';
 import { useGamesStore, type World } from '@/stores/Games.store';
 import { API_URL } from '@/config';
+import { createAuthHeaders } from '@/utils/auth';
 
 interface GameSummary {
   id: number;
@@ -42,6 +43,7 @@ async function callCreate() {
     const response = await fetch(`${API_URL}/games`, {
       method: "post",
       credentials: 'include',
+      headers: createAuthHeaders(),
     });
 
     if (response.ok) {
@@ -73,6 +75,7 @@ async function join(game: GameSummary) {
     const resp = await fetch(`${API_URL}/games/${game.id}`, {
       method: "put",
       credentials: 'include',
+      headers: createAuthHeaders(),
     });
 
     if (!resp.ok) {
