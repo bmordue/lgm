@@ -85,6 +85,10 @@ export default defineComponent({
         type: Number as PropType<number | null>,
         default: null,
     },
+    hoveredLegendType: {
+        type: String as PropType<string | null>,
+        default: null,
+    },
   },
   emits: ['move-planned', 'actor-hover', 'player-hover', 'move-hover', 'actor-select'], // Declare emitted events
   setup(props, { emit }) {
@@ -202,6 +206,17 @@ export default defineComponent({
 
         if (isHoveredBySidebar) {
             classes.push('is-hovered-actor');
+        }
+
+        // Legend highlight logic
+        if (props.hoveredLegendType) {
+            if (props.hoveredLegendType === 'terrain-empty' && terrainType === Terrain.EMPTY) classes.push('legend-highlight');
+            else if (props.hoveredLegendType === 'terrain-blocked' && terrainType === Terrain.BLOCKED) classes.push('legend-highlight');
+            else if (props.hoveredLegendType === 'terrain-unexplored' && terrainType === Terrain.UNEXPLORED) classes.push('legend-highlight');
+            else if (props.hoveredLegendType === 'is-own' && actorOnHex && actorOnHex.owner === currentPlayerId.value) classes.push('legend-highlight');
+            else if (props.hoveredLegendType === 'is-enemy' && actorOnHex && actorOnHex.owner !== currentPlayerId.value) classes.push('legend-highlight');
+            else if (props.hoveredLegendType === 'is-selected' && actorOnHex && actorOnHex.id === props.selectedActorId) classes.push('legend-highlight');
+            else if (props.hoveredLegendType === 'is-planned' && isPlannedDestination) classes.push('legend-highlight');
         }
 
         return classes;
@@ -458,6 +473,14 @@ g:focus-visible .hex-polygon {
   stroke: #2196f3; /* Blue highlight */
   stroke-width: 3;
   fill: rgba(33, 150, 243, 0.2);
+}
+
+.hex-polygon.legend-highlight {
+  stroke: hsla(160, 100%, 37%, 1);
+  stroke-width: 3.5;
+  filter: drop-shadow(0 0 4px hsla(160, 100%, 37%, 0.5));
+  animation: pulse-selection 1s infinite ease-in-out;
+  z-index: 10;
 }
 
 
