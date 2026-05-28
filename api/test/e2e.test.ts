@@ -208,6 +208,19 @@ describe('e2e tests', () => {
         .send(p2Orders);
       assert.equal(p2Submit.statusCode, 200);
       assert.equal(p2Submit.body.turnStatus.complete, true);
+
+      const [p1FinalResult, p2FinalResult] = await Promise.all([
+        superagent
+          .get(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerIdP1))
+          .set('Remote-User', emailP1),
+        superagent
+          .get(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerIdP2))
+          .set('Remote-User', emailP2),
+      ]);
+      assert.equal(p1FinalResult.statusCode, 200);
+      assert.equal(p2FinalResult.statusCode, 200);
+      assert(p1FinalResult.body.world);
+      assert(p2FinalResult.body.world);
     });
 
     it("should advance game turn after turn processing completes", async () => {

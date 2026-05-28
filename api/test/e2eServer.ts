@@ -3,11 +3,12 @@ import { ChildProcess, spawn } from "child_process";
 import path = require("path");
 
 let startedProcess: ChildProcess | null = null;
+const SHUTDOWN_TIMEOUT_MS = 1000;
 
 async function waitForServer(baseUrl: string, attempts = 30): Promise<void> {
     for (let i = 0; i < attempts; i++) {
         try {
-            await superagent.get(`${baseUrl}/users/me`);
+            await superagent.get(`${baseUrl}/games`);
             return;
         } catch (_err) {
             await new Promise((resolve) => setTimeout(resolve, 250));
@@ -48,9 +49,30 @@ export async function stopE2EServer(): Promise<void> {
 
     await new Promise<void>((resolve) => {
         const processToStop = startedProcess!;
-        startedProcess = null;
-        processToStop.once("exit", () => resolve());
+        let settled = false;
+        const done = () => {
+            if (!settled) {
+                settled = true;
+                resolve();
+            }
+        };
+
+        const finalizeStop = () => {
+            if (startedProcess === processToStop) {
+                startedProcess = null;
+            }
+            done();
+        };
+
+        const timeout = setTimeout(() => {
+            finalizeStop();
+        }, SHUTDOWN_TIMEOUT_MS);
+
+        processToStop.once("exit", () => {
+            clearTimeout(timeout);
+            finalizeStop();
+        });
+
         processToStop.kill();
-        setTimeout(() => resolve(), 1000);
     });
 }
