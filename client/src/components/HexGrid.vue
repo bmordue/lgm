@@ -40,7 +40,7 @@
 
 <script lang="ts">
 import { defineComponent, computed, type PropType, type CSSProperties } from 'vue'; // Added ref
-import { Terrain } from '../../../api/service/Models'; // Assuming Terrain might still be used or can be cleaned up if not.
+import { Terrain } from '../../../api/service/Models';
 import { Hex, Point, Layout, OffsetCoord } from '../../../api/Hex';
 import { useGamesStore, type Actor, type PlannedMove, type World } from '../stores/Games.store'; // Added imports
 
