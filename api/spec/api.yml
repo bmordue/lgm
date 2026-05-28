@@ -422,6 +422,7 @@ components:
   schemas:
     GameCreatedResponse:
       type: object
+      description: Response payload returned when a new game is successfully created.
       required:
       - gameId
       properties:
@@ -450,6 +451,7 @@ components:
           $ref: '#/components/schemas/GameState'
     ErrorMessageResponse:
       type: object
+      description: Standard error response payload used across API endpoints.
       required:
       - message
       properties:
@@ -457,6 +459,7 @@ components:
           type: string
     SuccessResponse:
       type: object
+      description: Generic success payload for operations that do not return resource data.
       required:
       - success
       properties:
@@ -464,6 +467,7 @@ components:
           type: boolean
     PostOrdersResponse:
       type: object
+      description: Indicates whether all required player orders have been submitted for the turn.
       required:
       - turnStatus
       properties:
@@ -482,6 +486,7 @@ components:
             $ref: '#/components/schemas/TurnOrders_orders'
     TurnResultsResponse:
       type: object
+      description: Contains the resolved world state returned after turn processing completes.
       required:
       - world
       properties:
