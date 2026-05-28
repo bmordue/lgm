@@ -25,12 +25,18 @@ paths:
                 maxPlayers:
                   type: integer
       responses:
-        "200":
+        "201":
           description: metadata about newly created game
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameCreatedResponse'
+        "500":
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
       x-swagger-router-controller: GameController
     get:
       summary: list games
@@ -60,8 +66,12 @@ paths:
         schema:
           type: integer
       responses:
-        "204":
+        "200":
           description: join request accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinGameResponse'
         "400":
           description: bad request
           content:
@@ -71,6 +81,21 @@ paths:
         "403":
           description: join request denied
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "404":
+          description: game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "500":
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
   /games/{gameId}/players/{playerId}:
     delete:
       summary: kick a player from a game
@@ -92,8 +117,28 @@ paths:
       responses:
         "200":
           description: player kicked
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         "400":
           description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "404":
+          description: game or player not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
     get:
       summary: get current game state for a specific player
       operationId: getPlayerGameState
@@ -120,6 +165,10 @@ paths:
                 $ref: '#/components/schemas/JoinGameResponse'
         "400":
           description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
         "403":
           description: forbidden
           content:
@@ -148,8 +197,28 @@ paths:
       responses:
         "200":
           description: game started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         "400":
           description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "404":
+          description: game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
   /games/{gameId}/host:
     put:
       summary: transfer host to another player
@@ -175,8 +244,28 @@ paths:
       responses:
         "200":
           description: host transferred
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
         "400":
           description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "403":
+          description: forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "404":
+          description: game or player not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
   /users/login:
     post:
       summary: User login (deprecated — returns 410 Gone)
@@ -256,6 +345,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TurnResultsResponse'
+        "404":
+          description: turn results not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "500":
+          description: server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
       x-swagger-router-controller: GameController
     post:
       summary: post turn orders
@@ -292,10 +393,26 @@ paths:
               $ref: '#/components/schemas/TurnOrders'
         required: true
       responses:
-        "202":
+        "200":
           description: accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostOrdersResponse'
         "400":
           description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "404":
+          description: game not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "500":
+          description: server error
           content:
             application/json:
               schema:
@@ -304,6 +421,7 @@ paths:
 components:
   schemas:
     GameCreatedResponse:
+      type: object
       required:
       - gameId
       properties:
@@ -331,11 +449,31 @@ components:
         gameState:
           $ref: '#/components/schemas/GameState'
     ErrorMessageResponse:
+      type: object
       required:
       - message
       properties:
         message:
           type: string
+    SuccessResponse:
+      type: object
+      required:
+      - success
+      properties:
+        success:
+          type: boolean
+    PostOrdersResponse:
+      type: object
+      required:
+      - turnStatus
+      properties:
+        turnStatus:
+          type: object
+          required:
+          - complete
+          properties:
+            complete:
+              type: boolean
     TurnOrders:
       properties:
         orders:
@@ -343,6 +481,9 @@ components:
           items:
             $ref: '#/components/schemas/TurnOrders_orders'
     TurnResultsResponse:
+      type: object
+      required:
+      - world
       properties:
         world:
           $ref: '#/components/schemas/World'

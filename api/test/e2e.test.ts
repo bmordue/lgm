@@ -53,9 +53,9 @@ describe('e2e tests', () => {
         .post(`${BASE_URL}/games`)
         .set('Remote-User', userEmail)
         .send();
-      assert.equal(response.statusCode, 200);
-      assert(typeof response.body.id === 'number' && response.body.id >= 0, "response.body.id should be a non-negative number");
-      createdGameId = response.body.id;
+      assert.equal(response.statusCode, 201);
+      assert(typeof response.body.gameId === 'number' && response.body.gameId >= 0, "response.body.gameId should be a non-negative number");
+      createdGameId = response.body.gameId;
     });
 
     it("should include the new game in the games list", async () => {
@@ -119,7 +119,8 @@ describe('e2e tests', () => {
         .post(`${BASE_URL}/games`)
         .set('Remote-User', emailP1)
         .send();
-      gameId = createResp.body.id;
+      assert.equal(createResp.statusCode, 201);
+      gameId = createResp.body.gameId;
 
       const joinResp1 = await superagent
         .put(`${BASE_URL}/games/${gameId}`)
@@ -184,7 +185,8 @@ describe('e2e tests', () => {
         .post(`${BASE_URL}/games`)
         .set('Remote-User', userEmail)
         .send();
-      gameId = createResp.body.id;
+      assert.equal(createResp.statusCode, 201);
+      gameId = createResp.body.gameId;
     });
 
     it("should reject creating a game without proxy headers (guest user)", async () => {
@@ -214,7 +216,8 @@ describe('e2e tests', () => {
           .send();
         assert.fail("Expected error for non-existent game");
       } catch (err: any) {
-        assert(err.status >= 400, `Expected 4xx status, got ${err.status}`);
+        assert.equal(err.status, 404);
+        assert.equal(err.response.body.message, `games with id ${nonExistentGameId} not found`);
       }
     });
   });

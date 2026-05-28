@@ -4,24 +4,35 @@ import GameService = require("../service/GameService");
 import GameLifecycleService = require("../service/GameLifecycleService");
 import { RuntimeUser } from "../middleware/auth";
 import { Player } from "../service/Models";
-import { NotFoundError } from "../utils/Errors";
+import { NotFoundError, formatErrorResponse } from "../utils/Errors";
+
+function handleControllerError(context: ExegesisContext, error: unknown) {
+  const normalizedError = error instanceof Error ? error : new Error("Unexpected error");
+  const { message, statusCode } = formatErrorResponse(normalizedError);
+  context.res.status(statusCode);
+  return { message };
+}
 
 module.exports.createGame = async function createGame(context: ExegesisContext) {
-  const maxPlayers = context.requestBody?.maxPlayers; // Optional parameter
-  const result = await GameLifecycleService.createGame(maxPlayers);
-  // Return with 'id' property to match API expectations
-  return { id: result.gameId };
+  try {
+    const maxPlayers = context.requestBody?.maxPlayers;
+    const result = await GameLifecycleService.createGame(maxPlayers);
+    context.res.status(201);
+    return { gameId: result.gameId };
+  } catch (error) {
+    return handleControllerError(context, error);
+  }
 };
 
 module.exports.joinGame = async function joinGame(context: ExegesisContext) {
-  // context.user is the RuntimeUser provisioned by the loadUser middleware
-  const email = context.user?.email;
-  const userId = context.user?.id;
   try {
-    return await GameService.joinGame(context.params.path.id, email, userId);
-  } catch (err: any) {
-    context.res.status(err.status || 500);
-    return { message: err.message || "An unexpected error occurred while trying to join the game." };
+    const email = context.user?.email;
+    const userId = context.user?.id;
+    const result = await GameService.joinGame(context.params.path.id, email, userId);
+    context.res.status(200);
+    return result;
+  } catch (error) {
+    return handleControllerError(context, error);
   }
 };
 
@@ -32,95 +43,123 @@ module.exports.postOrders = async function postOrders(context: ExegesisContext) 
   const playerId = context.params.path.playerId;
 
   try {
-    // GameService.postOrders returns PostOrdersResponse or rejects with Error
-    return await GameService.postOrders(body, gameId, turn, playerId);
-  } catch (err: any) {
-    context.res.status(err.status || 500); // Set status if available on error, else 500
-    return { message: err.message || "An unexpected error occurred while posting orders." };
+    const result = await GameService.postOrders(body, gameId, turn, playerId);
+    context.res.status(200);
+    return result;
+  } catch (error) {
+    return handleControllerError(context, error);
   }
 };
 
 module.exports.turnResults = async function turnResults(context: ExegesisContext) {
-  const gameId = context.params.path.gameId;
-  const turn = context.params.path.turn;
-  const playerId = context.params.path.playerId;
-  const result = await GameService.turnResults(gameId, turn, playerId);
+  try {
+    const gameId = context.params.path.gameId;
+    const turn = context.params.path.turn;
+    const playerId = context.params.path.playerId;
+    const result = await GameService.turnResults(gameId, turn, playerId);
 
-  if (result.success && result.world) {
-    return { world: result.world };
-  } else if (!result.success && result.message) {
-    return { message: result.message };
-  } else if (result.success) {
-    return { message: "Turn results processed, but world data not available." };
-  } else {
-    return { message: "Failed to process turn results or results not available." };
+    if (result.success && result.world) {
+      context.res.status(200);
+      return { world: result.world };
+    }
+
+    const message = result.message || "Turn results are unavailable.";
+    context.res.status(message === "turn results not available" ? 404 : 500);
+    return { message };
+  } catch (error) {
+    return handleControllerError(context, error);
   }
 };
 
-module.exports.listGames = async function listGames() {
-  const result = await GameService.listGames();
-  return { games: result.games };
+module.exports.listGames = async function listGames(context: ExegesisContext) {
+  try {
+    const result = await GameService.listGames();
+    context.res.status(200);
+    return { games: result.games };
+  } catch (error) {
+    return handleControllerError(context, error);
+  }
 };
 
 module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) {
+  try {
     const { gameId, playerId } = context.params.path;
     const requestingPlayerId = context.user?.playerId;
 
     await GameLifecycleService.kickPlayer(
-        gameId,
-        playerId,
-        requestingPlayerId
+      gameId,
+      playerId,
+      requestingPlayerId
     );
 
+    context.res.status(200);
     return { success: true };
+  } catch (error) {
+    return handleControllerError(context, error);
+  }
 }
 
 module.exports.startGame = async function startGame(context: ExegesisContext) {
+  try {
     const { gameId } = context.params.path;
     const requestingPlayerId = context.user?.playerId;
 
     await GameLifecycleService.startGame(gameId, requestingPlayerId);
+    context.res.status(200);
     return { success: true };
+  } catch (error) {
+    return handleControllerError(context, error);
+  }
 }
 
 module.exports.transferHost = async function transferHost(context: ExegesisContext) {
+  try {
     const { gameId } = context.params.path;
     const { newHostPlayerId } = context.requestBody;
     const requestingPlayerId = context.user?.playerId;
 
     await GameLifecycleService.transferHost(
-        gameId,
-        newHostPlayerId,
-        requestingPlayerId
+      gameId,
+      newHostPlayerId,
+      requestingPlayerId
     );
 
+    context.res.status(200);
     return { success: true };
+  } catch (error) {
+    return handleControllerError(context, error);
+  }
 }
 
 module.exports.getPlayerGameState = async function getPlayerGameState(context: ExegesisContext) {
-    const { gameId, playerId } = context.params.path;
+  const { gameId, playerId } = context.params.path;
 
-    // Authorization check
-    try {
-        const player = await store.read<Player>(store.keys.players, playerId);
-        const authenticatedUser = context.user as RuntimeUser;
+  try {
+    const player = await store.read<Player>(store.keys.players, playerId);
+    const authenticatedUser = context.user as RuntimeUser;
 
-        if (player.gameId !== gameId) {
-            context.res.status(404);
-            return { message: "Player not found" };
-        }
-
-        if (player.sessionId !== authenticatedUser.id && player.username !== authenticatedUser.email) {
-            context.res.status(403);
-            return { message: "You can only access your own game state" };
-        }
-    } catch (err) {
-        if (!(err instanceof NotFoundError)) {
-            throw err;
-        }
-        context.res.status(404);
-        return { message: "Player not found" };
+    if (player.gameId !== gameId) {
+      context.res.status(404);
+      return { message: "Player not found" };
     }
 
-    return await GameLifecycleService.getPlayerGameState(gameId, playerId);
+    if (player.sessionId !== authenticatedUser.id && player.username !== authenticatedUser.email) {
+      context.res.status(403);
+      return { message: "You can only access your own game state" };
+    }
+  } catch (error) {
+    if (!(error instanceof NotFoundError)) {
+      throw error;
+    }
+    context.res.status(404);
+    return { message: "Player not found" };
+  }
+
+  try {
+    const result = await GameLifecycleService.getPlayerGameState(gameId, playerId);
+    context.res.status(200);
+    return result;
+  } catch (error) {
+    return handleControllerError(context, error);
+  }
 }
