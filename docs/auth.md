@@ -136,6 +136,9 @@ auth_request_set $remote_name  $upstream_http_x_auth_request_user;
 | `DEV_STUB_USER`      | (unset)       | Dev-only fake identity. Format: `email:Display Name:group1,group2`. Ignored in production. |
 | `ADMIN_GROUP`        | `admins`      | Group name granting admin privileges. |
 | `LGM_PORT`           | `3000`        | TCP port the API listens on. |
+| `LGM_MAX_BODY_SIZE_BYTES` | `16384`  | Maximum request payload size accepted by the API parser and OpenAPI middleware. |
+| `LGM_RATE_LIMIT_MAX_REQUESTS` | `100` | Maximum requests per client IP within the rate-limit window. |
+| `LGM_RATE_LIMIT_WINDOW_MS` | `900000` | Rolling rate-limit window in milliseconds (default 15 minutes). |
 
 ---
 
@@ -218,9 +221,11 @@ Strict mode: returns `401` when `Remote-User` / `Remote-Email` headers are absen
 |--------|------------|
 | Header spoofing by untrusted client | nginx strips `Remote-*` before setting them from Authelia; API binds to loopback in production |
 | Unauthenticated access to game routes | `requireAuth` middleware rejects guest sentinel with 401 |
-| Information leakage via `X-Powered-By` | `app.disable('x-powered-by')` |
-| Clickjacking | `X-Frame-Options: DENY` security header |
-| MIME-type sniffing | `X-Content-Type-Options: nosniff` security header |
+| Information leakage via `X-Powered-By` | `app.disable('x-powered-by')` plus Helmet header hardening |
+| Clickjacking / browser-side header attacks | Helmet applies baseline response headers including `X-Frame-Options`, `X-Content-Type-Options`, and `Referrer-Policy` |
+| Request flooding | `express-rate-limit` enforces per-IP request quotas |
+| Oversized or malformed payloads | Body parsing is size-limited and OpenAPI validation rejects invalid request bodies |
+| Prototype-pollution payloads | Parsed JSON bodies reject forbidden keys such as `__proto__`, `constructor`, and `prototype` before controller execution |
 | Token theft | No tokens are issued; sessions are managed by the proxy/Authelia |
 | DEV_STUB_USER in production | Ignored when `NODE_ENV=production` or `REQUIRE_PROXY_AUTH=true` |
 
