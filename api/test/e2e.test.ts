@@ -1,11 +1,21 @@
 import assert = require("assert");
 import superagent = require("superagent");
 import util = require("util");
+import { ensureE2EServer, stopE2EServer } from "./e2eServer";
 
 const BASE_URL = "http://localhost:3000";
 
 process.env.RUN_E2E_TESTS &&
 describe('e2e tests', () => {
+  before(async function () {
+    this.timeout(20000);
+    await ensureE2EServer(BASE_URL);
+  });
+
+  after(async () => {
+    await stopE2EServer();
+  });
+
   describe("authentication", () => {
     it("should return 410 for POST /users/login (login is deprecated)", async () => {
       try {
@@ -173,6 +183,43 @@ describe('e2e tests', () => {
       assert.equal(resp1.statusCode, 200);
       assert.equal(resp2.statusCode, 200);
     });
+
+    it("should keep turn incomplete until all players submit orders", async () => {
+      const turn = 2;
+      const p1Orders = { gameId, turn, playerId: playerIdP1, orders: [] };
+      const p2Orders = { gameId, turn, playerId: playerIdP2, orders: [] };
+
+      const p1Submit = await superagent
+        .post(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerIdP1))
+        .set('Remote-User', emailP1)
+        .send(p1Orders);
+      assert.equal(p1Submit.statusCode, 200);
+      assert.equal(p1Submit.body.turnStatus.complete, false);
+
+      const p1EarlyResult = await superagent
+        .get(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerIdP1))
+        .set('Remote-User', emailP1);
+      assert.equal(p1EarlyResult.statusCode, 200);
+      assert.equal(p1EarlyResult.body.message, "turn results not available");
+
+      const p2Submit = await superagent
+        .post(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerIdP2))
+        .set('Remote-User', emailP2)
+        .send(p2Orders);
+      assert.equal(p2Submit.statusCode, 200);
+      assert.equal(p2Submit.body.turnStatus.complete, true);
+    });
+
+    it("should advance game turn after turn processing completes", async () => {
+      const gameStateResponse = await superagent
+        .get(`${BASE_URL}/games/${gameId}/players/${playerIdP1}`)
+        .set('Remote-User', emailP1);
+
+      assert.equal(gameStateResponse.statusCode, 200);
+      assert.equal(gameStateResponse.body.gameId, gameId);
+      assert.equal(gameStateResponse.body.playerId, playerIdP1);
+      assert.equal(gameStateResponse.body.turn, 3);
+    });
   });
 
   describe("authorization and error handling", () => {
@@ -215,6 +262,98 @@ describe('e2e tests', () => {
         assert.fail("Expected error for non-existent game");
       } catch (err: any) {
         assert(err.status >= 400, `Expected 4xx status, got ${err.status}`);
+      }
+    });
+
+    it("should reject duplicate join attempts for the same user in one game", async () => {
+      const duplicateEmail = "e2e_duplicate_user@example.com";
+      const createResp = await superagent
+        .post(`${BASE_URL}/games`)
+        .set('Remote-User', duplicateEmail)
+        .send();
+      const duplicateGameId = createResp.body.id;
+
+      await superagent
+        .put(`${BASE_URL}/games/${duplicateGameId}`)
+        .set('Remote-User', duplicateEmail)
+        .send();
+
+      try {
+        await superagent
+          .put(`${BASE_URL}/games/${duplicateGameId}`)
+          .set('Remote-User', duplicateEmail)
+          .send();
+        assert.fail("Expected duplicate join to fail");
+      } catch (err: any) {
+        assert(err.status >= 400, `Expected 4xx/5xx status, got ${err.status}`);
+        assert.equal(err.response.body.message, "Player already joined this game");
+      }
+    });
+
+    it("should reject joins when game is full", async () => {
+      const createResp = await superagent
+        .post(`${BASE_URL}/games`)
+        .set('Remote-User', "e2e_full_host@example.com")
+        .send({ maxPlayers: 2 });
+      const fullGameId = createResp.body.id;
+
+      await superagent
+        .put(`${BASE_URL}/games/${fullGameId}`)
+        .set('Remote-User', "e2e_full_host@example.com")
+        .send();
+
+      await superagent
+        .put(`${BASE_URL}/games/${fullGameId}`)
+        .set('Remote-User', "e2e_full_second@example.com")
+        .send();
+
+      try {
+        await superagent
+          .put(`${BASE_URL}/games/${fullGameId}`)
+          .set('Remote-User', "e2e_full_third@example.com")
+          .send();
+        assert.fail("Expected full game join to fail");
+      } catch (err: any) {
+        assert(err.status >= 400, `Expected 4xx/5xx status, got ${err.status}`);
+        assert.equal(err.response.body.message, "Game is full");
+      }
+    });
+
+    it("should reject duplicate order submission from the same player and turn", async () => {
+      const p1 = "e2e_dup_order_p1@example.com";
+      const p2 = "e2e_dup_order_p2@example.com";
+
+      const createResp = await superagent
+        .post(`${BASE_URL}/games`)
+        .set('Remote-User', p1)
+        .send();
+      const duplicateOrderGameId = createResp.body.id;
+
+      const join1 = await superagent
+        .put(`${BASE_URL}/games/${duplicateOrderGameId}`)
+        .set('Remote-User', p1)
+        .send();
+      await superagent
+        .put(`${BASE_URL}/games/${duplicateOrderGameId}`)
+        .set('Remote-User', p2)
+        .send();
+
+      const firstSubmit = await superagent
+        .post(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, duplicateOrderGameId, 1, join1.body.playerId))
+        .set('Remote-User', p1)
+        .send({ gameId: duplicateOrderGameId, turn: 1, playerId: join1.body.playerId, orders: [] });
+
+      assert.equal(firstSubmit.statusCode, 200);
+
+      try {
+        await superagent
+          .post(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, duplicateOrderGameId, 1, join1.body.playerId))
+          .set('Remote-User', p1)
+          .send({ gameId: duplicateOrderGameId, turn: 1, playerId: join1.body.playerId, orders: [] });
+        assert.fail("Expected duplicate order submission to fail");
+      } catch (err: any) {
+        assert(err.status >= 400, `Expected 4xx/5xx status, got ${err.status}`);
+        assert.equal(err.response.body.message, "storeOrders: turnOrders already exists for this game-turn-player");
       }
     });
   });
