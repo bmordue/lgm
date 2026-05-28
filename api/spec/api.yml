@@ -315,6 +315,7 @@ components:
           type: integer
         gameId:
           type: integer
+          description: Deprecated alias for id retained for backward compatibility.
       example:
         id: 0
         gameId: 0

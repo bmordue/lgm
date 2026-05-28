@@ -16,6 +16,8 @@ async function resolvePlayerIdForUser(gameId: number, user?: RuntimeUser): Promi
   const game = await store.read<Game>(store.keys.games, gameId);
   for (const existingPlayerId of game.players || []) {
     const player = await store.read<Player>(store.keys.players, existingPlayerId);
+    // Match the canonical session-backed identity first, with username/email as a
+    // compatibility fallback for players created before session tracking existed.
     if (player.sessionId === user.id || player.username === user.email) {
       return existingPlayerId;
     }
@@ -29,6 +31,7 @@ async function resolvePlayerIdForUser(gameId: number, user?: RuntimeUser): Promi
 module.exports.createGame = async function createGame(context: ExegesisContext) {
   const maxPlayers = context.requestBody?.maxPlayers; // Optional parameter
   const result = await GameLifecycleService.createGame(maxPlayers);
+  // TODO: remove gameId once all API consumers have migrated to id.
   return { id: result.gameId, gameId: result.gameId };
 };
 

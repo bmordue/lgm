@@ -190,6 +190,12 @@ async function join(game: GameSummary) {
       No active games found. Click 'Create New Game' to start a new journey!
     </div>
   </div>
+  <label class="player-limit-label" for="max-players">Player limit</label>
+  <select id="max-players" v-model.number="selectedMaxPlayers" class="player-limit-select">
+    <option v-for="count in [2, 3, 4, 5, 6, 7, 8]" :key="count" :value="count">
+      {{ count }} players
+    </option>
+  </select>
   <button
     type="button"
     class="create-game-btn"
@@ -213,12 +219,6 @@ async function join(game: GameSummary) {
     </svg>
     {{ isCreating ? 'Creating...' : 'Create New Game' }}
   </button>
-  <label class="player-limit-label" for="max-players">Player limit</label>
-  <select id="max-players" v-model.number="selectedMaxPlayers" class="player-limit-select">
-    <option v-for="count in [2, 3, 4, 5, 6, 7, 8]" :key="count" :value="count">
-      {{ count }} players
-    </option>
-  </select>
 </template>
 
 <style scoped>

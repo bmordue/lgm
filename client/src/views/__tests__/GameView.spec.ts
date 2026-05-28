@@ -306,6 +306,10 @@ describe('GameView.vue', () => {
       expect(wrapper.findAll('.transfer-host-btn').length).toBe(1);
       expect(wrapper.findAll('.kick-player-btn').length).toBe(1);
       expect(wrapper.findComponent({ name: 'OrderSubmission' }).exists()).toBe(false);
+      expect(wrapper.findAll('.player-item')[0].text()).not.toContain('Kick');
+      expect(wrapper.findAll('.player-item')[0].text()).not.toContain('Make Host');
+      expect(wrapper.findAll('.player-item')[1].text()).toContain('Kick');
+      expect(wrapper.findAll('.player-item')[1].text()).toContain('Make Host');
     });
 
     it('calls store actions for host lobby controls', async () => {

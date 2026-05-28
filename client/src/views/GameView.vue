@@ -411,9 +411,6 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             }"
             @mouseenter="hoveredPlayerId = player.id"
             @mouseleave="hoveredPlayerId = null"
-            @focus="hoveredPlayerId = player.id"
-            @blur="hoveredPlayerId = null"
-            tabindex="0"
           >
             <span>
               {{ player.name }}{{ player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}

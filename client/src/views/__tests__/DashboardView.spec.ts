@@ -105,4 +105,30 @@ describe('DashboardView.vue', () => {
       })
     );
   });
+
+  it('sends the default player limit when creating a game without changing the selector', async () => {
+    fetchMock.mockImplementation((url, options) => {
+      if (options?.method === 'post') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ games: [] }),
+      });
+    });
+
+    const wrapper = mount(DashboardView);
+    await wrapper.find('.create-game-btn').trigger('click');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/games'),
+      expect.objectContaining({
+        method: 'post',
+        body: JSON.stringify({ maxPlayers: 4 }),
+      })
+    );
+  });
 });
