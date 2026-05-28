@@ -51,6 +51,8 @@ describe('GameView.vue', () => {
   beforeEach(() => {
     // Reset mocks for each test
     vi.clearAllMocks();
+    localStorage.clear();
+    localStorage.setItem('auth_token', 'token-123');
 
     mockGamesStore = {
       getCurrentGame: vi.fn(() => ({
@@ -183,7 +185,6 @@ describe('GameView.vue', () => {
       await orderSubmissionComponent.vm.$emit('submit-orders', [...samplePlannedMoves]);
       await flushPromises(); // Wait for postOrders async and fetch
 
-      const expectedUrl = `/api/test/games/g1/turns/1/players/1`;
       const expectedBody = {
         orders: samplePlannedMoves.map(pm => ({
           actorId: pm.actorId,
@@ -193,17 +194,13 @@ describe('GameView.vue', () => {
       };
 
       expect(global.fetch).toHaveBeenCalledTimes(1);
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`/games/g1/turns/1/players/1`),
-        expect.objectContaining({
-          method: 'POST',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(expectedBody),
-        })
-      );
+      const [url, options] = (global.fetch as any).mock.calls[0];
+      expect(url).toContain('/games/g1/turns/1/players/1');
+      expect(options.method).toBe('POST');
+      expect(options.credentials).toBe('include');
+      expect(options.body).toBe(JSON.stringify(expectedBody));
+      expect((options.headers as Headers).get('Content-Type')).toBe('application/json');
+      expect((options.headers as Headers).get('Authorization')).toBe('Bearer ' + 'token-123');
       expect(wrapper.vm.plannedMoves).toEqual([]); // Moves cleared
       expect(wrapper.find('.success-message').text()).toContain('Orders submitted successfully!');
     });

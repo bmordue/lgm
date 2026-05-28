@@ -50,15 +50,6 @@ function provisionUser(email: string, name: string, groups: string[]): RuntimeUs
   if (existing) {
     return existing;
   }
-
-  function resolveBearerToken(authHeader: string): string | null {
-    if (!authHeader.startsWith('Bearer ')) {
-      return null;
-    }
-
-    const token = authHeader.slice('Bearer '.length).trim();
-    return token || null;
-  }
   const user: RuntimeUser = {
     id: email,
     email,
@@ -68,6 +59,15 @@ function provisionUser(email: string, name: string, groups: string[]): RuntimeUs
   };
   usersByEmail.set(email, user);
   return user;
+}
+
+function resolveBearerToken(authHeader: string): string | null {
+  if (!authHeader.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const token = authHeader.slice('Bearer '.length).trim();
+  return token || null;
 }
 
 /**
