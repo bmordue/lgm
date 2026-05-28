@@ -1,7 +1,7 @@
 import assert = require("assert");
 import * as GameLifecycleService from "../service/GameLifecycleService";
 import * as store from "../service/Store";
-import { Game, Player, GameState } from "../service/Models";
+import { Actor, Game, Player, GameState, Terrain, World } from "../service/Models";
 
 describe("GameLifecycleService", function () {
   beforeEach(() => {
@@ -322,6 +322,70 @@ describe("GameLifecycleService", function () {
       } catch (error) {
         assert.equal(error.message, "Player does not belong to this game");
       }
+    });
+  });
+
+  describe("actor placement", function () {
+    const formationOriginByOwner = (actors: Actor[]) => {
+      const origins = new Map<number, { x: number; y: number }>();
+
+      for (const actor of actors) {
+        const currentOrigin = origins.get(actor.owner);
+        if (!currentOrigin) {
+          origins.set(actor.owner, { x: actor.pos.x, y: actor.pos.y });
+          continue;
+        }
+
+        origins.set(actor.owner, {
+          x: Math.min(currentOrigin.x, actor.pos.x),
+          y: Math.min(currentOrigin.y, actor.pos.y),
+        });
+      }
+
+      return Array.from(origins.values())
+        .map((origin) => `${origin.x},${origin.y}`)
+        .sort();
+    };
+
+    const assertActorsSpawnOnEmptyTerrain = (world: World, actors: Actor[]) => {
+      for (const actor of actors) {
+        assert.equal(world.terrain[actor.pos.x][actor.pos.y], Terrain.EMPTY);
+      }
+    };
+
+    it("should spawn two players at opposite corners", async function () {
+      const createResponse = await GameLifecycleService.createGame(2);
+      const gameId = createResponse.gameId;
+
+      await GameLifecycleService.joinGame(gameId, "host");
+      await GameLifecycleService.joinGame(gameId, "guest");
+
+      const game = await store.read<Game>(store.keys.games, gameId);
+      const world = await store.read<World>(store.keys.worlds, game.worldId);
+      const actors = await Promise.all(
+        world.actorIds.map((id) => store.read<Actor>(store.keys.actors, id))
+      );
+
+      assert.deepEqual(formationOriginByOwner(actors), ["0,0", "7,7"]);
+      assertActorsSpawnOnEmptyTerrain(world, actors);
+    });
+
+    it("should spawn four players into four distinct corner formations", async function () {
+      const createResponse = await GameLifecycleService.createGame(4);
+      const gameId = createResponse.gameId;
+
+      for (let i = 0; i < 4; i++) {
+        await GameLifecycleService.joinGame(gameId, `player${i}`);
+      }
+
+      const game = await store.read<Game>(store.keys.games, gameId);
+      const world = await store.read<World>(store.keys.worlds, game.worldId);
+      const actors = await Promise.all(
+        world.actorIds.map((id) => store.read<Actor>(store.keys.actors, id))
+      );
+
+      assert.deepEqual(formationOriginByOwner(actors), ["0,0", "0,7", "7,0", "7,7"]);
+      assertActorsSpawnOnEmptyTerrain(world, actors);
     });
   });
 });

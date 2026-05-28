@@ -13,6 +13,7 @@ import { Hex } from '../Hex';
 import { getConfig } from '../config/GameConfig';
 import { getDefaultWeapon, getWeaponDamage } from '../config/WeaponsConfig';
 import * as RangeValidation from './RangeValidation';
+import * as ActorPlacement from './ActorPlacement';
 import { calculateDamage, applyDamage } from './CombatMath';
 
 const config = getConfig();
@@ -472,93 +473,35 @@ function inBox(item: Actor, left: number, bottom: number, right: number, top: nu
         && item.pos.y <= top;
 }
 
-function isAreaEmpty(x: number, y: number, size: number, actors: Actor[]): boolean {
-    return !actors.some(actor =>
-        actor.pos.x >= x &&
-        actor.pos.x < x + size &&
-        actor.pos.y >= y &&
-        actor.pos.y < y + size
-    );
-}
-
 export async function setupActors(game: Game, playerId: number) {
-    const actorPromises: Promise<Actor>[] = [];
     const world = await store.read<World>(store.keys.worlds, game.worldId);
     const existingActorObjects = await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
 
-    // Find an unoccupied spot using a more intelligent algorithm
     const ACTOR_GRID_SIZE = config.actors.formationWidth; // Formation grid size for actor placement
-    const MAX_ATTEMPTS = config.actors.maxPlacementAttempts; // Maximum search attempts
-    let placed = false;
-    let attempts = 0;
-    let x = 0;
-    let y = 0;
+    const existingPlayerOrigins = ActorPlacement.getPlayerSpawnOrigins(existingActorObjects);
+    const playerIndex = game.players ? game.players.indexOf(playerId) : -1;
+    const spawnZones = ActorPlacement.getSpawnZonesForPlayerCount(
+        Math.max(game.maxPlayers || game.players?.length || 2, 2),
+        { width: world.terrain.length, height: world.terrain[0].length },
+        ACTOR_GRID_SIZE
+    );
+    const preferredZone = playerIndex >= 0 ? spawnZones[Math.min(playerIndex, spawnZones.length - 1)] : undefined;
+    const spawnOrigin = ActorPlacement.findSpawnOrigin(
+        world.terrain,
+        ACTOR_GRID_SIZE,
+        existingActorObjects,
+        existingPlayerOrigins,
+        preferredZone
+    );
 
-    // Helper function to check if an area is empty
-    const isAreaEmpty = (x: number, y: number, size: number, actors: Actor[]): boolean => {
-        return !actors.some(actor =>
-            actor.pos.x >= x &&
-            actor.pos.x < x + size &&
-            actor.pos.y >= y &&
-            actor.pos.y < y + size
-        );
-    };
-
-    // Create a list of all possible positions to try, shuffled for randomness
-    const possiblePositions = [];
-    for (let row = 0; row <= world.terrain.length - ACTOR_GRID_SIZE; row++) {
-        for (let col = 0; col <= world.terrain[0].length - ACTOR_GRID_SIZE; col++) {
-            possiblePositions.push({x: row, y: col});
-        }
-    }
-
-    // Shuffle the positions for random placement
-    for (let i = possiblePositions.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [possiblePositions[i], possiblePositions[j]] = [possiblePositions[j], possiblePositions[i]];
-    }
-
-    // Try each position until we find one that works
-    for (const pos of possiblePositions) {
-        if (attempts >= MAX_ATTEMPTS) break;
-
-        x = pos.x;
-        y = pos.y;
-
-        // Check if this position is suitable (no other actors in the 3x3 area)
-        if (isAreaEmpty(x, y, ACTOR_GRID_SIZE, existingActorObjects)) {
-            placed = true;
-            logger.debug(util.format("Actor placement: found an empty box: (%s, %s), (%s, %s)", x, y, x + ACTOR_GRID_SIZE - 1, y + ACTOR_GRID_SIZE - 1));
-            break;
-        }
-
-        attempts++;
-    }
-
-    // If we couldn't find a suitable position after many attempts
-    if (!placed) {
-        logger.warn(`Actor placement: failed to find suitable position for player ${playerId} after ${MAX_ATTEMPTS} attempts. Using fallback placement.`);
-
-        // Fallback: try to find any available space by scanning the map systematically
-        placed = false;
-        for (let row = 0; row <= world.terrain.length - ACTOR_GRID_SIZE && !placed; row++) {
-            for (let col = 0; col <= world.terrain[0].length - ACTOR_GRID_SIZE && !placed; col++) {
-                x = row;
-                y = col;
-
-                if (isAreaEmpty(x, y, ACTOR_GRID_SIZE, existingActorObjects)) {
-                    placed = true;
-                    logger.debug(util.format("Actor placement: found fallback position: (%s, %s)", x, y));
-                }
-            }
-        }
-    }
-
-    // If still couldn't place, return empty array
-    if (!placed) {
+    if (!spawnOrigin) {
         logger.error(`Actor placement: could not find any suitable position for player ${playerId}. World may be too full.`);
         return [];
     }
+
+    const x = spawnOrigin.x;
+    const y = spawnOrigin.y;
+    logger.debug(util.format("Actor placement: found spawn box: (%s, %s), (%s, %s)", x, y, x + ACTOR_GRID_SIZE - 1, y + ACTOR_GRID_SIZE - 1));
 
     const defaultWeapon: Weapon = getDefaultWeapon();
 
