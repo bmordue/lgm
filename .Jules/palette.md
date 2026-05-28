@@ -165,3 +165,7 @@
 ## 2026-05-26 - Responsive Spatial and Tactical Layouts
 **Learning:** Tactical games often rely on a sidebar-and-map layout which fails on narrow viewports. Implementing a responsive shift to a vertical stack (`flex-direction: column`) with strategic re-ordering (e.g., placing the map above the unit list) ensures the core spatial experience remains primary even on mobile devices.
 **Action:** For all spatial/tactical layouts, implement a breakpoint-based vertical stack that prioritizes the map/grid view while keeping interactive list controls accessible below.
+
+## 2026-05-27 - Interactive Legend Highlighting Pattern
+**Learning:** Making a static Map Legend interactive by using hover/focus states to trigger spatial highlights on a grid drastically improves the discoverability and clarity of complex visual states. Using `tabindex="0"` and `focusin`/`focusout` ensures this "delightful" feature is also accessible to keyboard users.
+**Action:** Always implement cross-highlighting between legends and their associated spatial representations to strengthen the mental link between abstract categories and their concrete instances.

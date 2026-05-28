@@ -21,6 +21,7 @@ const plannedMoves = ref<PlannedMove[]>([]); // Reactive state for planned moves
 const hoveredMove = ref<PlannedMove | null>(null); // State for hovered move
 const hoveredActorId = ref<number | null>(null); // New state for hovered actor
 const hoveredPlayerId = ref<number | null>(null); // New state for hovered player
+const hoveredLegendType = ref<string | null>(null); // New state for hovered legend item
 const hoveredActorOwnerId = computed(() => {
   if (hoveredActorId.value === null) return null;
   const actor = game.value.world?.actors?.find((a: Actor) => a.id === hoveredActorId.value);
@@ -367,13 +368,28 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         <div class="legend">
           <h4>Map Legend</h4>
           <ul class="legend-list">
-            <li><span class="swatch terrain-empty" aria-hidden="true"></span> Empty</li>
-            <li><span class="swatch terrain-blocked" aria-hidden="true"></span> Blocked</li>
-            <li><span class="swatch terrain-unexplored" aria-hidden="true"></span> Unexplored</li>
-            <li><span class="swatch is-own" aria-hidden="true"></span> Your Unit</li>
-            <li><span class="swatch is-enemy" aria-hidden="true"></span> Enemy Unit</li>
-            <li><span class="swatch is-selected" aria-hidden="true"></span> Selected</li>
-            <li><span class="swatch is-planned" aria-hidden="true"></span> Planned Move</li>
+            <li
+              v-for="item in [
+                { type: 'terrain-empty', label: 'Empty' },
+                { type: 'terrain-blocked', label: 'Blocked' },
+                { type: 'terrain-unexplored', label: 'Unexplored' },
+                { type: 'is-own', label: 'Your Unit' },
+                { type: 'is-enemy', label: 'Enemy Unit' },
+                { type: 'is-selected', label: 'Selected' },
+                { type: 'is-planned', label: 'Planned Move' }
+              ]"
+              :key="item.type"
+              class="legend-item"
+              @mouseenter="hoveredLegendType = item.type"
+              @mouseleave="hoveredLegendType = null"
+              @focusin="hoveredLegendType = item.type"
+              @focusout="hoveredLegendType = null"
+              tabindex="0"
+              role="note"
+            >
+              <span class="swatch" :class="item.type" aria-hidden="true"></span>
+              {{ item.label }}
+            </li>
           </ul>
         </div>
       </div>
@@ -389,6 +405,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             :hovered-actor-id="hoveredActorId"
             :hovered-player-id="hoveredPlayerId"
             :selected-actor-id="selectedActorId"
+            :hovered-legend-type="hoveredLegendType"
             @move-planned="handleMovePlanned"
             @actor-hover="hoveredActorId = ($event as any)"
             @player-hover="hoveredPlayerId = ($event as any)"
@@ -686,7 +703,22 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 
 .legend h4 { margin: 0 0 10px 0; font-size: 0.9em; }
 .legend-list { list-style: none; padding: 0; margin: 0; font-size: 0.8em; }
-.legend-list li { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding: 4px;
+  border-radius: 4px;
+  cursor: help;
+  transition: all 0.2s ease;
+  border-left: 3px solid transparent;
+}
+.legend-item:hover, .legend-item:focus-visible {
+  background-color: hsla(160, 100%, 37%, 0.1);
+  border-left-color: hsla(160, 100%, 37%, 1);
+  outline: none;
+}
 .swatch { width: 14px; height: 14px; border: 1px solid #34495E; flex-shrink: 0; border-radius: 2px; }
 .swatch.terrain-empty { background: #EAECEE; }
 .swatch.terrain-blocked { background: #5D6D7E; }
