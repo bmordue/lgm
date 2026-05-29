@@ -1,1 +1,5 @@
-export * from '../../../api/service/Models';
+export enum Terrain {
+  EMPTY,
+  BLOCKED,
+  UNEXPLORED,
+}
