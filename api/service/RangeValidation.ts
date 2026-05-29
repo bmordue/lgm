@@ -121,7 +121,7 @@ export function validateAttack(
     const attackerHex = gridPositionToHex(attacker.pos);
     const targetHex = gridPositionToHex(target.pos);
     // Use allActors if provided, otherwise just attacker and target
-    const losActors = allActors || [attacker, target];
+    const losActors = (allActors || [attacker, target]).filter(a => a.state !== ActorState.DEAD);
     const los = hasLineOfSight(attackerHex, targetHex, world.terrain, losActors);
 
     if (!los) {
@@ -192,7 +192,12 @@ export function getValidTargets(
         // Check line of sight
         const attackerHex = gridPositionToHex(actor.pos);
         const targetHex = gridPositionToHex(target.pos);
-        const los = hasLineOfSight(attackerHex, targetHex, terrain, [actor, target]);
+        const los = hasLineOfSight(
+            attackerHex,
+            targetHex,
+            terrain,
+            allActors.filter(a => a.state !== ActorState.DEAD)
+        );
 
         if (!los) {
             continue;

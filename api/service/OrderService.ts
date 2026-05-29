@@ -158,20 +158,7 @@ async function validateOrders(
       const validation = RangeValidation.validateAttack(actor, targetActor, world, allActorsInWorld);
 
       if (!validation.valid) {
-        // Identify errors that should be fatal at submission time
-        const fatalErrors = validation.errors.filter(e =>
-          e.includes('no weapon') ||
-          e.includes('Cannot attack own units') ||
-          e.includes('Cannot attack self') ||
-          e.includes('Target is already dead')
-        );
-
-        if (fatalErrors.length > 0) {
-          return Promise.reject(new Error(`Invalid attack order for actor ${actorId}: ${fatalErrors.join(', ')}`));
-        }
-
-        // Non-fatal errors (range, LOS) are logged as they might change during simulation
-        logger.info(`Preliminary attack validation for actor ${actorId} to target ${targetActor.id}: POTENTIALLY INVALID. Reasons: ${validation.errors.join(', ')}. Note: This is a preliminary check as actor positions may change before execution.`);
+        return Promise.reject(new Error(`Invalid attack order for actor ${actorId}: ${validation.errors.join(', ')}`));
       }
     }
   }

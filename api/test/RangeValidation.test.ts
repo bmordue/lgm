@@ -392,7 +392,7 @@ describe('RangeValidation', () => {
 
             const friendly: Actor = {
                 id: 4,
-                pos: { x: 7, y: 5 },
+                pos: { x: 7, y: 6 },
                 state: ActorState.ALIVE,
                 owner: 1,
                 health: 100
@@ -443,6 +443,39 @@ describe('RangeValidation', () => {
             const targets = getValidTargets(attacker, allActors, terrain);
             
             assert.strictEqual(targets.length, 0);
+        });
+
+        it('should exclude targets blocked by another actor', async () => {
+            const terrain = Array(20).fill(null).map(() => Array(20).fill(Terrain.EMPTY));
+
+            const attacker: Actor = {
+                id: 1,
+                pos: { x: 5, y: 5 },
+                state: ActorState.ALIVE,
+                owner: 1,
+                health: 100,
+                weapon: { ...WEAPON_TYPES.RIFLE }
+            };
+
+            const blockingActor: Actor = {
+                id: 2,
+                pos: { x: 6, y: 5 },
+                state: ActorState.ALIVE,
+                owner: 1,
+                health: 100
+            };
+
+            const target: Actor = {
+                id: 3,
+                pos: { x: 7, y: 5 },
+                state: ActorState.ALIVE,
+                owner: 2,
+                health: 100
+            };
+
+            const targets = getValidTargets(attacker, [attacker, blockingActor, target], terrain);
+
+            assert.ok(!targets.some(t => t.id === target.id));
         });
     });
 
