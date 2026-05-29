@@ -5,6 +5,8 @@ import { Actor, ActorState, Game, OrderType, Terrain, World } from "../service/M
 import { WEAPON_TYPES } from "../config/WeaponsConfig";
 
 describe("OrderService ATTACK validation", () => {
+  const TEST_WORLD_SIZE = 20;
+
   beforeEach(async () => {
     await store.deleteAll();
   });
@@ -14,7 +16,7 @@ describe("OrderService ATTACK validation", () => {
     targetPos: { x: number; y: number },
     terrainOverride?: Terrain[][]
   ): Promise<{ gameId: number; attackerId: number; targetId: number }> {
-    const terrain = terrainOverride ?? Array(10).fill(null).map(() => Array(10).fill(Terrain.EMPTY));
+    const terrain = terrainOverride ?? Array(TEST_WORLD_SIZE).fill(null).map(() => Array(TEST_WORLD_SIZE).fill(Terrain.EMPTY));
 
     const attackerId = await store.create<Omit<Actor, "id">>(store.keys.actors, {
       owner: 1,
@@ -67,7 +69,7 @@ describe("OrderService ATTACK validation", () => {
   });
 
   it("rejects ATTACK orders when line of sight is blocked", async () => {
-    const terrain = Array(10).fill(null).map(() => Array(10).fill(Terrain.EMPTY));
+    const terrain = Array(TEST_WORLD_SIZE).fill(null).map(() => Array(TEST_WORLD_SIZE).fill(Terrain.EMPTY));
     terrain[1][0] = Terrain.BLOCKED;
 
     const { gameId, attackerId, targetId } = await createGameWithActors(

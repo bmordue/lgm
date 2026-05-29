@@ -158,6 +158,7 @@ async function validateOrders(
       const validation = RangeValidation.validateAttack(actor, targetActor, world, allActorsInWorld);
 
       if (!validation.valid) {
+        logger.info(`Attack order for actor ${actorId} rejected: ${validation.errors.join(', ')}`);
         return Promise.reject(new Error(`Invalid attack order for actor ${actorId}: ${validation.errors.join(', ')}`));
       }
     }
