@@ -1,14 +1,45 @@
-import util = require('util');
+type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
 
-function consoleLog(level, obj) {
-    console.log(util.format("%s: %j", level, obj));
+function normalizePayload(input: unknown): Record<string, unknown> {
+    if (input instanceof Error) {
+        return { message: input.message, name: input.name, stack: input.stack };
+    }
+    if (typeof input === 'string') {
+        return { message: input };
+    }
+    if (input && typeof input === 'object') {
+        return input as Record<string, unknown>;
+    }
+    return { message: String(input) };
 }
 
-function log(level, obj) {
-    consoleLog(level, obj);
+function serialize(payload: Record<string, unknown>): string {
+    try {
+        return JSON.stringify(payload);
+    } catch (_err) {
+        return JSON.stringify({ message: 'failed to serialize log payload' });
+    }
 }
 
-export function debug(obj) { if (process.env["LGM_DEBUG"]) log("DEBUG", obj); }
-export function info(obj) { log("INFO", obj); }
-export function warn(obj) { log("WARN", obj); }
-export function error(obj) { log("ERROR", obj); }
+function write(level: LogLevel, obj: unknown): void {
+    if (level === 'DEBUG' && !process.env['LGM_DEBUG']) {
+        return;
+    }
+
+    const payload = {
+        timestamp: new Date().toISOString(),
+        level,
+        ...normalizePayload(obj),
+    };
+    const line = serialize(payload);
+    if (level === 'WARN' || level === 'ERROR') {
+        process.stderr.write(`${line}\n`);
+        return;
+    }
+    process.stdout.write(`${line}\n`);
+}
+
+export function debug(obj: unknown): void { write('DEBUG', obj); }
+export function info(obj: unknown): void { write('INFO', obj); }
+export function warn(obj: unknown): void { write('WARN', obj); }
+export function error(obj: unknown): void { write('ERROR', obj); }
