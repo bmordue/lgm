@@ -45,17 +45,7 @@ module.exports.turnResults = async function turnResults(context: ExegesisContext
   const gameId = context.params.path.gameId;
   const turn = context.params.path.turn;
   const playerId = context.params.path.playerId;
-  const result = await GameService.turnResults(gameId, turn, playerId);
-
-  if (result.success && result.world) {
-    return { world: result.world };
-  } else if (!result.success && result.message) {
-    return { message: result.message };
-  } else if (result.success) {
-    return { message: "Turn results processed, but world data not available." };
-  } else {
-    return { message: "Failed to process turn results or results not available." };
-  }
+  return await GameService.turnResults(gameId, turn, playerId);
 };
 
 module.exports.listGames = async function listGames() {
