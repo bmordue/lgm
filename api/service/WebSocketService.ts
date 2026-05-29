@@ -23,14 +23,14 @@ class WebSocketService {
     this.io.on('connection', (socket: Socket) => {
       socket.on('join_game', (payload: { gameId?: number | string } = {}) => {
         const gameId = Number(payload.gameId);
-        if (Number.isFinite(gameId) && gameId > 0) {
+        if (this.isValidGameId(gameId)) {
           socket.join(this.gameRoom(gameId));
         }
       });
 
       socket.on('leave_game', (payload: { gameId?: number | string } = {}) => {
         const gameId = Number(payload.gameId);
-        if (Number.isFinite(gameId) && gameId > 0) {
+        if (this.isValidGameId(gameId)) {
           socket.leave(this.gameRoom(gameId));
         }
       });
@@ -43,11 +43,14 @@ class WebSocketService {
 
   emitGameUpdated(payload: GameUpdatePayload): void {
     this.io?.to(this.gameRoom(payload.gameId)).emit('game:updated', payload);
-    this.io?.emit('game:updated', payload);
   }
 
   private gameRoom(gameId: number): string {
     return `game:${gameId}`;
+  }
+
+  private isValidGameId(gameId: number): boolean {
+    return Number.isFinite(gameId) && gameId >= 0;
   }
 }
 

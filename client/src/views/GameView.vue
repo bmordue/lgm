@@ -97,10 +97,10 @@ onUnmounted(() => {
 });
 
 watch(() => game.value.gameId, (gameId, previousGameId) => {
-  if (previousGameId) {
+  if (typeof previousGameId === 'number' && previousGameId >= 0) {
     webSocketService.leaveGame(previousGameId);
   }
-  if (gameId) {
+  if (typeof gameId === 'number' && gameId >= 0) {
     webSocketService.joinGame(gameId);
   }
 }, { immediate: true });

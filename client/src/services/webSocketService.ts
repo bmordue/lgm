@@ -11,7 +11,7 @@ type Unsubscribe = () => void;
 class WebSocketService {
   private socket: Socket | null = null;
 
-  private ensureSocket(): Socket | null {
+  private ensureSocket(): Socket {
     if (!this.socket) {
       this.socket = io(API_URL, {
         transports: ['websocket', 'polling'],
@@ -23,9 +23,6 @@ class WebSocketService {
 
   onGamesUpdated(handler: () => void): Unsubscribe {
     const socket = this.ensureSocket();
-    if (!socket) {
-      return () => undefined;
-    }
 
     socket.on('games:updated', handler);
     return () => socket.off('games:updated', handler);
@@ -33,9 +30,6 @@ class WebSocketService {
 
   onGameUpdated(handler: (payload: GameUpdatePayload) => void): Unsubscribe {
     const socket = this.ensureSocket();
-    if (!socket) {
-      return () => undefined;
-    }
 
     socket.on('game:updated', handler);
     return () => socket.off('game:updated', handler);
@@ -43,10 +37,6 @@ class WebSocketService {
 
   joinGame(gameId: number): void {
     const socket = this.ensureSocket();
-    if (!socket) {
-      return;
-    }
-
     socket.emit('join_game', { gameId });
   }
 
@@ -56,6 +46,15 @@ class WebSocketService {
     }
 
     this.socket.emit('leave_game', { gameId });
+  }
+
+  disconnect(): void {
+    if (!this.socket) {
+      return;
+    }
+
+    this.socket.disconnect();
+    this.socket = null;
   }
 }
 

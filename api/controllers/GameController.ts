@@ -12,7 +12,6 @@ module.exports.createGame = async function createGame(context: ExegesisContext) 
   const maxPlayers = context.requestBody?.maxPlayers; // Optional parameter
   const result = await GameLifecycleService.createGame(maxPlayers);
   webSocketService.emitGamesUpdated();
-  webSocketService.emitGameUpdated({ gameId: result.gameId });
   // Return with 'id' property to match API expectations
   return { id: result.gameId };
 };
@@ -96,6 +95,7 @@ module.exports.transferHost = async function transferHost(context: ExegesisConte
         newHostPlayerId,
         requestingPlayerId
     );
+    webSocketService.emitGamesUpdated();
     webSocketService.emitGameUpdated({ gameId });
 
     return { success: true };
