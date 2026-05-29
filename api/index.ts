@@ -7,6 +7,7 @@ import { loadUser, RuntimeUser } from './middleware/auth';
 import { inspect } from 'util';
 import { SERVER_CONFIG } from './config/GameConfig';
 import * as logger from './utils/Logger';
+const APP_VERSION = (require('../package.json').version as string) || '0.0.1';
 
 /* 
 // import * as path from 'path';
@@ -111,7 +112,7 @@ export async function createServer() {
             status: 'healthy',
             timestamp: new Date().toISOString(),
             uptimeSeconds: Number(process.uptime().toFixed(3)),
-            version: process.env.npm_package_version || '0.0.1',
+            version: APP_VERSION,
         });
     });
 
@@ -174,7 +175,7 @@ if (require.main === module) {
     createServer()
         .then(server => {
             server.listen(port, host);
-            logger.info({ event: 'server_started', port, host: host || '0.0.0.0' });
+            logger.info({ event: 'server_started', port, requestedHost: host || 'all_interfaces' });
         })
         .catch(err => {
             logger.error({ event: 'server_start_failed', message: err?.message, stack: err?.stack });

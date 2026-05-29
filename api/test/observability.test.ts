@@ -34,11 +34,11 @@ describe('observability endpoints', () => {
     const baseline = (await superagent.get(`${baseUrl}/metrics`)).body;
 
     await superagent.get(`${baseUrl}/health`);
-    await superagent.get(`${baseUrl}/does-not-exist`).ok(() => true);
+    await superagent.get(`${baseUrl}/test-404`).ok(() => true);
 
     const after = (await superagent.get(`${baseUrl}/metrics`)).body;
     assert.equal(after.requests.byPath['/health'], (baseline.requests.byPath['/health'] || 0) + 1);
-    assert.equal(after.requests.byPath['/does-not-exist'], (baseline.requests.byPath['/does-not-exist'] || 0) + 1);
+    assert.equal(after.requests.byPath['/test-404'], (baseline.requests.byPath['/test-404'] || 0) + 1);
     assert(after.requests.total >= baseline.requests.total + 2);
     assert(after.responses.byStatus['200'] >= (baseline.responses.byStatus['200'] || 0) + 1);
     assert.equal(after.responses.byStatus['404'], (baseline.responses.byStatus['404'] || 0) + 1);
