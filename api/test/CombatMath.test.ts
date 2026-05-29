@@ -168,6 +168,7 @@ describe('CombatMath', () => {
                 damageVariance: { min: 1.0, max: 1.0 },
                 criticalHitChance: 0
             });
+
             try {
                 const attacker = createTestActor(1, { x: 0, y: 0 }, 1, 'RIFLE');
                 const defender = createTestActor(2, { x: 5, y: 0 }, 2);
@@ -286,6 +287,103 @@ describe('CombatMath', () => {
             
             // Restore
             overrideCombatConfig({ maxArmorReduction: originalMax });
+        });
+    });
+
+    describe('calculateDamage - Configurable Factor Weights', () => {
+        it('should allow disabling cover impact in formula', () => {
+            const original = getCombatConfig();
+            overrideCombatConfig({
+                damageVariance: { min: 1.0, max: 1.0 },
+                criticalHitChance: 0
+            });
+            try {
+                const attacker = createTestActor(1, { x: 0, y: 0 }, 1, 'RIFLE');
+                const defender = createTestActor(2, { x: 5, y: 0 }, 2);
+
+                const noCover = calculateDamage(
+                    attacker,
+                    defender,
+                    5,
+                    Terrain.EMPTY,
+                    Terrain.EMPTY,
+                    true
+                );
+
+                const withCover = calculateDamage(
+                    attacker,
+                    defender,
+                    5,
+                    Terrain.EMPTY,
+                    Terrain.BLOCKED,
+                    true
+                );
+
+                assert.ok(withCover.finalDamage < noCover.finalDamage);
+
+                overrideCombatConfig({
+                    damageVariance: { min: 1.0, max: 1.0 },
+                    criticalHitChance: 0,
+                    damageFactorWeights: {
+                        ...original.damageFactorWeights,
+                        cover: 0
+                    }
+                });
+
+                const withCoverDisabled = calculateDamage(
+                    attacker,
+                    defender,
+                    5,
+                    Terrain.EMPTY,
+                    Terrain.BLOCKED,
+                    true
+                );
+
+                assert.strictEqual(withCoverDisabled.finalDamage, noCover.finalDamage);
+                assert.strictEqual(withCoverDisabled.coverModifier, 1.0);
+            } finally {
+                overrideCombatConfig(original);
+            }
+        });
+
+        it('should allow disabling distance impact in formula', () => {
+            const original = getCombatConfig();
+            overrideCombatConfig({
+                damageVariance: { min: 1.0, max: 1.0 },
+                criticalHitChance: 0,
+                damageFactorWeights: {
+                    ...original.damageFactorWeights,
+                    distance: 0
+                }
+            });
+            try {
+                const attacker = createTestActor(1, { x: 0, y: 0 }, 1, 'RIFLE');
+                const defender = createTestActor(2, { x: 8, y: 0 }, 2);
+
+                const optimalRangeDamage = calculateDamage(
+                    attacker,
+                    defender,
+                    5,
+                    Terrain.EMPTY,
+                    Terrain.EMPTY,
+                    true
+                );
+
+                const maxRangeDamage = calculateDamage(
+                    attacker,
+                    defender,
+                    8,
+                    Terrain.EMPTY,
+                    Terrain.EMPTY,
+                    true
+                );
+
+                assert.strictEqual(optimalRangeDamage.distanceModifier, 1.0);
+                assert.strictEqual(maxRangeDamage.distanceModifier, 1.0);
+                assert.strictEqual(maxRangeDamage.finalDamage, optimalRangeDamage.finalDamage);
+            } finally {
+                overrideCombatConfig(original);
+            }
         });
     });
 
