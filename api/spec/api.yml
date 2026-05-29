@@ -6,6 +6,8 @@ info:
     LGM API. Authentication is handled by an upstream reverse-proxy (nginx + Authelia).
     The proxy injects identity headers (Remote-User, Remote-Name, Remote-Email, Remote-Groups)
     which the service uses for ownership and permission checks.
+  license:
+    name: Unlicense
 servers:
 - url: /
 paths:
@@ -39,6 +41,7 @@ paths:
     get:
       summary: list games
       operationId: listGames
+      security: []
       x-exegesis-controller: GameController
       responses:
         "200":
@@ -64,10 +67,20 @@ paths:
         schema:
           type: integer
       responses:
-        "204":
-          description: join request accepted
+        "200":
+          description: joined game state for the requesting player
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JoinGameResponse'
         "400":
           description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "401":
+          description: authentication required
           content:
             application/json:
               schema:
@@ -75,6 +88,9 @@ paths:
         "403":
           description: join request denied
           content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
   /games/{gameId}/players/{playerId}:
     delete:
       summary: kick a player from a game
@@ -185,6 +201,43 @@ paths:
           description: host transferred
         "400":
           description: bad request
+  /games/{gameId}/actors/{actorId}/targets:
+    get:
+      summary: Get valid attack targets for an actor
+      operationId: getValidTargets
+      security:
+        - bearerAuth: []
+      x-exegesis-controller: GameController
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: actorId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: List of valid targets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  targets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        actorId:
+                          type: integer
+                        distance:
+                          type: integer
+                        canAttack:
+                          type: boolean
   /users/login:
     post:
       summary: User login (deprecated — returns 410 Gone)
@@ -192,6 +245,7 @@ paths:
         This endpoint is deprecated. Authentication is handled by the upstream reverse proxy.
         Always returns 410 Gone.
       operationId: loginUser
+      security: []
       x-exegesis-controller: UsersController
       x-swagger-router-controller: UsersController
       requestBody:
@@ -224,6 +278,7 @@ paths:
         Returns the current user as resolved from proxy identity headers.
         Guest users (no proxy headers) receive the guest sentinel object.
       operationId: getCurrentUser
+      security: []
       x-exegesis-controller: UsersController
       x-swagger-router-controller: UsersController
       responses:
@@ -269,6 +324,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TurnResultsResponse'
+        "401":
+          description: authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
       x-swagger-router-controller: GameController
     post:
       summary: post turn orders
@@ -305,10 +366,20 @@ paths:
               $ref: '#/components/schemas/TurnOrders'
         required: true
       responses:
-        "202":
-          description: accepted
+        "200":
+          description: submitted orders status
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostOrdersResponse'
         "400":
           description: bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorMessageResponse'
+        "401":
+          description: authentication required
           content:
             application/json:
               schema:
@@ -319,14 +390,21 @@ components:
     GameCreatedResponse:
       type: object
       required:
-      - gameId
+        - id
       properties:
-        gameId:
+        id:
           type: integer
       example:
-        gameId: 0
+        id: 0
     JoinGameResponse:
       type: object
+      required:
+        - gameId
+        - playerId
+        - turn
+        - world
+        - playerCount
+        - maxPlayers
       properties:
         gameId:
           type: integer
@@ -347,7 +425,7 @@ components:
     ErrorMessageResponse:
       type: object
       required:
-      - message
+        - message
       properties:
         message:
           type: string
@@ -369,12 +447,30 @@ components:
         orders:
           type: array
           items:
-            $ref: '#/components/schemas/TurnOrders_orders'
+            $ref: '#/components/schemas/ActorOrders'
+    PostOrdersResponse:
+      type: object
+      required:
+        - turnStatus
+      properties:
+        turnStatus:
+          type: object
+          required:
+            - complete
+          properties:
+            complete:
+              type: boolean
     TurnResultsResponse:
       type: object
+      required:
+        - success
       properties:
+        success:
+          type: boolean
         world:
           $ref: '#/components/schemas/World'
+        message:
+          type: string
     World:
       type: object
       properties:
@@ -455,21 +551,33 @@ components:
           type: integer
         ammo:
           type: integer
-    TurnOrders_orders:
+    ActorOrders:
       type: object
       additionalProperties: false
       required:
         - actorId
-        - toQ
-        - toR
+        - orderType
       properties:
         actorId:
           type: integer
           minimum: 0
         toQ:
+        orderType:
           type: integer
-        toR:
+          description: "Order type (0: MOVE, 1: ATTACK)"
+          enum: [0, 1]
+        ordersList:
+          type: array
+          description: Ordered list of movement directions for MOVE orders.
+          items:
+            $ref: '#/components/schemas/Direction'
+        targetId:
           type: integer
+          description: Target actor identifier for ATTACK orders.
+    Direction:
+      type: integer
+      description: "0: UP_LEFT, 1: UP_RIGHT, 2: LEFT, 3: RIGHT, 4: DOWN_LEFT, 5: DOWN_RIGHT, 6: NONE"
+      enum: [0, 1, 2, 3, 4, 5, 6]
     ListGamesResponse:
       type: object
       properties:
@@ -497,12 +605,10 @@ components:
           type: integer
         isFull:
           type: boolean
-  # securitySchemes:
-  #   bearerAuth:
-  #     type: http
-  #     scheme: bearer
     LoginResponse:
       type: object
+      required:
+        - token
       properties:
         token:
           type: string

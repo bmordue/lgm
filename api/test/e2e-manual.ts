@@ -3,6 +3,7 @@ import assert = require('assert');
 import util = require('util');
 import { TurnOrders } from '../service/Models';
 import { inspect } from 'util';
+import { ensureE2EServer, stopE2EServer } from './e2eServer';
 
 const BASE_URL = 'http://localhost:3000';
 
@@ -36,6 +37,15 @@ function getTurnResults(gameId: number, playerId: number, turn: number, email: s
 
 process.env.RUN_E2E_TESTS &&
     describe('Smoke - API', () => {
+        before(async function () {
+            this.timeout(20000);
+            await ensureE2EServer(BASE_URL);
+        });
+
+        after(async () => {
+            await stopE2EServer();
+        });
+
         let gameId: number;
         let playerId: number;
 

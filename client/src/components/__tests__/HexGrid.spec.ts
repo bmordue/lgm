@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { mount, VueWrapper } from '@vue/test-utils';
+import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
 import HexGrid from '../HexGrid.vue';
 import { Terrain } from '../../../../api/service/Models'; // Path for Terrain
 import type { World, Actor, PlannedMove } from '../../stores/Games.store'; // Path for store types
@@ -217,7 +217,7 @@ const sampleActors: Actor[] = [
 // Offset (1,0) -> Axial (1,0) for ODD_R
 // Offset (0,1) -> Axial (0,1) for ODD_R (q=0-(1-(1&1))/2=0, r=1)
 // Offset (1,1) -> Axial (1,1) for ODD_R (q=1-(1-(1&1))/2=1, r=1)
-const findHexPolygonByAxial = (wrapper: VueWrapper<any>, q: number, r: number): VueWrapper<Element> | null => {
+const findHexPolygonByAxial = (wrapper: VueWrapper<any>, q: number, r: number): DOMWrapper<Element> | null => {
   const polygons = wrapper.findAll('polygon');
   const hexElements = wrapper.vm.hexes as Hex[]; // Access computed hexes array
 

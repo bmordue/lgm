@@ -413,7 +413,6 @@ class Tests {
 
 
 // Tests
-function complain(name) { console.log("FAIL", name); }
+function complain(name: string) { console.log("FAIL", name); }
 Tests.testAll();
-
 

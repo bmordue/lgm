@@ -176,7 +176,7 @@ describe("GameController", function () {
       store.deleteAll();
     });
 
-    it("should return turn results with message when no results available", async function () {
+    it("should return unsuccessful turn results with message when no results available", async function () {
       const game = await GameService.createGame();
       const player = await GameService.joinGame(game.id);
 
@@ -196,9 +196,40 @@ describe("GameController", function () {
       };
 
       const result = await GameController.turnResults(mockContext);
-      // When no turn results are available yet, should return message
+      assert.equal(result.success, false);
       assert(result.message !== undefined, "Should have message property");
       assert.equal(result.message, "turn results not available");
+    });
+
+    it("should return successful turn results with world data when available", async function () {
+      const game = await GameService.createGame();
+      const player = await GameService.joinGame(game.id);
+
+      await GameService.postOrders(
+        { orders: [] },
+        game.id,
+        1,
+        player.playerId
+      );
+
+      const mockContext: any = {
+        params: {
+          path: {
+            gameId: game.id,
+            turn: 1,
+            playerId: player.playerId
+          },
+          query: {}
+        },
+        res: {
+          status: function() { return this; },
+          json: function() { return this; }
+        }
+      };
+
+      const result = await GameController.turnResults(mockContext);
+      assert.equal(result.success, true);
+      assert(result.world !== undefined, "Should have world property");
     });
   });
 
