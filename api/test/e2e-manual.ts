@@ -62,7 +62,7 @@ process.env.RUN_E2E_TESTS &&
         it('send orders for first turn', (done) => {
             const orders = {
                 gameId: gameId,
-                turn: 0,
+                turn: 1,
                 playerId: playerId,
                 orders: []
             };
