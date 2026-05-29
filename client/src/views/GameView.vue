@@ -5,6 +5,7 @@ import OrderSubmission from '@/components/OrderSubmission.vue'; // Import OrderS
 import { useGamesStore, type Actor, type PlannedMove, type Order } from '../stores/Games.store' // Import PlannedMove and Order
 import { useUserStore } from '../stores/User.store';
 import { API_URL } from '@/config';
+import { webSocketService } from '@/services/webSocketService';
 
 interface GameData {
   gameId?: number | null;
@@ -32,6 +33,7 @@ const submissionError = ref('');
 const submissionSuccess = ref('');
 const copySuccess = ref(false);
 const lastRefreshed = ref<string | null>(null);
+let unsubscribeGameUpdates: (() => void) | null = null;
 
 const gamesStore = useGamesStore();
 const userStore = useUserStore();
@@ -76,11 +78,32 @@ const handleKeyDown = (event: KeyboardEvent) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeyDown);
+  unsubscribeGameUpdates = webSocketService.onGameUpdated((payload) => {
+    if (payload.gameId === game.value.gameId) {
+      refreshGame();
+    }
+  });
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeyDown);
+  if (game.value.gameId) {
+    webSocketService.leaveGame(game.value.gameId);
+  }
+  if (unsubscribeGameUpdates) {
+    unsubscribeGameUpdates();
+    unsubscribeGameUpdates = null;
+  }
 });
+
+watch(() => game.value.gameId, (gameId, previousGameId) => {
+  if (previousGameId) {
+    webSocketService.leaveGame(previousGameId);
+  }
+  if (gameId) {
+    webSocketService.joinGame(gameId);
+  }
+}, { immediate: true });
 
 const copyGameId = async () => {
   if (game.value.gameId) {

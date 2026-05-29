@@ -1,11 +1,12 @@
 import * as bodyParser from 'body-parser';
-import * as express from 'express';
+import express = require('express');
 import * as exegesisExpress from 'exegesis-express';
 import * as path from 'path';
 import * as http from "http";
 import { loadUser, RuntimeUser } from './middleware/auth';
 import { inspect } from 'util';
 import { SERVER_CONFIG } from './config/GameConfig';
+import { webSocketService } from './service/WebSocketService';
 
 /* 
 // import * as path from 'path';
@@ -79,6 +80,7 @@ async function createServer() {
     });
 
     const server = http.createServer(app);
+    webSocketService.initialize(server);
 
     return server;
 }
@@ -96,4 +98,3 @@ createServer()
         console.error('Failed to start server:', err);
         process.exit(1);
     });
-

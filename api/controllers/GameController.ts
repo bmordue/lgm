@@ -6,10 +6,13 @@ import { RuntimeUser } from "../middleware/auth";
 import { Player, Game, World, Actor } from "../service/Models";
 import { NotFoundError } from "../utils/Errors";
 import * as RangeValidation from "../service/RangeValidation";
+import { webSocketService } from "../service/WebSocketService";
 
 module.exports.createGame = async function createGame(context: ExegesisContext) {
   const maxPlayers = context.requestBody?.maxPlayers; // Optional parameter
   const result = await GameLifecycleService.createGame(maxPlayers);
+  webSocketService.emitGamesUpdated();
+  webSocketService.emitGameUpdated({ gameId: result.gameId });
   // Return with 'id' property to match API expectations
   return { id: result.gameId };
 };
@@ -19,7 +22,10 @@ module.exports.joinGame = async function joinGame(context: ExegesisContext) {
   const email = context.user?.email;
   const userId = context.user?.id;
   try {
-    return await GameService.joinGame(context.params.path.id, email, userId);
+    const result = await GameService.joinGame(context.params.path.id, email, userId);
+    webSocketService.emitGamesUpdated();
+    webSocketService.emitGameUpdated({ gameId: result.gameId, turn: result.turn });
+    return result;
   } catch (err: any) {
     context.res.status(err.status || 500);
     return { message: err.message || "An unexpected error occurred while trying to join the game." };
@@ -34,7 +40,9 @@ module.exports.postOrders = async function postOrders(context: ExegesisContext) 
 
   try {
     // GameService.postOrders returns PostOrdersResponse or rejects with Error
-    return await GameService.postOrders(body, gameId, turn, playerId);
+    const result = await GameService.postOrders(body, gameId, turn, playerId);
+    webSocketService.emitGameUpdated({ gameId, turn, turnStatus: result.turnStatus });
+    return result;
   } catch (err: any) {
     context.res.status(err.status || 500); // Set status if available on error, else 500
     return { message: err.message || "An unexpected error occurred while posting orders." };
@@ -62,6 +70,8 @@ module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) 
         playerId,
         requestingPlayerId
     );
+    webSocketService.emitGamesUpdated();
+    webSocketService.emitGameUpdated({ gameId });
 
     return { success: true };
 }
@@ -71,6 +81,8 @@ module.exports.startGame = async function startGame(context: ExegesisContext) {
     const requestingPlayerId = context.user?.playerId;
 
     await GameLifecycleService.startGame(gameId, requestingPlayerId);
+    webSocketService.emitGamesUpdated();
+    webSocketService.emitGameUpdated({ gameId });
     return { success: true };
 }
 
@@ -84,6 +96,7 @@ module.exports.transferHost = async function transferHost(context: ExegesisConte
         newHostPlayerId,
         requestingPlayerId
     );
+    webSocketService.emitGameUpdated({ gameId });
 
     return { success: true };
 }
