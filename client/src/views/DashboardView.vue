@@ -104,11 +104,20 @@ async function join(game: GameSummary) {
 <template>
   <Transition name="fade">
     <div v-if="errorMessage" class="error-message" role="alert" aria-live="assertive">
+      <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
       {{ errorMessage }}
     </div>
   </Transition>
   <Transition name="fade">
     <div v-if="successMessage" class="success-message" role="status" aria-live="polite">
+      <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
       {{ successMessage }}
     </div>
   </Transition>
@@ -164,10 +173,35 @@ async function join(game: GameSummary) {
         :aria-busy="joiningGameId === game.id"
         @click="join(game)"
       >
-        <div class="game-id">
+        <div class="game-item-content">
+          <div class="game-details">
+            <div class="game-id">
+              <svg
+                v-if="joiningGameId === game.id"
+                class="btn-spinner spinning"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+              </svg>
+              {{ joiningGameId === game.id ? 'Joining...' : 'Game #' + game.id }}
+            </div>
+            <div class="game-status">
+              Players: {{ game.playerCount }}/{{ game.maxPlayers }}
+              <span v-if="game.isFull" class="full-indicator"> (FULL)</span>
+            </div>
+          </div>
           <svg
-            v-if="joiningGameId === game.id"
-            class="btn-spinner spinning"
+            v-if="!game.isFull && joiningGameId !== game.id"
+            class="chevron-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -176,13 +210,8 @@ async function join(game: GameSummary) {
             stroke-linejoin="round"
             aria-hidden="true"
           >
-            <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            <polyline points="9 18 15 12 9 6"></polyline>
           </svg>
-          {{ joiningGameId === game.id ? 'Joining...' : 'Game #' + game.id }}
-        </div>
-        <div class="game-status">
-          Players: {{ game.playerCount }}/{{ game.maxPlayers }}
-          <span v-if="game.isFull" class="full-indicator"> (FULL)</span>
         </div>
       </button>
     </TransitionGroup>
@@ -317,6 +346,26 @@ async function join(game: GameSummary) {
   transform: none;
 }
 
+.game-item-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.game-details {
+  flex-grow: 1;
+}
+
+.chevron-icon {
+  color: hsla(160, 100%, 37%, 1);
+  transition: transform 0.2s ease;
+}
+
+.game-item:hover .chevron-icon,
+.game-item:focus-visible .chevron-icon {
+  transform: translateX(4px);
+}
+
 .game-id {
   font-weight: bold;
   font-size: 1.1em;
@@ -346,6 +395,10 @@ async function join(game: GameSummary) {
   margin-bottom: 15px;
   font-size: 0.9em;
   border: 1px solid;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .error-message {
@@ -358,7 +411,10 @@ async function join(game: GameSummary) {
   background-color: hsla(160, 100%, 37%, 0.1);
   border-color: hsla(160, 100%, 37%, 1);
   color: hsla(160, 100%, 37%, 1);
-  text-align: center;
+}
+
+.status-icon {
+  flex-shrink: 0;
 }
 
 .create-game-btn {

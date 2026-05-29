@@ -3,8 +3,9 @@ import * as store from "../service/DatabaseStore";
 import GameService = require("../service/GameService");
 import GameLifecycleService = require("../service/GameLifecycleService");
 import { RuntimeUser } from "../middleware/auth";
-import { Game, Player } from "../service/Models";
+import { Player, Game, World, Actor } from "../service/Models";
 import { NotFoundError } from "../utils/Errors";
+import * as RangeValidation from "../service/RangeValidation";
 
 async function resolvePlayerIdForUser(gameId: number, user?: RuntimeUser): Promise<number> {
   if (!user || user.isGuest) {
@@ -161,3 +162,44 @@ module.exports.getPlayerGameState = async function getPlayerGameState(context: E
 
     return await GameLifecycleService.getPlayerGameState(gameId, playerId);
 }
+
+module.exports.getValidTargets = async function getValidTargets(context: ExegesisContext) {
+    const { gameId, actorId } = context.params.path;
+    const authenticatedUser = context.user as RuntimeUser;
+
+    // 1. Get game and world
+    const game = await store.read<Game>(store.keys.games, gameId);
+    const world = await store.read<World>(store.keys.worlds, game.worldId);
+
+    // 2. Get actor and verify it belongs to a player owned by the authenticated user
+    const actor = await store.read<Actor>(store.keys.actors, actorId);
+
+    // We need to find the player ID for this user in this game
+    const players = await Promise.all(game.players.map(pid => store.read<Player>(store.keys.players, pid)));
+    const currentPlayer = players.find(p => p.sessionId === authenticatedUser.id || p.username === authenticatedUser.email);
+
+    if (!currentPlayer || actor.owner !== currentPlayer.id) {
+        context.res.status(403);
+        return { message: "Not your actor" };
+    }
+
+    // 3. Get all actors in the world
+    const allActors = await Promise.all(
+        world.actorIds.map(id => store.read<Actor>(store.keys.actors, id))
+    );
+
+    // 4. Get valid targets
+    const targets = RangeValidation.getValidTargets(
+        actor,
+        allActors,
+        world.terrain
+    );
+
+    return {
+        targets: targets.map(t => ({
+            actorId: t.id,
+            distance: RangeValidation.calculateHexDistance(actor.pos, t.pos),
+            canAttack: true
+        }))
+    };
+};
