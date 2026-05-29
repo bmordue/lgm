@@ -4,6 +4,7 @@ import * as store from "./DatabaseStore";
 import rules = require("./Rules");
 import logger = require("../utils/Logger");
 import util = require("util");
+import * as RangeValidation from "./RangeValidation";
 
 import {
   Game,
@@ -13,7 +14,6 @@ import {
   TurnOrders,
   OrderType
 } from "./Models";
-import { calculateHexDistance } from "./HexGrid";
 import { ValidationError } from "../utils/Errors";
 
 export interface RequestActorOrders {
@@ -154,28 +154,24 @@ async function validateOrders(
         return Promise.reject(new ValidationError(`Target actor with ID ${requestOrder.targetId} not found in game`));
       }
 
-      // Validate that the attacking actor has a weapon
-      if (!actor.weapon) {
-        return Promise.reject(new ValidationError(`Actor ${actorId} has no weapon and cannot perform attack`));
-      }
+      // Use RangeValidation service for comprehensive preliminary validation
+      const validation = RangeValidation.validateAttack(actor, targetActor, world, allActorsInWorld);
 
-      // Validate weapon properties
-      if (actor.weapon.minRange < 0) {
-        return Promise.reject(new ValidationError(`Actor ${actorId}'s weapon has invalid minRange: ${actor.weapon.minRange}`));
-      }
+      if (!validation.valid) {
+        // Identify errors that should be fatal at submission time
+        const fatalErrors = validation.errors.filter(e =>
+          e.includes('no weapon') ||
+          e.includes('Cannot attack own units') ||
+          e.includes('Cannot attack self') ||
+          e.includes('Target is already dead')
+        );
 
-      if (actor.weapon.maxRange < actor.weapon.minRange) {
-        return Promise.reject(new ValidationError(`Actor ${actorId}'s weapon has invalid range: maxRange (${actor.weapon.maxRange}) < minRange (${actor.weapon.minRange})`));
-      }
+        if (fatalErrors.length > 0) {
+          return Promise.reject(new ValidationError(`Invalid attack order for actor ${actorId}: ${fatalErrors.join(', ')}`));
+        }
 
-      // Perform preliminary range check (note: this is only a preliminary check as positions can change)
-      const attackerPos = actor.pos;
-      const targetPos = targetActor.pos;
-
-      const distance = calculateHexDistance(attackerPos, targetPos);
-
-      if (distance < actor.weapon.minRange || distance > actor.weapon.maxRange) {
-        logger.info(`Preliminary range check: Target ${targetActor.id} is out of range for ${actorId} (min: ${actor.weapon.minRange}, max: ${actor.weapon.maxRange}, distance: ${distance}). Note: This is a preliminary check as actor positions may change before execution.`);
+        // Non-fatal errors (range, LOS) are logged as they might change during simulation
+        logger.info(`Preliminary attack validation for actor ${actorId} to target ${targetActor.id}: POTENTIALLY INVALID. Reasons: ${validation.errors.join(', ')}. Note: This is a preliminary check as actor positions may change before execution.`);
       }
     }
   }
