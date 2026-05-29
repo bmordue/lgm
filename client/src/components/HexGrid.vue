@@ -40,8 +40,8 @@
 
 <script lang="ts">
 import { defineComponent, computed, type PropType, type CSSProperties } from 'vue'; // Added ref
-import { Terrain } from '../../../api/service/Models';
-import { Hex, Point, Layout, OffsetCoord } from '../../../api/Hex';
+import { Terrain } from '@lgm/shared-types/models';
+import { Hex, Point, Layout, OffsetCoord } from '@lgm/shared-types/hex';
 import { useGamesStore, type Actor, type PlannedMove, type World } from '../stores/Games.store'; // Added imports
 
 interface HexStyle extends CSSProperties {
