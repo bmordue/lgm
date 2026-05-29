@@ -24,7 +24,7 @@ All combat damage settings are controlled via `api/config/CombatConfig.ts`:
 
 - Core tuning values (`minRangePenalty`, `maxRangePenalty`, `coverEffectiveness`, `maxArmorReduction`, `damageVariance`, `criticalHitChance`, `criticalHitMultiplier`, `minDamage`)
 - `damageFactorWeights` for formula weighting:
-  - `0`: disable that factor (neutral multiplier `1.0`)
+  - `0`: neutralizes that factor to `1.0` (no effect on damage)
   - `1`: default behavior
   - `>1`: amplify the factor's effect
 

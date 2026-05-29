@@ -385,6 +385,94 @@ describe('CombatMath', () => {
                 overrideCombatConfig(original);
             }
         });
+
+        it('should amplify cover impact when cover weight is greater than one', () => {
+            const original = getCombatConfig();
+            overrideCombatConfig({
+                damageVariance: { min: 1.0, max: 1.0 },
+                criticalHitChance: 0
+            });
+            try {
+                const attacker = createTestActor(1, { x: 0, y: 0 }, 1, 'RIFLE');
+                const defender = createTestActor(2, { x: 5, y: 0 }, 2);
+
+                const defaultCoverDamage = calculateDamage(
+                    attacker,
+                    defender,
+                    5,
+                    Terrain.EMPTY,
+                    Terrain.BLOCKED,
+                    true
+                );
+
+                overrideCombatConfig({
+                    damageVariance: { min: 1.0, max: 1.0 },
+                    criticalHitChance: 0,
+                    damageFactorWeights: {
+                        ...original.damageFactorWeights,
+                        cover: 2
+                    }
+                });
+
+                const amplifiedCoverDamage = calculateDamage(
+                    attacker,
+                    defender,
+                    5,
+                    Terrain.EMPTY,
+                    Terrain.BLOCKED,
+                    true
+                );
+
+                assert.ok(amplifiedCoverDamage.finalDamage < defaultCoverDamage.finalDamage);
+                assert.ok(amplifiedCoverDamage.coverModifier < defaultCoverDamage.coverModifier);
+            } finally {
+                overrideCombatConfig(original);
+            }
+        });
+
+        it('should clamp negative factor weights to zero', () => {
+            const original = getCombatConfig();
+            overrideCombatConfig({
+                damageVariance: { min: 1.0, max: 1.0 },
+                criticalHitChance: 0
+            });
+            try {
+                const attacker = createTestActor(1, { x: 0, y: 0 }, 1, 'RIFLE');
+                const defender = createTestActor(2, { x: 5, y: 0 }, 2);
+
+                const noCover = calculateDamage(
+                    attacker,
+                    defender,
+                    5,
+                    Terrain.EMPTY,
+                    Terrain.EMPTY,
+                    true
+                );
+
+                overrideCombatConfig({
+                    damageVariance: { min: 1.0, max: 1.0 },
+                    criticalHitChance: 0,
+                    damageFactorWeights: {
+                        ...original.damageFactorWeights,
+                        cover: -2
+                    }
+                });
+
+                const withCoverNegativeWeight = calculateDamage(
+                    attacker,
+                    defender,
+                    5,
+                    Terrain.EMPTY,
+                    Terrain.BLOCKED,
+                    true
+                );
+
+                assert.strictEqual(withCoverNegativeWeight.coverModifier, 1.0);
+                assert.strictEqual(withCoverNegativeWeight.finalDamage, noCover.finalDamage);
+            } finally {
+                overrideCombatConfig(original);
+            }
+        });
     });
 
     describe('calculateDamage - Random Variance', () => {

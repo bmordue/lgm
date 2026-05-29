@@ -369,15 +369,15 @@ export function calculateExpectedDamage(
     
     const attackerTerrainProps = getTerrainProperties(attackerTerrain);
     const defenderTerrainProps = getTerrainProperties(defenderTerrain);
-    const terrainMod = applyFactorWeight(
+    const weightedTerrainMod = applyFactorWeight(
         calculateTerrainModifier(attackerTerrainProps, defenderTerrainProps, config),
         config.damageFactorWeights.terrain
     );
-    const coverMod = applyFactorWeight(
+    const weightedCoverMod = applyFactorWeight(
         calculateCoverModifier(defenderTerrainProps, defender, config),
         config.damageFactorWeights.cover
     );
-    const armorMod = applyFactorWeight(
+    const weightedArmorMod = applyFactorWeight(
         calculateArmorModifier(attacker.weapon!, defender, config),
         config.damageFactorWeights.armor
     );
@@ -385,11 +385,20 @@ export function calculateExpectedDamage(
     const weightedAvgRandom = applyFactorWeight(avgRandom, config.damageFactorWeights.random);
     
     // Use average random instead of rolling
-    const rawDamage = baseDamage * weightedDistanceMod * terrainMod * coverMod * armorMod * weightedAvgRandom;
+    const rawDamage = baseDamage * weightedDistanceMod * weightedTerrainMod * weightedCoverMod * weightedArmorMod * weightedAvgRandom;
     
     return Math.max(config.minDamage, Math.floor(rawDamage));
 }
 
+/**
+ * Weight a modifier relative to neutral multiplier `1.0`.
+ * - weight = 0 => neutralized to `1.0`
+ * - weight = 1 => unchanged
+ * - weight > 1 => amplified away from `1.0`
+ * @param modifier Original factor modifier value.
+ * @param weight Factor weight (negative values are clamped to 0).
+ * @returns Weighted modifier relative to neutral baseline `1.0`.
+ */
 function applyFactorWeight(modifier: number, weight: number): number {
     const safeWeight = Math.max(0, weight);
     return 1 + ((modifier - 1) * safeWeight);
