@@ -177,6 +177,43 @@ paths:
           description: host transferred
         "400":
           description: bad request
+  /games/{gameId}/actors/{actorId}/targets:
+    get:
+      summary: Get valid attack targets for an actor
+      operationId: getValidTargets
+      security:
+        - bearerAuth: []
+      x-exegesis-controller: GameController
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          type: integer
+      - name: actorId
+        in: path
+        required: true
+        schema:
+          type: integer
+      responses:
+        "200":
+          description: List of valid targets
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  targets:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        actorId:
+                          type: integer
+                        distance:
+                          type: integer
+                        canAttack:
+                          type: boolean
   /users/login:
     post:
       summary: User login (deprecated — returns 410 Gone)

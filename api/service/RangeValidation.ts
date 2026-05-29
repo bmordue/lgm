@@ -7,6 +7,8 @@ import { hasLineOfSight } from './Visibility';
 import { getTerrainProperties } from '../config/TerrainConfig';
 import { calculateHexDistance, gridPositionToHex } from './HexGrid';
 
+export { calculateHexDistance, gridPositionToHex };
+
 export interface RangeCheckResult {
     inRange: boolean;
     distance: number;
