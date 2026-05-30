@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import HexGrid from '../HexGrid.vue';
-import { Terrain } from '../../../../api/service/Models';
+import { Terrain } from '@lgm/shared-types/models';
 import type { World, Actor } from '../../stores/Games.store';
 
 // Mock the games store

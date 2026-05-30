@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, VueWrapper } from '@vue/test-utils';
 import HexGrid from '../HexGrid.vue';
-import { Terrain } from '../../../../api/service/Models';
+import { Terrain } from '@lgm/shared-types/models';
 import type { World, Actor, PlannedMove } from '../../stores/Games.store';
-import { Hex } from '../../../../api/Hex';
+import { Hex } from '@lgm/shared-types/hex';
 
 vi.mock('../../stores/Games.store', () => ({
   useGamesStore: () => ({ getCurrentPlayerId: () => 1 }),
