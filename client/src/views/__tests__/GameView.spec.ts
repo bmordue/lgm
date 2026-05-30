@@ -206,6 +206,7 @@ describe('GameView.vue', () => {
       );
       expect(wrapper.vm.plannedMoves).toEqual([]); // Moves cleared
       expect(wrapper.find('.success-message').text()).toContain('Orders submitted successfully!');
+      expect(wrapper.find('.success-message .status-icon').exists()).toBe(true);
     });
 
     it('shows loading state during submission', async () => {
@@ -246,6 +247,7 @@ describe('GameView.vue', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1); // fetch was still called
       expect(wrapper.vm.plannedMoves).toEqual(samplePlannedMoves); // Moves NOT cleared
       expect(wrapper.find('.error-message').text()).toContain('Failed to submit orders: Test API Error');
+      expect(wrapper.find('.error-message .status-icon').exists()).toBe(true);
       expect(consoleErrorSpy).toHaveBeenCalled(); // Check if error was logged
 
       consoleErrorSpy.mockRestore();
