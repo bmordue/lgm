@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import  router  from '../router';
 import { useGamesStore, type World } from '@/stores/Games.store';
 import { API_URL } from '@/config';
+import { webSocketService } from '@/services/webSocketService';
 
 interface GameSummary {
   id: number;
@@ -31,8 +32,20 @@ async function fetchGameList() {
   }
 }
 
-watchEffect(() => {
+let unsubscribeGamesUpdated: (() => void) | null = null;
+
+onMounted(() => {
   fetchGameList();
+  unsubscribeGamesUpdated = webSocketService.onGamesUpdated(() => {
+    fetchGameList();
+  });
+});
+
+onUnmounted(() => {
+  if (unsubscribeGamesUpdated) {
+    unsubscribeGamesUpdated();
+    unsubscribeGamesUpdated = null;
+  }
 });
 
 async function callCreate() {

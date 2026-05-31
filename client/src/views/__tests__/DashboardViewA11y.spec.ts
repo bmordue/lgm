@@ -21,6 +21,12 @@ vi.mock('../../stores/User.store', () => ({
   }),
 }));
 
+vi.mock('../../services/webSocketService', () => ({
+  webSocketService: {
+    onGamesUpdated: vi.fn(() => () => undefined),
+  },
+}));
+
 describe('DashboardView.vue accessibility and UX', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
