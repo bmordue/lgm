@@ -20,8 +20,8 @@
 
 ## Damage Calculations
 
-- [ ] Define factors influencing damage (e.g., weapon type, unit stats, terrain)
-- [ ] Implement formulas to calculate damage dealt and received
+- [X] Define factors influencing damage (e.g., weapon type, unit stats, terrain)
+- [X] Implement formulas to calculate damage dealt and received
 
 ## Integration
 
@@ -30,5 +30,5 @@
 
 ## Testing
 
-- [ ] Create unit tests for line-of-sight, weapon range, and damage calculation logic
+- [X] Create unit tests for line-of-sight, weapon range, and damage calculation logic
 - [ ] Create integration tests to ensure the combat system works correctly within the game

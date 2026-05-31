@@ -100,37 +100,44 @@ export function calculateDamage(
         randomMod *= (1.0 + attacker.aimBonus / 100);
     }
 
+    const weightedDistanceMod = applyFactorWeight(distanceMod, config.damageFactorWeights.distance);
+    const weightedTerrainMod = applyFactorWeight(terrainMod, config.damageFactorWeights.terrain);
+    const weightedCoverMod = applyFactorWeight(coverMod, config.damageFactorWeights.cover);
+    const weightedArmorMod = applyFactorWeight(armorMod, config.damageFactorWeights.armor);
+    const weightedRandomMod = applyFactorWeight(randomMod, config.damageFactorWeights.random);
+    const weightedCriticalMod = applyFactorWeight(criticalMod, config.damageFactorWeights.critical);
+
     // Calculate final damage
     const finalDamage = calculateFinalDamage(
         baseDamage,
-        distanceMod,
-        terrainMod,
-        coverMod,
-        armorMod,
-        randomMod,
-        criticalMod,
+        weightedDistanceMod,
+        weightedTerrainMod,
+        weightedCoverMod,
+        weightedArmorMod,
+        weightedRandomMod,
+        weightedCriticalMod,
         config
     );
 
     return {
         baseDamage,
         distance,
-        distanceModifier: distanceMod,
-        terrainModifier: terrainMod,
-        coverModifier: coverMod,
-        armorModifier: armorMod,
-        randomModifier: randomMod,
+        distanceModifier: weightedDistanceMod,
+        terrainModifier: weightedTerrainMod,
+        coverModifier: weightedCoverMod,
+        armorModifier: weightedArmorMod,
+        randomModifier: weightedRandomMod,
         finalDamage,
         isCritical,
-        criticalMultiplier: isCritical ? criticalMod : undefined,
+        criticalMultiplier: isCritical ? weightedCriticalMod : undefined,
         breakdown: createDamageBreakdown(
             baseDamage,
-            distanceMod,
-            terrainMod,
-            coverMod,
-            armorMod,
-            randomMod,
-            criticalMod,
+            weightedDistanceMod,
+            weightedTerrainMod,
+            weightedCoverMod,
+            weightedArmorMod,
+            weightedRandomMod,
+            weightedCriticalMod,
             finalDamage
         )
     };
@@ -362,14 +369,39 @@ export function calculateExpectedDamage(
     
     const attackerTerrainProps = getTerrainProperties(attackerTerrain);
     const defenderTerrainProps = getTerrainProperties(defenderTerrain);
-    const terrainMod = calculateTerrainModifier(attackerTerrainProps, defenderTerrainProps, config);
-    const coverMod = calculateCoverModifier(defenderTerrainProps, defender, config);
-    const armorMod = calculateArmorModifier(attacker.weapon!, defender, config);
+    const weightedTerrainMod = applyFactorWeight(
+        calculateTerrainModifier(attackerTerrainProps, defenderTerrainProps, config),
+        config.damageFactorWeights.terrain
+    );
+    const weightedCoverMod = applyFactorWeight(
+        calculateCoverModifier(defenderTerrainProps, defender, config),
+        config.damageFactorWeights.cover
+    );
+    const weightedArmorMod = applyFactorWeight(
+        calculateArmorModifier(attacker.weapon!, defender, config),
+        config.damageFactorWeights.armor
+    );
+    const weightedDistanceMod = applyFactorWeight(distanceMod, config.damageFactorWeights.distance);
+    const weightedAvgRandom = applyFactorWeight(avgRandom, config.damageFactorWeights.random);
     
     // Use average random instead of rolling
-    const rawDamage = baseDamage * distanceMod * terrainMod * coverMod * armorMod * avgRandom;
+    const rawDamage = baseDamage * weightedDistanceMod * weightedTerrainMod * weightedCoverMod * weightedArmorMod * weightedAvgRandom;
     
     return Math.max(config.minDamage, Math.floor(rawDamage));
+}
+
+/**
+ * Weight a modifier relative to neutral multiplier `1.0`.
+ * - weight = 0 => neutralized to `1.0`
+ * - weight = 1 => unchanged
+ * - weight > 1 => amplified away from `1.0`
+ * @param modifier Original factor modifier value.
+ * @param weight Factor weight (negative values are clamped to 0).
+ * @returns Weighted modifier relative to neutral baseline `1.0`.
+ */
+function applyFactorWeight(modifier: number, weight: number): number {
+    const safeWeight = Math.max(0, weight);
+    return 1 + ((modifier - 1) * safeWeight);
 }
 
 /**
