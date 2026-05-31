@@ -14,6 +14,7 @@
     "format": "prettier --write src/"
   },
   "dependencies": {
+    "@lgm/shared-types": "file:../packages/shared-types",
     "pinia": "^2.1.7",
     "socket.io-client": "^4.8.3",
     "vue": "^3.4.20",

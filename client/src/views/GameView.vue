@@ -339,6 +339,26 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         Last Refreshed: {{ lastRefreshed }}
       </span>
     </div>
+
+    <Transition name="fade">
+      <div v-if="submissionError" class="error-message" role="alert" aria-live="assertive">
+        <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        {{ submissionError }}
+      </div>
+    </Transition>
+    <Transition name="fade">
+      <div v-if="submissionSuccess" class="success-message" role="status" aria-live="polite">
+        <svg class="status-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+          <polyline points="22 4 12 14.01 9 11.01"></polyline>
+        </svg>
+        {{ submissionSuccess }}
+      </div>
+    </Transition>
     
     <div class="game-content">
       <div class="left-panel">
@@ -363,16 +383,6 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         </div>
         
         <!-- Order Submission Component -->
-        <Transition name="fade">
-          <div v-if="submissionError" class="error-message" role="alert" aria-live="assertive">
-            {{ submissionError }}
-          </div>
-        </Transition>
-        <Transition name="fade">
-          <div v-if="submissionSuccess" class="success-message" role="status" aria-live="polite">
-            {{ submissionSuccess }}
-          </div>
-        </Transition>
         <order-submission
           :planned-moves="plannedMoves"
           :is-submitting="isSubmitting"
@@ -574,26 +584,6 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   background: hsla(160, 100%, 37%, 0.2);
 }
 
-.error-message {
-  background-color: #fce4e4;
-  border: 1px solid #fcc2c2;
-  color: #cc0000;
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  font-size: 0.9em;
-}
-
-.success-message {
-  background-color: hsla(160, 100%, 37%, 0.1);
-  border: 1px solid hsla(160, 100%, 37%, 1);
-  color: hsla(160, 100%, 37%, 1);
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  font-size: 0.9em;
-  text-align: center;
-}
 
 .world-grid {
   /* font-family: monospace; // Keep or remove based on HexGrid's text styling */

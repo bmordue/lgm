@@ -389,33 +389,6 @@ async function join(game: GameSummary) {
   padding: 20px;
 }
 
-.error-message, .success-message {
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  font-size: 0.9em;
-  border: 1px solid;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.error-message {
-  background-color: #fce4e4;
-  border-color: #fcc2c2;
-  color: #cc0000;
-}
-
-.success-message {
-  background-color: hsla(160, 100%, 37%, 0.1);
-  border-color: hsla(160, 100%, 37%, 1);
-  color: hsla(160, 100%, 37%, 1);
-}
-
-.status-icon {
-  flex-shrink: 0;
-}
 
 .create-game-btn {
   background-color: hsla(160, 100%, 37%, 1);

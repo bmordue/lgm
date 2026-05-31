@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mount, VueWrapper, DOMWrapper } from '@vue/test-utils';
 import HexGrid from '../HexGrid.vue';
-import { Terrain } from '../../../../api/service/Models'; // Path for Terrain
+import { Terrain } from '@lgm/shared-types/models';
 import type { World, Actor, PlannedMove } from '../../stores/Games.store'; // Path for store types
-import { Hex } from '../../../../api/Hex'; // Path for Hex utils
+import { Hex } from '@lgm/shared-types/hex';
 
 // Mock console.log and console.error
 const consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});

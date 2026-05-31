@@ -1,0 +1,11 @@
+{
+  "name": "@lgm/shared-types",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./hex": "./src/hex.ts",
+    "./models": "./src/models.ts"
+  }
+}
