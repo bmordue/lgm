@@ -46,17 +46,17 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
     it('renders no hexes if world.terrain is empty or undefined', () => {
       const world = createWorld([]);
       wrapper = mountComponent(world);
-      expect(wrapper.findAll('polygon').length).toBe(0);
+      expect(wrapper.findAll('.hex-polygon').length).toBe(0);
 
       // Test with undefined world prop or world with undefined terrain - This needs careful handling
       // The component requires `world` prop. If `world.terrain` is what's empty/undefined:
       const worldWithNoTerrain = { id: 1, actors: [], terrain: []}; // Empty terrain array
       wrapper = mountComponent(worldWithNoTerrain);
-      expect(wrapper.findAll('polygon').length).toBe(0);
+      expect(wrapper.findAll('.hex-polygon').length).toBe(0);
 
       const worldWithUndefinedTerrain = { id: 1, actors: [], terrain: undefined as any}; // Undefined terrain
       wrapper = mountComponent(worldWithUndefinedTerrain);
-      expect(wrapper.findAll('polygon').length).toBe(0);
+      expect(wrapper.findAll('.hex-polygon').length).toBe(0);
     });
 
     it('renders the correct number of hexes based on world.terrain data', () => {
@@ -66,7 +66,7 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
       ];
       const world = createWorld(terrain);
       wrapper = mountComponent(world); // Actors default to []
-      expect(wrapper.findAll('polygon').length).toBe(4); // 2x2 grid
+      expect(wrapper.findAll('.hex-polygon').length).toBe(4); // 2x2 grid
     });
 
     it('assigns correct styles/classes based on terrain type', async () => {
@@ -76,7 +76,7 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
       const world = createWorld(terrain);
       wrapper = mountComponent(world);
 
-      const polygons = wrapper.findAll('polygon');
+      const polygons = wrapper.findAll('.hex-polygon');
       expect(polygons.length).toBe(2);
 
       // Hex 0,0 (offset) -> EMPTY
@@ -106,7 +106,7 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
       const world = createWorld(terrain);
       wrapper = mountComponent(world); // Actors default to []
 
-      const polygon = wrapper.find('polygon');
+      const polygon = wrapper.find('.hex-polygon');
       await polygon.trigger('click');
 
       // Current component selects player actors, not empty hexes. Clicking an
@@ -120,7 +120,7 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
         const world = createWorld(terrain);
         wrapper = mountComponent(world); // Actors default to []
 
-        const polygons = wrapper.findAll('polygon');
+        const polygons = wrapper.findAll('.hex-polygon');
         const firstHex = polygons[0];
         const secondHex = polygons[1];
 
@@ -157,7 +157,7 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
     it('updates rendering when world prop changes', async () => {
       const initialWorld = createWorld([]);
       wrapper = mountComponent(initialWorld); // Actors default to []
-      expect(wrapper.findAll('polygon').length).toBe(0);
+      expect(wrapper.findAll('.hex-polygon').length).toBe(0);
 
       const newTerrain = [
         [Terrain.EMPTY, Terrain.BLOCKED],
@@ -166,8 +166,8 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
       const newWorld = createWorld(newTerrain);
       await wrapper.setProps({ world: newWorld });
 
-      expect(wrapper.findAll('polygon').length).toBe(4);
-      const firstHex = wrapper.findAll('polygon')[0];
+      expect(wrapper.findAll('.hex-polygon').length).toBe(4);
+      const firstHex = wrapper.findAll('.hex-polygon')[0];
       expect(firstHex.classes()).toContain('terrain-empty');
     });
 
@@ -176,7 +176,7 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
         let terrain = [[Terrain.BLOCKED, Terrain.BLOCKED]];
         let world = createWorld(terrain);
         wrapper = mountComponent(world); // Actors default to []
-        let polygons = wrapper.findAll('polygon');
+        let polygons = wrapper.findAll('.hex-polygon');
         expect(polygons.length).toBe(2);
         expect(polygons[0].classes()).toContain('terrain-blocked');
         expect(polygons[1].classes()).toContain('terrain-blocked');
@@ -185,7 +185,7 @@ describe('HexGrid.vue Original Rendering and Interaction', () => {
         terrain = [[Terrain.EMPTY, Terrain.BLOCKED, Terrain.EMPTY]];
         world = createWorld(terrain);
         wrapper = mountComponent(world); // Actors default to []
-        polygons = wrapper.findAll('polygon');
+        polygons = wrapper.findAll('.hex-polygon');
         expect(polygons.length).toBe(3);
         expect(polygons[0].classes()).toContain('terrain-empty');
         expect(polygons[1].classes()).toContain('terrain-blocked');
@@ -218,7 +218,7 @@ const sampleActors: Actor[] = [
 // Offset (0,1) -> Axial (0,1) for ODD_R (q=0-(1-(1&1))/2=0, r=1)
 // Offset (1,1) -> Axial (1,1) for ODD_R (q=1-(1-(1&1))/2=1, r=1)
 const findHexPolygonByAxial = (wrapper: VueWrapper<any>, q: number, r: number): DOMWrapper<Element> | null => {
-  const polygons = wrapper.findAll('polygon');
+  const polygons = wrapper.findAll('.hex-polygon');
   const hexElements = wrapper.vm.hexes as Hex[]; // Access computed hexes array
 
   const targetHexIndex = hexElements.findIndex(hex => hex.q === q && hex.r === r);
