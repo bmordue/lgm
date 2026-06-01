@@ -6,9 +6,10 @@ import { ExegesisContext } from "exegesis";
  * This endpoint is kept for backward compatibility but always returns 410 Gone.
  */
 export async function loginUser(context: ExegesisContext) {
-  context.res.status(410).json({
+  context.res.status(410);
+  return {
     message: 'Login is no longer supported. Authentication is handled by the upstream proxy.',
-  });
+  };
 }
 
 /**
@@ -25,5 +26,6 @@ export function getCurrentUser(context: ExegesisContext) {
     groups: [],
     isGuest: true,
   };
-  context.res.status(200).json(user);
+  context.res.status(200);
+  return user;
 }
