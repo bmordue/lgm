@@ -4,6 +4,7 @@ import { Client } from 'pg';
 import { Store, keys } from './StoreInterface';
 import { NotFoundError } from '../utils/Errors';
 import logger = require('../utils/Logger.js');
+import { ActorState, Game, World } from './Models';
 
 const STORE_DEBUG = false;
 const store_debug = (obj) => { if (STORE_DEBUG) logger.debug(obj) };
@@ -21,13 +22,26 @@ export class PostgresStore implements Store {
     return `"${key}"`;
   }
 
+  private hydrateResult<T>(key: keys, row: any): T {
+    if (key === keys.games) {
+      const game = row as Game;
+      return {
+        ...game,
+        players: Array.isArray(game.players) ? game.players : []
+      } as T;
+    }
+    if (key === keys.worlds) {
+      const world = row as World;
+      return {
+        ...world,
+        actorIds: Array.isArray(world.actorIds) ? world.actorIds : []
+      } as T;
+    }
+    return row as T;
+  }
+
   async deleteAll(): Promise<void> {
-    await this.client.query('DELETE FROM "turnResults";');
-    await this.client.query('DELETE FROM "turnOrders";');
-    await this.client.query('DELETE FROM "actors";');
-    await this.client.query('DELETE FROM "players";');
-    await this.client.query('DELETE FROM "games";');
-    await this.client.query('DELETE FROM "worlds";');
+    await this.client.query('TRUNCATE TABLE "turnResults", "turnOrders", "actors", "players", "games", "worlds" RESTART IDENTITY CASCADE;');
   }
 
   async create<T>(key: keys, obj: T): Promise<number> {
@@ -39,15 +53,16 @@ export class PostgresStore implements Store {
     switch (key) {
       case keys.games:
         query = `
-          INSERT INTO "games" ("hostPlayerId", "maxPlayers", "gameState", "turn", "worldId", "startedAt")
-          VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`;
+          INSERT INTO "games" ("players", "hostPlayerId", "maxPlayers", "gameState", "turn", "worldId", "startedAt")
+          VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`;
         values = [
-          data.hostPlayerId || null,
-          data.maxPlayers || null,
-          data.gameState || 'LOBBY',
-          data.turn || 0,
+          JSON.stringify(data.players || []),
+          data.hostPlayerId ?? null,
+          data.maxPlayers ?? null,
+          data.gameState ?? 'LOBBY',
+          data.turn ?? 0,
           data.worldId,
-          data.startedAt || null
+          data.startedAt ?? null
         ];
         break;
 
@@ -79,9 +94,9 @@ export class PostgresStore implements Store {
           VALUES ($1, $2, $3, $4, $5) RETURNING id`;
         values = [
           JSON.stringify(data.pos),
-          data.state || 'ALIVE',
+          data.state ?? ActorState.ALIVE,
           data.owner,
-          data.health || null,
+          data.health ?? null,
           data.weapon ? JSON.stringify(data.weapon) : null
         ];
         break;
@@ -128,7 +143,7 @@ export class PostgresStore implements Store {
       throw new NotFoundError(key, id);
     }
 
-    return result.rows[0] as T;
+    return this.hydrateResult<T>(key, result.rows[0]);
   }
 
   async readAll<T>(key: keys, filterFunc: (item: T) => boolean): Promise<Array<T>> {
@@ -136,7 +151,7 @@ export class PostgresStore implements Store {
     const tableName = this.getQuotedTableName(key);
     const query = `SELECT * FROM ${tableName}`;
     const result = await this.client.query(query);
-    return (result.rows as T[]).filter(filterFunc);
+    return result.rows.map((row) => this.hydrateResult<T>(key, row)).filter(filterFunc);
   }
 
   async replace<T>(key: keys, id: number, newObj: T): Promise<T> {
@@ -149,16 +164,17 @@ export class PostgresStore implements Store {
       case keys.games:
         query = `
           UPDATE "games"
-          SET "hostPlayerId" = $1, "maxPlayers" = $2, "gameState" = $3, "turn" = $4, "worldId" = $5, "startedAt" = $6
-          WHERE "id" = $7
+          SET "players" = $1, "hostPlayerId" = $2, "maxPlayers" = $3, "gameState" = $4, "turn" = $5, "worldId" = $6, "startedAt" = $7
+          WHERE "id" = $8
           RETURNING *`;
         values = [
-          data.hostPlayerId || null,
-          data.maxPlayers || null,
-          data.gameState || 'LOBBY',
-          data.turn || 0,
+          JSON.stringify(data.players || []),
+          data.hostPlayerId ?? null,
+          data.maxPlayers ?? null,
+          data.gameState ?? 'LOBBY',
+          data.turn ?? 0,
           data.worldId,
-          data.startedAt || null,
+          data.startedAt ?? null,
           id
         ];
         break;
@@ -196,9 +212,9 @@ export class PostgresStore implements Store {
           RETURNING *`;
         values = [
           JSON.stringify(data.pos),
-          data.state || 'ALIVE',
+          data.state ?? ActorState.ALIVE,
           data.owner,
-          data.health || null,
+          data.health ?? null,
           data.weapon ? JSON.stringify(data.weapon) : null,
           id
         ];
@@ -262,7 +278,7 @@ export class PostgresStore implements Store {
       if (obj.hasOwnProperty(field)) {
         const dbField = `"${field}"`;
 
-        if (['actorIds', 'terrain', 'pos', 'weapon', 'orders', 'world'].includes(field)) {
+        if (['players', 'actorIds', 'terrain', 'pos', 'weapon', 'orders', 'world'].includes(field)) {
           values.push(JSON.stringify(obj[field]));
         } else {
           values.push(obj[field]);
@@ -279,7 +295,7 @@ export class PostgresStore implements Store {
     if (!result || result.rows.length === 0) {
       throw new NotFoundError(key, id);
     }
-    return result.rows[0] as T;
+    return this.hydrateResult<T>(key, result.rows[0]);
   }
 
   async remove<T>(key: keys, id: number): Promise<boolean> {

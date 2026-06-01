@@ -13,6 +13,10 @@ CREATE TABLE IF NOT EXISTS games (
     "startedAt" TIMESTAMP WITH TIME ZONE
 );
 
+-- Backfill for existing databases created before the players column existed.
+ALTER TABLE games ADD COLUMN IF NOT EXISTS "players" JSONB DEFAULT '[]'::jsonb;
+UPDATE games SET "players" = '[]'::jsonb WHERE "players" IS NULL;
+
 CREATE TABLE IF NOT EXISTS players (
     "id" SERIAL PRIMARY KEY,
     "gameId" INTEGER NOT NULL REFERENCES games("id") ON DELETE CASCADE,
@@ -33,11 +37,20 @@ CREATE TABLE IF NOT EXISTS worlds (
 CREATE TABLE IF NOT EXISTS actors (
     "id" SERIAL PRIMARY KEY,
     "pos" JSONB NOT NULL, -- Will store x, y coordinates as JSON
-    "state" VARCHAR(10) DEFAULT 'ALIVE', -- 'ALIVE' or 'DEAD'
+    "state" INTEGER DEFAULT 1, -- ActorState enum value (1 = ALIVE)
     "owner" INTEGER NOT NULL, -- References player id
     "health" INTEGER,
     "weapon" JSONB -- Store weapon properties as JSON
 );
+
+ALTER TABLE actors
+  ALTER COLUMN "state" TYPE INTEGER
+  USING CASE
+    WHEN "state"::text IN ('ALIVE', '1') THEN 1
+    WHEN "state"::text IN ('DEAD', '0') THEN 0
+    -- Fallback for legacy or malformed data to preserve playability.
+    ELSE 1
+  END;
 
 CREATE TABLE IF NOT EXISTS "turnOrders" (
     "id" SERIAL PRIMARY KEY,
