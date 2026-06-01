@@ -74,6 +74,13 @@ const handleKeyDown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
     selectedActorId.value = null;
   }
+
+  // Ctrl+Enter or Cmd+Enter to submit orders
+  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+    if (plannedMoves.value && plannedMoves.value.length > 0 && !isSubmitting.value) {
+      handleSubmitOrders(plannedMoves.value);
+    }
+  }
 };
 
 onMounted(() => {
