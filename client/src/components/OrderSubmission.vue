@@ -93,7 +93,8 @@
       class="submit-orders-btn"
       :aria-busy="isSubmitting"
       aria-live="polite"
-      :title="(!plannedMoves || plannedMoves.length === 0) ? 'Plan at least one move to submit orders' : ''"
+      aria-keyshortcuts="Control+Enter Meta+Enter"
+      :title="(!plannedMoves || plannedMoves.length === 0) ? 'Plan at least one move to submit orders' : 'Submit all orders (Ctrl/Cmd + Enter)'"
     >
       <svg
         v-if="isSubmitting"
@@ -109,6 +110,7 @@
         <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
       </svg>
       {{ isSubmitting ? 'Submitting...' : 'Submit All Orders' }}
+      <span v-if="!isSubmitting && (plannedMoves && plannedMoves.length > 0)" class="shortcut-hint">(Ctrl/Cmd+Enter)</span>
     </button>
   </div>
 </template>
@@ -412,6 +414,13 @@ const handleSubmitOrders = () => {
 .submit-orders-btn:disabled {
   background-color: #bdc3c7;
   cursor: not-allowed;
+}
+
+.shortcut-hint {
+  font-size: 0.8em;
+  opacity: 0.7;
+  margin-left: 8px;
+  font-weight: normal;
 }
 
 .empty-state {
