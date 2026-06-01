@@ -10,10 +10,15 @@ import { webSocketService } from "../service/WebSocketService";
 
 module.exports.createGame = async function createGame(context: ExegesisContext) {
   const maxPlayers = context.requestBody?.maxPlayers; // Optional parameter
-  const result = await GameLifecycleService.createGame(maxPlayers);
-  webSocketService.emitGamesUpdated();
-  // Return with 'id' property to match API expectations
-  return { id: result.gameId };
+  try {
+    const result = await GameLifecycleService.createGame(maxPlayers);
+    webSocketService.emitGamesUpdated();
+    // Return with 'id' property to match API expectations
+    return { id: result.gameId };
+  } catch (err: any) {
+    context.res.status(err.status || 500);
+    return { message: err.message || "An unexpected error occurred while creating a game" };
+  }
 };
 
 module.exports.joinGame = async function joinGame(context: ExegesisContext) {
@@ -52,37 +57,57 @@ module.exports.turnResults = async function turnResults(context: ExegesisContext
   const gameId = context.params.path.gameId;
   const turn = context.params.path.turn;
   const playerId = context.params.path.playerId;
-  return await GameService.turnResults(gameId, turn, playerId);
+  try {
+    return await GameService.turnResults(gameId, turn, playerId);
+  } catch (err: any) {
+    context.res.status(err.status || 500);
+    return { message: err.message || "An unexpected error occurred while fetching turn results" };
+  }
 };
 
-module.exports.listGames = async function listGames() {
-  const result = await GameService.listGames();
-  return { games: result.games };
+module.exports.listGames = async function listGames(context: ExegesisContext) {
+  try {
+    const result = await GameService.listGames();
+    return { gameIds: result.gameIds, games: result.games };
+  } catch (err: any) {
+    context.res.status(err.status || 500);
+    return { message: err.message || "An unexpected error occurred while listing games" };
+  }
 };
 
 module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) {
     const { gameId, playerId } = context.params.path;
     const requestingPlayerId = context.user?.playerId;
 
-    await GameLifecycleService.kickPlayer(
-        gameId,
-        playerId,
-        requestingPlayerId
-    );
-    webSocketService.emitGamesUpdated();
-    webSocketService.emitGameUpdated({ gameId });
+    try {
+        await GameLifecycleService.kickPlayer(
+            gameId,
+            playerId,
+            requestingPlayerId
+        );
+        webSocketService.emitGamesUpdated();
+        webSocketService.emitGameUpdated({ gameId });
 
-    return { success: true };
+        return { success: true };
+    } catch (err: any) {
+        context.res.status(err.status || 500);
+        return { message: err.message || "An error occurred while kicking the player" };
+    }
 }
 
 module.exports.startGame = async function startGame(context: ExegesisContext) {
     const { gameId } = context.params.path;
     const requestingPlayerId = context.user?.playerId;
 
-    await GameLifecycleService.startGame(gameId, requestingPlayerId);
-    webSocketService.emitGamesUpdated();
-    webSocketService.emitGameUpdated({ gameId });
-    return { success: true };
+    try {
+        await GameLifecycleService.startGame(gameId, requestingPlayerId);
+        webSocketService.emitGamesUpdated();
+        webSocketService.emitGameUpdated({ gameId });
+        return { success: true };
+    } catch (err: any) {
+        context.res.status(err.status || 500);
+        return { message: err.message || "An error occurred while starting the game" };
+    }
 }
 
 module.exports.transferHost = async function transferHost(context: ExegesisContext) {
@@ -90,22 +115,27 @@ module.exports.transferHost = async function transferHost(context: ExegesisConte
     const { newHostPlayerId } = context.requestBody;
     const requestingPlayerId = context.user?.playerId;
 
-    await GameLifecycleService.transferHost(
-        gameId,
-        newHostPlayerId,
-        requestingPlayerId
-    );
-    webSocketService.emitGamesUpdated();
-    webSocketService.emitGameUpdated({ gameId });
+    try {
+        await GameLifecycleService.transferHost(
+            gameId,
+            newHostPlayerId,
+            requestingPlayerId
+        );
+        webSocketService.emitGamesUpdated();
+        webSocketService.emitGameUpdated({ gameId });
 
-    return { success: true };
+        return { success: true };
+    } catch (err: any) {
+        context.res.status(err.status || 500);
+        return { message: err.message || "An error occurred while transferring the host" };
+    }
 }
 
 module.exports.getPlayerGameState = async function getPlayerGameState(context: ExegesisContext) {
     const { gameId, playerId } = context.params.path;
 
-    // Authorization check
     try {
+        // Authorization check
         const player = await store.read<Player>(store.keys.players, playerId);
         const authenticatedUser = context.user as RuntimeUser;
 
@@ -118,54 +148,60 @@ module.exports.getPlayerGameState = async function getPlayerGameState(context: E
             context.res.status(403);
             return { message: "You can only access your own game state" };
         }
-    } catch (err) {
-        if (!(err instanceof NotFoundError)) {
-            throw err;
-        }
-        context.res.status(404);
-        return { message: "Player not found" };
-    }
 
-    return await GameLifecycleService.getPlayerGameState(gameId, playerId);
+        return await GameLifecycleService.getPlayerGameState(gameId, playerId);
+    } catch (err: any) {
+        if (err instanceof NotFoundError) {
+            context.res.status(404);
+            return { message: "Player not found" };
+        }
+        context.res.status(err.status || 500);
+        return { message: err.message || "An unexpected error occurred while fetching player game state" };
+    }
 }
 
 module.exports.getValidTargets = async function getValidTargets(context: ExegesisContext) {
     const { gameId, actorId } = context.params.path;
     const authenticatedUser = context.user as RuntimeUser;
 
-    // 1. Get game and world
-    const game = await store.read<Game>(store.keys.games, gameId);
-    const world = await store.read<World>(store.keys.worlds, game.worldId);
+    try {
+        // 1. Get game and world
+        const game = await store.read<Game>(store.keys.games, gameId);
+        const world = await store.read<World>(store.keys.worlds, game.worldId);
 
-    // 2. Get actor and verify it belongs to a player owned by the authenticated user
-    const actor = await store.read<Actor>(store.keys.actors, actorId);
+        // 2. Get actor and verify it belongs to a player owned by the authenticated user
+        const actor = await store.read<Actor>(store.keys.actors, actorId);
 
-    // We need to find the player ID for this user in this game
-    const players = await Promise.all(game.players.map(pid => store.read<Player>(store.keys.players, pid)));
-    const currentPlayer = players.find(p => p.sessionId === authenticatedUser.id || p.username === authenticatedUser.email);
+        // We need to find the player ID for this user in this game
+        const players = await Promise.all(game.players.map(pid => store.read<Player>(store.keys.players, pid)));
+        const currentPlayer = players.find(p => p.sessionId === authenticatedUser.id || p.username === authenticatedUser.email);
 
-    if (!currentPlayer || actor.owner !== currentPlayer.id) {
-        context.res.status(403);
-        return { message: "Not your actor" };
+        if (!currentPlayer || actor.owner !== currentPlayer.id) {
+            context.res.status(403);
+            return { message: "Not your actor" };
+        }
+
+        // 3. Get all actors in the world
+        const allActors = await Promise.all(
+            world.actorIds.map(id => store.read<Actor>(store.keys.actors, id))
+        );
+
+        // 4. Get valid targets
+        const targets = RangeValidation.getValidTargets(
+            actor,
+            allActors,
+            world.terrain
+        );
+
+        return {
+            targets: targets.map(t => ({
+                actorId: t.id,
+                distance: RangeValidation.calculateHexDistance(actor.pos, t.pos),
+                canAttack: true
+            }))
+        };
+    } catch (err: any) {
+        context.res.status(err.status || 500);
+        return { message: err.message || "An unexpected error occurred while getting valid targets" };
     }
-
-    // 3. Get all actors in the world
-    const allActors = await Promise.all(
-        world.actorIds.map(id => store.read<Actor>(store.keys.actors, id))
-    );
-
-    // 4. Get valid targets
-    const targets = RangeValidation.getValidTargets(
-        actor,
-        allActors,
-        world.terrain
-    );
-
-    return {
-        targets: targets.map(t => ({
-            actorId: t.id,
-            distance: RangeValidation.calculateHexDistance(actor.pos, t.pos),
-            canAttack: true
-        }))
-    };
 };

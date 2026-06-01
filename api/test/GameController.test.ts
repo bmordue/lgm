@@ -68,6 +68,9 @@ describe("GameController", function () {
       assert(result.games, "Should have games property");
       assert(Array.isArray(result.games), "Games should be an array");
       assert.equal(result.games.length, 2, "Should have 2 games");
+      assert(result.gameIds, "Should have gameIds property");
+      assert(Array.isArray(result.gameIds), "gameIds should be an array");
+      assert.equal(result.gameIds.length, 2, "Should have 2 game IDs");
     });
   });
 
@@ -349,7 +352,7 @@ describe("GameController", function () {
       assert.equal(result.message, "Player not found");
     });
 
-    it("should rethrow unexpected store errors", async function () {
+    it("should return 500 for unexpected store errors", async function () {
       const mutableDatabaseStore = databaseStore as any;
       const originalRead = mutableDatabaseStore.read;
       mutableDatabaseStore.read = async function () {
@@ -376,10 +379,9 @@ describe("GameController", function () {
       };
 
       try {
-        await assert.rejects(
-          async () => GameController.getPlayerGameState(mockContext),
-          /Unexpected store failure/
-        );
+        const result = await GameController.getPlayerGameState(mockContext);
+        assert.equal(mockContext.res.statusCode, 500);
+        assert.equal(result.message, "Unexpected store failure");
       } finally {
         mutableDatabaseStore.read = originalRead;
       }
