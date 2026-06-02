@@ -16,17 +16,22 @@ describe("GameController", function () {
         requestBody: {},
         params: { path: {}, query: {} },
         res: {
-          status: function() { return this; },
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          statusCode: 0,
           json: function() { return this; }
         }
       };
 
       const result = await GameController.createGame(mockContext);
-      assert(result.id !== undefined, "Game ID should be defined");
-      assert(typeof result.id === 'number', "Game ID should be a number");
+      assert.equal(mockContext.res.statusCode, 201);
+      assert(result.gameId !== undefined, "Game ID should be defined");
+      assert(typeof result.gameId === 'number', "Game ID should be a number");
 
       // Verify that the game was created with default maxPlayers (4)
-      const createdGame = await store.read<any>(store.keys.games, result.id);
+      const createdGame = await store.read<any>(store.keys.games, result.gameId);
       assert.equal(createdGame.maxPlayers, 4, "Default maxPlayers should be 4");
     });
 
@@ -35,14 +40,19 @@ describe("GameController", function () {
         requestBody: { maxPlayers: 4 },
         params: { path: {}, query: {} },
         res: {
-          status: function() { return this; },
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          statusCode: 0,
           json: function() { return this; }
         }
       };
 
       const result = await GameController.createGame(mockContext);
-      assert(result.id !== undefined, "Game ID should be defined");
-      assert(typeof result.id === 'number', "Game ID should be a number");
+      assert.equal(mockContext.res.statusCode, 201);
+      assert(result.gameId !== undefined, "Game ID should be defined");
+      assert(typeof result.gameId === 'number', "Game ID should be a number");
     });
   });
 
@@ -59,12 +69,17 @@ describe("GameController", function () {
       const mockContext: any = {
         params: { path: {}, query: {} },
         res: {
-          status: function() { return this; },
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          statusCode: 0,
           json: function() { return this; }
         }
       };
 
       const result = await GameController.listGames(mockContext);
+      assert.equal(mockContext.res.statusCode, 200);
       assert(result.games, "Should have games property");
       assert(Array.isArray(result.games), "Games should be an array");
       assert.equal(result.games.length, 2, "Should have 2 games");
@@ -84,14 +99,19 @@ describe("GameController", function () {
       
       const mockContext: any = {
         params: { path: { id: game.id }, query: {} },
-        user: { username: "testuser", sessionId: "session123" },
+        user: { email: "testuser", id: "session123" },
         res: {
-          status: function() { return this; },
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          statusCode: 0,
           json: function() { return this; }
         }
       };
 
       const result = await GameController.joinGame(mockContext);
+      assert.equal(mockContext.res.statusCode, 200);
       assert.equal(result.gameId, game.id);
       assert(typeof result.playerId === 'number');
     });
@@ -99,7 +119,7 @@ describe("GameController", function () {
     it("should return error message for non-existent game", async function () {
       const mockContext: any = {
         params: { path: { id: 9999 }, query: {} },
-        user: { username: "testuser", sessionId: "session123" },
+        user: { email: "testuser", id: "session123" },
         res: {
           status: function(code: number) { 
             this.statusCode = code;
@@ -112,7 +132,8 @@ describe("GameController", function () {
 
       const result = await GameController.joinGame(mockContext);
       assert(result.message, "Should have error message");
-      assert.equal(mockContext.res.statusCode, 500);
+      assert.equal(mockContext.res.statusCode, 404);
+      assert.equal(result.message, "games with id 9999 not found");
     });
   });
 
@@ -141,12 +162,17 @@ describe("GameController", function () {
           query: {} 
         },
         res: {
-          status: function() { return this; },
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          statusCode: 0,
           json: function() { return this; }
         }
       };
 
       const result = await GameController.postOrders(mockContext);
+      assert.equal(mockContext.res.statusCode, 200);
       assert(result.turnStatus !== undefined, "Should have turnStatus property");
       assert(typeof result.turnStatus.complete === 'boolean', "turnStatus.complete should be a boolean");
     });
@@ -170,7 +196,8 @@ describe("GameController", function () {
 
       const result = await GameController.postOrders(mockContext);
       assert(result.message, "Should have error message");
-      assert.equal(mockContext.res.statusCode, 500);
+      assert.equal(mockContext.res.statusCode, 404);
+      assert.equal(result.message, "games with id 9999 not found");
     });
   });
 
@@ -193,13 +220,17 @@ describe("GameController", function () {
           query: {} 
         },
         res: {
-          status: function() { return this; },
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          statusCode: 0,
           json: function() { return this; }
         }
       };
 
       const result = await GameController.turnResults(mockContext);
-      assert.equal(result.success, false);
+      assert.equal(mockContext.res.statusCode, 404);
       assert(result.message !== undefined, "Should have message property");
       assert.equal(result.message, "turn results not available");
     });
@@ -225,14 +256,94 @@ describe("GameController", function () {
           query: {}
         },
         res: {
-          status: function() { return this; },
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          statusCode: 0,
           json: function() { return this; }
         }
       };
 
       const result = await GameController.turnResults(mockContext);
-      assert.equal(result.success, true);
+      assert.equal(mockContext.res.statusCode, 200);
       assert(result.world !== undefined, "Should have world property");
+    });
+  });
+
+  describe("lobby management responses", function () {
+    beforeEach(() => {
+      store.deleteAll();
+    });
+
+    it("should return success payload when kicking a player", async function () {
+      const game = await GameService.createGame();
+      const host = await GameService.joinGame(game.id, "host@example.com", "host-session");
+      const player = await GameService.joinGame(game.id, "player@example.com", "player-session");
+
+      const mockContext: any = {
+        params: { path: { gameId: game.id, playerId: player.playerId }, query: {} },
+        user: { playerId: host.playerId },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 0
+        }
+      };
+
+      const result = await GameController.kickPlayer(mockContext);
+      assert.equal(mockContext.res.statusCode, 200);
+      assert.equal(result.success, true);
+    });
+
+    it("should return success payload when starting a game", async function () {
+      const game = await GameService.createGame();
+      const host = await GameService.joinGame(game.id, "host@example.com", "host-session");
+      await GameService.joinGame(game.id, "player@example.com", "player-session");
+
+      const mockContext: any = {
+        params: { path: { gameId: game.id }, query: {} },
+        user: { playerId: host.playerId },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 0
+        }
+      };
+
+      const result = await GameController.startGame(mockContext);
+      assert.equal(mockContext.res.statusCode, 200);
+      assert.equal(result.success, true);
+    });
+
+    it("should return success payload when transferring host", async function () {
+      const game = await GameService.createGame();
+      const host = await GameService.joinGame(game.id, "host@example.com", "host-session");
+      const player = await GameService.joinGame(game.id, "player@example.com", "player-session");
+
+      const mockContext: any = {
+        requestBody: { newHostPlayerId: player.playerId },
+        params: { path: { gameId: game.id }, query: {} },
+        user: { playerId: host.playerId },
+        res: {
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          json: function() { return this; },
+          statusCode: 0
+        }
+      };
+
+      const result = await GameController.transferHost(mockContext);
+      assert.equal(mockContext.res.statusCode, 200);
+      assert.equal(result.success, true);
     });
   });
 
@@ -255,12 +366,17 @@ describe("GameController", function () {
         },
         user: { email: "testuser", id: "session123" },
         res: {
-          status: function() { return this; },
+          status: function(code: number) {
+            this.statusCode = code;
+            return this;
+          },
+          statusCode: 0,
           json: function() { return this; }
         }
       };
 
       const result = await GameController.getPlayerGameState(mockContext);
+      assert.equal(mockContext.res.statusCode, 200);
       assert.equal(result.gameId, game.id);
       assert.equal(result.playerId, player.playerId);
       assert(result.world !== undefined);
