@@ -183,7 +183,26 @@ async function join(game: GameSummary) {
           <div class="game-details">
             <div class="game-id">
               <svg
-                v-if="joiningGameId === game.id"
+                v-if="joiningGameId !== game.id"
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="game-icon"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <svg
+                v-else
                 class="btn-spinner spinning"
                 viewBox="0 0 24 24"
                 fill="none"
@@ -245,6 +264,22 @@ async function join(game: GameSummary) {
       aria-hidden="true"
     >
       <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+    </svg>
+    <svg
+      v-else
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
     </svg>
     {{ isCreating ? 'Creating...' : 'Create New Game' }}
   </button>
@@ -370,6 +405,9 @@ async function join(game: GameSummary) {
   font-weight: bold;
   font-size: 1.1em;
   margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .game-status {
@@ -401,6 +439,10 @@ async function join(game: GameSummary) {
   transition: background-color 0.2s, transform 0.1s;
   width: 100%;
   font-size: 1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .create-game-btn:hover:not(:disabled) {
