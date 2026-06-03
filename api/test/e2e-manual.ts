@@ -57,7 +57,7 @@ process.env.RUN_E2E_TESTS &&
             const createResp = await createAGame(SMOKE_USER_EMAIL);
             console.log(JSON.stringify(createResp.body, null, 4));
 
-            gameId = createResp.body.id;
+            gameId = createResp.body.gameId;
             const response = await joinAGame(gameId, SMOKE_USER_EMAIL);
             console.log(JSON.stringify(response.body, null, 4));
 
@@ -72,7 +72,7 @@ process.env.RUN_E2E_TESTS &&
         it('send orders for first turn', (done) => {
             const orders = {
                 gameId: gameId,
-                turn: 0,
+                turn: 1,
                 playerId: playerId,
                 orders: []
             };

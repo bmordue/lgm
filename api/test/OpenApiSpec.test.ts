@@ -13,15 +13,19 @@ describe("OpenAPI spec", function () {
     const spec = loadSpec();
 
     assert.equal(
-      spec.paths["/games"].post.responses["200"].content["application/json"].schema.$ref,
+      spec.paths["/games"].post.responses["201"].content["application/json"].schema.$ref,
       "#/components/schemas/GameCreatedResponse"
     );
-    assert.deepEqual(spec.components.schemas.GameCreatedResponse.required, ["id"]);
-    assert.equal(spec.components.schemas.GameCreatedResponse.properties.id.type, "integer");
+    assert.deepEqual(spec.components.schemas.GameCreatedResponse.required, ["gameId"]);
+    assert.equal(spec.components.schemas.GameCreatedResponse.properties.gameId.type, "integer");
 
     assert.equal(
       spec.paths["/games/{id}"].put.responses["200"].content["application/json"].schema.$ref,
       "#/components/schemas/JoinGameResponse"
+    );
+    assert.equal(
+      spec.paths["/games/{id}"].put.responses["404"].content["application/json"].schema.$ref,
+      "#/components/schemas/ErrorMessageResponse"
     );
   });
 
@@ -38,8 +42,12 @@ describe("OpenAPI spec", function () {
       spec.paths["/games/{gameId}/turns/{turn}/players/{playerId}"].get.responses["200"].content["application/json"].schema.$ref,
       "#/components/schemas/TurnResultsResponse"
     );
-    assert.deepEqual(spec.components.schemas.TurnResultsResponse.required, ["success"]);
-    assert.equal(spec.components.schemas.TurnResultsResponse.properties.success.type, "boolean");
+    assert.deepEqual(spec.components.schemas.TurnResultsResponse.required, ["world"]);
+    assert.equal(spec.components.schemas.TurnResultsResponse.properties.world.$ref, "#/components/schemas/World");
+    assert.equal(
+      spec.paths["/games/{gameId}/turns/{turn}/players/{playerId}"].get.responses["404"].content["application/json"].schema.$ref,
+      "#/components/schemas/ErrorMessageResponse"
+    );
   });
 
   it("documents actor orders using the implemented order schema", function () {

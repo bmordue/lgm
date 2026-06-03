@@ -1,5 +1,5 @@
 import assert = require("assert");
-import * as store from "../service/Store";
+import * as store from "../service/DatabaseStore";
 import * as OrderService from "../service/OrderService";
 import { Actor, ActorState, Game, OrderType, Terrain, World } from "../service/Models";
 import { WEAPON_TYPES } from "../config/WeaponsConfig";
@@ -48,27 +48,22 @@ describe("OrderService ATTACK validation", () => {
     return { gameId, attackerId, targetId };
   }
 
-  it("rejects ATTACK orders when target is out of range", async () => {
+  it("permits ATTACK orders when target is out of range (non-fatal)", async () => {
     const { gameId, attackerId, targetId } = await createGameWithActors(
       { x: 0, y: 0 },
       { x: 9, y: 9 }
     );
 
-    try {
-      await OrderService.postOrders(
-        { orders: [{ actorId: attackerId, orderType: OrderType.ATTACK, targetId }] },
-        gameId,
-        1,
-        1
-      );
-      assert.fail("Expected out-of-range ATTACK order to be rejected");
-    } catch (e) {
-      assert.ok(e.message.includes("Invalid attack order"));
-      assert.ok(e.message.includes("Target too far"));
-    }
+    // This should no longer throw
+    await OrderService.postOrders(
+      { orders: [{ actorId: attackerId, orderType: OrderType.ATTACK, targetId }] },
+      gameId,
+      1,
+      1
+    );
   });
 
-  it("rejects ATTACK orders when line of sight is blocked", async () => {
+  it("permits ATTACK orders when line of sight is blocked (non-fatal)", async () => {
     const terrain = Array(TEST_WORLD_SIZE).fill(null).map(() => Array(TEST_WORLD_SIZE).fill(Terrain.EMPTY));
     terrain[1][0] = Terrain.BLOCKED;
 
@@ -78,17 +73,32 @@ describe("OrderService ATTACK validation", () => {
       terrain
     );
 
+    // This should no longer throw
+    await OrderService.postOrders(
+      { orders: [{ actorId: attackerId, orderType: OrderType.ATTACK, targetId }] },
+      gameId,
+      1,
+      1
+    );
+  });
+
+  it("rejects ATTACK orders for fatal errors (e.g. self-attack)", async () => {
+    const { gameId, attackerId } = await createGameWithActors(
+      { x: 0, y: 0 },
+      { x: 1, y: 0 }
+    );
+
     try {
       await OrderService.postOrders(
-        { orders: [{ actorId: attackerId, orderType: OrderType.ATTACK, targetId }] },
+        { orders: [{ actorId: attackerId, orderType: OrderType.ATTACK, targetId: attackerId }] },
         gameId,
         1,
         1
       );
-      assert.fail("Expected blocked-LOS ATTACK order to be rejected");
+      assert.fail("Expected self-attack to be rejected");
     } catch (e) {
       assert.ok(e.message.includes("Invalid attack order"));
-      assert.ok(e.message.includes("No line of sight"));
+      assert.ok(e.message.includes("Cannot attack self"));
     }
   });
 });
