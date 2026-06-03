@@ -110,7 +110,7 @@
         <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
       </svg>
       {{ isSubmitting ? 'Submitting...' : 'Submit All Orders' }}
-      <span v-if="!isSubmitting && (plannedMoves && plannedMoves.length > 0)" class="shortcut-hint">(Ctrl/Cmd+Enter)</span>
+      <span v-if="!isSubmitting && (plannedMoves && plannedMoves.length > 0)" class="shortcut-hint">(<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Enter</kbd>)</span>
     </button>
   </div>
 </template>

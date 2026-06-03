@@ -339,8 +339,14 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
       </button>
     </div>
     <div class="game-info" v-if="game.gameId !== undefined && game.gameId !== null">
-      <span class="turn-info">Turn {{ game.turn }}</span>
-      <span class="player-info">Players: {{ game.playerCount }}/{{ game.maxPlayers }}</span>
+      <span class="turn-info">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="game-info-icon" aria-hidden="true"><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>
+        Turn {{ game.turn }}
+      </span>
+      <span class="player-info">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="game-info-icon" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+        Players: {{ game.playerCount }}/{{ game.maxPlayers }}
+      </span>
       <span v-if="lastRefreshed" class="last-refreshed">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clock-icon" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
         Last Refreshed: {{ lastRefreshed }}
@@ -462,7 +468,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         
         <h3>
           Actors ({{ game.world?.actors?.length || 0 }})
-          <span v-if="selectedActorId" class="hint-text">(Esc to deselect)</span>
+          <span v-if="selectedActorId" class="hint-text">(<kbd>Esc</kbd> to deselect)</span>
         </h3>
         <div class="actors-list">
           <button
@@ -518,6 +524,14 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 .turn-info, .player-info {
   font-weight: bold;
   color: #333;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.game-info-icon {
+  color: hsla(160, 100%, 37%, 1);
+  flex-shrink: 0;
 }
 
 .last-refreshed {
