@@ -44,6 +44,9 @@ export const useUserStore = defineStore('user', {
       localStorage.removeItem('user');
       router.push('/login');
     },
+    getToken(): string | null {
+      return this.user?.token ?? null;
+    },
   }
 })
 
@@ -53,4 +56,5 @@ interface UserInfo {
   email?: string;
   groups?: string[];
   isGuest?: boolean;
+  token?: string;
 }
