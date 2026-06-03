@@ -1,9 +1,15 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
-import { useUserStore } from './stores/User.store';
+import { useUserStore } from './stores/User.store'
 
-const userStore = useUserStore();
+const userStore = useUserStore()
+const isAuthenticated = computed(() => userStore.isAuthenticated)
+const username = computed(() => userStore.user?.name || '')
+
+function logout() {
+  userStore.logout()
+}
 
 onMounted(() => {
   userStore.fetchCurrentUser();
@@ -20,15 +26,11 @@ onMounted(() => {
     <div class="wrapper">
       <nav>
         <span v-if="userStore.user" class="user-greeting">Welcome, {{ userStore.user.name }}!</span>
-        <RouterLink v-if="userStore.isAuthenticated" to="/dashboard">Dashboard</RouterLink>
-        <RouterLink v-if="!userStore.isAuthenticated" to="/login">Login</RouterLink>
-        <RouterLink v-if="!userStore.isAuthenticated" to="/reset">Reset</RouterLink>
-        <button
-          v-if="userStore.isAuthenticated"
-          type="button"
-          @click="userStore.logout"
-        >
-          Logout
+        <RouterLink v-if="isAuthenticated" to="/dashboard">Dashboard</RouterLink>
+        <RouterLink v-if="!isAuthenticated" to="/login">Login</RouterLink>
+        <RouterLink v-if="!isAuthenticated" to="/reset">Reset</RouterLink>
+        <button v-if="isAuthenticated" class="logout-btn" @click="logout">
+          Logout ({{ username }})
         </button>
       </nav>
     </div>
@@ -139,6 +141,22 @@ nav button {
 }
 
 nav button:hover, nav a:hover {
+  background-color: hsla(160, 100%, 37%, 0.2);
+}
+
+.logout-btn {
+  background: none;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  color: hsla(160, 100%, 37%, 1);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  transition: 0.4s;
+}
+
+.logout-btn:hover {
   background-color: hsla(160, 100%, 37%, 0.2);
 }
 
