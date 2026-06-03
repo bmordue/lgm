@@ -177,3 +177,7 @@
 ## 2026-05-27 - Interactive Legend Highlighting Pattern
 **Learning:** Making a static Map Legend interactive by using hover/focus states to trigger spatial highlights on a grid drastically improves the discoverability and clarity of complex visual states. Using `tabindex="0"` and `focusin`/`focusout` ensures this "delightful" feature is also accessible to keyboard users.
 **Action:** Always implement cross-highlighting between legends and their associated spatial representations to strengthen the mental link between abstract categories and their concrete instances.
+
+## 2026-06-03 - [Keyboard Shortcut Visibility]
+**Learning:** Standardizing keyboard shortcut hints using the `<kbd>` tag significantly improves discoverability and provides a professional, tactile feel to the UI that users find more intuitive than plain text hints.
+**Action:** Always wrap keyboard shortcut hints (like Esc, Ctrl, Enter) in `<kbd>` tags and provide global styling for them.
