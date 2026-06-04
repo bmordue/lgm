@@ -184,3 +184,7 @@
 ## 2026-06-03 - [Keyboard Shortcut Visibility]
 **Learning:** Standardizing keyboard shortcut hints using the `<kbd>` tag significantly improves discoverability and provides a professional, tactile feel to the UI that users find more intuitive than plain text hints.
 **Action:** Always wrap keyboard shortcut hints (like Esc, Ctrl, Enter) in `<kbd>` tags and provide global styling for them.
+
+## 2026-06-04 - Synchronized Unit-Owner Selection Highlighting
+**Learning:** Linking the selection state of a spatial entity (unit) to its metadata in a separate list (player owner) provides critical context and reduces cognitive load. Using a consistent visual language (e.g., the same red outline) for both reinforces this relationship and helps users quickly identify ownership in multi-player environments.
+**Action:** Always implement cross-highlighting between units and their owners in sidebars to maintain clear ownership context during tactical analysis.

@@ -28,6 +28,11 @@ const hoveredActorOwnerId = computed(() => {
   const actor = game.value.world?.actors?.find((a: Actor) => a.id === hoveredActorId.value);
   return actor ? actor.owner : null;
 });
+const selectedActorOwnerId = computed(() => {
+  if (selectedActorId.value === null) return null;
+  const actor = game.value.world?.actors?.find((a: Actor) => a.id === selectedActorId.value);
+  return actor ? actor.owner : null;
+});
 const isSubmitting = ref(false);
 const submissionError = ref('');
 const submissionSuccess = ref('');
@@ -375,7 +380,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     
     <div class="game-content">
       <div class="left-panel">
-        <h3>Players</h3>
+        <h3>Players ({{ getPlayerList().length }})</h3>
         <div class="player-list">
           <button
             type="button"
@@ -384,8 +389,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             class="player-item"
             :class="{
               'is-self': player.id === gamesStore.getCurrentPlayerId(),
-              'is-hovered': player.id === hoveredPlayerId || player.id === hoveredActorOwnerId
+              'is-hovered': player.id === hoveredPlayerId || player.id === hoveredActorOwnerId,
+              'is-selected': player.id === selectedActorOwnerId
             }"
+            :aria-label="player.name + (player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '') + (player.id === selectedActorOwnerId ? ', owns selected unit' : '')"
             @mouseenter="hoveredPlayerId = player.id"
             @mouseleave="hoveredPlayerId = null"
             @focus="hoveredPlayerId = player.id"
@@ -481,7 +488,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
               'is-hovered': actor.id === hoveredActorId || (hoveredPlayerId !== null && actor.owner === hoveredPlayerId),
               'is-selected': actor.id === selectedActorId
             }"
-            :aria-label="'Actor ' + actor.id + ' at ' + actor.pos.x + ',' + actor.pos.y + ', Health ' + (actor.health ?? 100) + ' of ' + (actor.maxHealth ?? 100)"
+            :aria-label="'Actor ' + actor.id + ' at ' + actor.pos.x + ',' + actor.pos.y + ', Health ' + (actor.health ?? 100) + ' of ' + (actor.maxHealth ?? 100) + (actor.id === selectedActorId ? ', Selected' : '')"
             @mouseenter="hoveredActorId = actor.id"
             @mouseleave="hoveredActorId = null"
             @focus="hoveredActorId = actor.id"
@@ -603,6 +610,11 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 
 .player-item.is-self:hover, .player-item.is-self:focus, .player-item.is-self.is-hovered {
   background: hsla(160, 100%, 37%, 0.2);
+}
+
+.player-item.is-selected {
+  outline: 2px solid #c0392b;
+  outline-offset: -2px;
 }
 
 
