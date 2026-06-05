@@ -1,9 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { mount, flushPromises, VueWrapper } from '@vue/test-utils';
 import GameView from '../GameView.vue';
-import HexGrid from '@/components/HexGrid.vue';
 import OrderSubmission from '@/components/OrderSubmission.vue';
-import type { PlannedMove, Order, Actor, World } from '@/stores/Games.store'; // Assuming World is also needed for store mock
+import type { PlannedMove, World } from '@/stores/Games.store'; // Assuming World is also needed for store mock
 import { useGamesStore } from '@/stores/Games.store';
 import { useUserStore } from '@/stores/User.store';
 
@@ -24,8 +23,14 @@ const samplePlannedMoves: PlannedMove[] = [
   { actorId: 102, startPos: { x: 1, y: 1 }, endPos: { x: 2, y: 1 } },
 ];
 
-const sampleActor: Actor = { id: 101, owner: 1, pos: {x:0,y:0} };
-const sampleWorld: World = { id: 1, terrain: [[0]], actors: [sampleActor] };
+const sampleWorld: World = {
+  id: 1,
+  terrain: [[0]],
+  actors: [
+    { id: 101, owner: 1, pos: {x:0,y:0} },
+    { id: 102, owner: 2, pos: {x:1,y:0} },
+  ],
+};
 
 describe('GameView.vue', () => {
   let wrapper: VueWrapper<any>;
@@ -54,18 +59,21 @@ describe('GameView.vue', () => {
 
     mockGamesStore = {
       getCurrentGame: vi.fn(() => ({
-        gameId: 'g1',
+        gameId: 1,
         turn: 1,
         world: sampleWorld,
-        playerCount: 1,
+        playerCount: 2,
         maxPlayers: 2,
+        hostPlayerId: 1,
+        gameState: 'IN_PROGRESS',
       })),
       getCurrentPlayerId: vi.fn(() => 1),
       setCurrentGameTurn: vi.fn(),
       fetchTurnResults: vi.fn().mockResolvedValue({}),
       fetchGameDetails: vi.fn().mockResolvedValue({}),
-      // games: [], // if GameView tries to access games list for some reason
-      // gameTurns: [],
+      kickPlayer: vi.fn().mockResolvedValue({}),
+      transferHost: vi.fn().mockResolvedValue({}),
+      startGame: vi.fn().mockResolvedValue({}),
     };
     (useGamesStore as any).mockReturnValue(mockGamesStore);
 
@@ -103,7 +111,7 @@ describe('GameView.vue', () => {
     it('highlights the current player in the player list', () => {
       wrapper = mountComponent();
       const playerItems = wrapper.findAll('.player-item');
-      // sampleActor has owner: 1, and mockUserStore has name 'Test User'
+      // sampleWorld includes owner 1, and mockUserStore has name 'Test User'
       // so 'Test User (You)' should be in the list
       const selfPlayerItem = playerItems.find(item => item.text().includes('Test User (You)'));
       expect(selfPlayerItem).toBeTruthy();
@@ -169,11 +177,13 @@ describe('GameView.vue', () => {
         wrapper.vm.plannedMoves = [...samplePlannedMoves];
         // Mock getCurrentGame to return specific IDs for URL construction
         mockGamesStore.getCurrentGame.mockReturnValue({
-            gameId: 'g1',
+            gameId: 1,
             turn: 1,
             world: sampleWorld, // Or a more detailed one if needed for other parts of GameView
-            playerCount: 1,
+            playerCount: 2,
             maxPlayers: 2,
+            hostPlayerId: 1,
+            gameState: 'IN_PROGRESS',
         });
         mockGamesStore.getCurrentPlayerId.mockReturnValue(1);
     });
@@ -183,7 +193,6 @@ describe('GameView.vue', () => {
       await orderSubmissionComponent.vm.$emit('submit-orders', [...samplePlannedMoves]);
       await flushPromises(); // Wait for postOrders async and fetch
 
-      const expectedUrl = `/api/test/games/g1/turns/1/players/1`;
       const expectedBody = {
         orders: samplePlannedMoves.map(pm => ({
           actorId: pm.actorId,
@@ -194,7 +203,7 @@ describe('GameView.vue', () => {
 
       expect(global.fetch).toHaveBeenCalledTimes(1);
       expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`/games/g1/turns/1/players/1`),
+        expect.stringContaining(`/games/1/turns/1/players/1`),
         expect.objectContaining({
           method: 'POST',
           credentials: 'include',
@@ -277,6 +286,43 @@ describe('GameView.vue', () => {
         await flushPromises();
 
         expect(global.fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('lobby host controls', () => {
+    beforeEach(() => {
+      mockGamesStore.getCurrentGame.mockReturnValue({
+        gameId: 1,
+        turn: 1,
+        world: sampleWorld,
+        playerCount: 2,
+        maxPlayers: 4,
+        hostPlayerId: 1,
+        gameState: 'LOBBY',
+      });
+      wrapper = mountComponent();
+    });
+
+    it('shows start, transfer, and kick controls for the host in the lobby', () => {
+      expect(wrapper.find('.start-game-btn').exists()).toBe(true);
+      expect(wrapper.findAll('.transfer-host-btn').length).toBe(1);
+      expect(wrapper.findAll('.kick-player-btn').length).toBe(1);
+      expect(wrapper.findComponent({ name: 'OrderSubmission' }).exists()).toBe(false);
+      expect(wrapper.findAll('.player-item')[0].text()).not.toContain('Kick');
+      expect(wrapper.findAll('.player-item')[0].text()).not.toContain('Make Host');
+      expect(wrapper.findAll('.player-item')[1].text()).toContain('Kick');
+      expect(wrapper.findAll('.player-item')[1].text()).toContain('Make Host');
+    });
+
+    it('calls store actions for host lobby controls', async () => {
+      await wrapper.find('.transfer-host-btn').trigger('click');
+      expect(mockGamesStore.transferHost).toHaveBeenCalledWith(1, 2);
+
+      await wrapper.find('.kick-player-btn').trigger('click');
+      expect(mockGamesStore.kickPlayer).toHaveBeenCalledWith(1, 2);
+
+      await wrapper.find('.start-game-btn').trigger('click');
+      expect(mockGamesStore.startGame).toHaveBeenCalledWith(1);
     });
   });
 });

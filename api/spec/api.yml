@@ -484,11 +484,16 @@ components:
       type: object
       description: Response payload returned when a new game is successfully created.
       required:
+        - id
         - gameId
       properties:
+        id:
+          type: integer
         gameId:
           type: integer
+          description: Deprecated alias for id retained for backward compatibility.
       example:
+        id: 0
         gameId: 0
     JoinGameResponse:
       type: object
@@ -499,6 +504,8 @@ components:
         - world
         - playerCount
         - maxPlayers
+        - hostPlayerId
+        - gameState
       properties:
         gameId:
           type: integer
@@ -682,6 +689,8 @@ components:
         - playerCount
         - maxPlayers
         - isFull
+        - hostPlayerId
+        - gameState
       properties:
         id:
           type: integer
@@ -691,6 +700,10 @@ components:
           type: integer
         isFull:
           type: boolean
+        hostPlayerId:
+          type: integer
+        gameState:
+          $ref: '#/components/schemas/GameState'
     LoginResponse:
       type: object
       required:

@@ -99,7 +99,7 @@ describe("GameController", function () {
       
       const mockContext: any = {
         params: { path: { id: game.id }, query: {} },
-        user: { email: "testuser", id: "session123" },
+        user: { email: "testuser@example.com", id: "session123" },
         res: {
           status: function(code: number) {
             this.statusCode = code;
@@ -119,7 +119,7 @@ describe("GameController", function () {
     it("should return error message for non-existent game", async function () {
       const mockContext: any = {
         params: { path: { id: 9999 }, query: {} },
-        user: { email: "testuser", id: "session123" },
+        user: { email: "testuser@example.com", id: "session123" },
         res: {
           status: function(code: number) { 
             this.statusCode = code;
@@ -283,7 +283,7 @@ describe("GameController", function () {
 
       const mockContext: any = {
         params: { path: { gameId: game.id, playerId: player.playerId }, query: {} },
-        user: { playerId: host.playerId },
+        user: { email: "host@example.com", id: "host-session" },
         res: {
           status: function(code: number) {
             this.statusCode = code;
@@ -306,7 +306,7 @@ describe("GameController", function () {
 
       const mockContext: any = {
         params: { path: { gameId: game.id }, query: {} },
-        user: { playerId: host.playerId },
+        user: { email: "host@example.com", id: "host-session" },
         res: {
           status: function(code: number) {
             this.statusCode = code;
@@ -330,7 +330,7 @@ describe("GameController", function () {
       const mockContext: any = {
         requestBody: { newHostPlayerId: player.playerId },
         params: { path: { gameId: game.id }, query: {} },
-        user: { playerId: host.playerId },
+        user: { email: "host@example.com", id: "host-session" },
         res: {
           status: function(code: number) {
             this.statusCode = code;
@@ -501,6 +501,112 @@ describe("GameController", function () {
       } finally {
         mutableDatabaseStore.read = originalRead;
       }
+    });
+
+    describe("player management actions", function () {
+      beforeEach(() => {
+        store.deleteAll();
+      });
+
+      it("should allow the host to kick another player", async function () {
+        const game = await GameService.createGame();
+        const host = await GameService.joinGame(game.id, "host@example.com", "host-session");
+        const guest = await GameService.joinGame(game.id, "guest@example.com", "guest-session");
+
+        const mockContext: any = {
+          params: { path: { gameId: game.id, playerId: guest.playerId }, query: {} },
+          user: { email: "host@example.com", id: "host-session" },
+          res: {
+            status: function(code: number) {
+              this.statusCode = code;
+              return this;
+            },
+            json: function() { return this; },
+            statusCode: 200
+          }
+        };
+
+        const result = await GameController.kickPlayer(mockContext);
+        assert.equal(result.success, true);
+        assert.equal(mockContext.res.statusCode, 200);
+
+        const updatedGame = await store.read<any>(store.keys.games, game.id);
+        assert(!updatedGame.players.includes(guest.playerId));
+        assert(updatedGame.players.includes(host.playerId));
+      });
+
+      it("should return 403 when the caller has not joined the game", async function () {
+        const game = await GameService.createGame();
+        const host = await GameService.joinGame(game.id, "host@example.com", "host-session");
+
+        const mockContext: any = {
+          params: { path: { gameId: game.id, playerId: host.playerId }, query: {} },
+          user: { email: "outsider@example.com", id: "outsider-session" },
+          res: {
+            status: function(code: number) {
+              this.statusCode = code;
+              return this;
+            },
+            json: function() { return this; },
+            statusCode: 200
+          }
+        };
+
+        const result = await GameController.kickPlayer(mockContext);
+        assert.equal(mockContext.res.statusCode, 403);
+        assert.equal(result.message, "You must join this game before performing player management actions");
+      });
+
+      it("should allow the host to transfer host control", async function () {
+        const game = await GameService.createGame();
+        const host = await GameService.joinGame(game.id, "host@example.com", "host-session");
+        const guest = await GameService.joinGame(game.id, "guest@example.com", "guest-session");
+
+        const mockContext: any = {
+          params: { path: { gameId: game.id }, query: {} },
+          requestBody: { newHostPlayerId: guest.playerId },
+          user: { email: "host@example.com", id: "host-session" },
+          res: {
+            status: function(code: number) {
+              this.statusCode = code;
+              return this;
+            },
+            json: function() { return this; },
+            statusCode: 200
+          }
+        };
+
+        const result = await GameController.transferHost(mockContext);
+        assert.equal(result.success, true);
+
+        const updatedGame = await store.read<any>(store.keys.games, game.id);
+        assert.equal(updatedGame.hostPlayerId, guest.playerId);
+      });
+
+      it("should allow the host to start the game", async function () {
+        const game = await GameService.createGame();
+        const host = await GameService.joinGame(game.id, "host@example.com", "host-session");
+        await GameService.joinGame(game.id, "guest@example.com", "guest-session");
+
+        const mockContext: any = {
+          params: { path: { gameId: game.id }, query: {} },
+          user: { email: "host@example.com", id: "host-session" },
+          res: {
+            status: function(code: number) {
+              this.statusCode = code;
+              return this;
+            },
+            json: function() { return this; },
+            statusCode: 200
+          }
+        };
+
+        const result = await GameController.startGame(mockContext);
+        assert.equal(result.success, true);
+
+        const updatedGame = await store.read<any>(store.keys.games, game.id);
+        assert.equal(updatedGame.gameState, "IN_PROGRESS");
+      });
     });
   });
 });
