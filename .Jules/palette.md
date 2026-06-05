@@ -188,3 +188,7 @@
 ## 2026-06-04 - Synchronized Unit-Owner Selection Highlighting
 **Learning:** Linking the selection state of a spatial entity (unit) to its metadata in a separate list (player owner) provides critical context and reduces cognitive load. Using a consistent visual language (e.g., the same red outline) for both reinforces this relationship and helps users quickly identify ownership in multi-player environments.
 **Action:** Always implement cross-highlighting between units and their owners in sidebars to maintain clear ownership context during tactical analysis.
+
+## 2026-06-05 - Semantic Navigation Icons and Alignment
+**Learning:** Adding semantic inline SVG icons to global navigation significantly improves scannability and visual affordance. Using `display: inline-flex` with `align-items: center` and a standardized `gap: 8px` ensures icons and text are perfectly aligned across different browsers and zoom levels.
+**Action:** Always pair navigation links with semantic icons and use the standardized flexbox alignment pattern to maintain a professional and accessible interface.
