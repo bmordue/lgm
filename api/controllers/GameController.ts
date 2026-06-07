@@ -58,9 +58,8 @@ module.exports.postOrders = async function postOrders(context: ExegesisContext) 
 };
 
 module.exports.turnResults = async function turnResults(context: ExegesisContext) {
-  const gameId = context.params.path.gameId;
-  const turn = context.params.path.turn;
-  const playerId = context.params.path.playerId;
+  const { gameId, turn, playerId } = context.params.path;
+
   try {
     const result = await GameService.turnResults(gameId, turn, playerId);
 
@@ -88,8 +87,9 @@ module.exports.listGames = async function listGames(context: ExegesisContext) {
 };
 
 module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) {
+  const { gameId, playerId } = context.params.path;
+
   try {
-    const { gameId, playerId } = context.params.path;
     const requestingPlayerId = context.user?.playerId;
 
     await GameLifecycleService.kickPlayer(
@@ -109,8 +109,9 @@ module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) 
 }
 
 module.exports.startGame = async function startGame(context: ExegesisContext) {
+  const { gameId } = context.params.path;
+
   try {
-    const { gameId } = context.params.path;
     const requestingPlayerId = context.user?.playerId;
 
     await GameLifecycleService.startGame(gameId, requestingPlayerId);
@@ -126,8 +127,9 @@ module.exports.startGame = async function startGame(context: ExegesisContext) {
 }
 
 module.exports.transferHost = async function transferHost(context: ExegesisContext) {
+  const { gameId } = context.params.path;
+
   try {
-    const { gameId } = context.params.path;
     const { newHostPlayerId } = context.requestBody;
     const requestingPlayerId = context.user?.playerId;
 
@@ -163,6 +165,7 @@ module.exports.getPlayerGameState = async function getPlayerGameState(context: E
       context.res.status(403);
       return { message: "You can only access your own game state" };
     }
+
     const result = await GameLifecycleService.getPlayerGameState(gameId, playerId);
     context.res.status(200);
     return result;
