@@ -163,7 +163,6 @@ module.exports.getPlayerGameState = async function getPlayerGameState(context: E
       context.res.status(403);
       return { message: "You can only access your own game state" };
     }
-
     const result = await GameLifecycleService.getPlayerGameState(gameId, playerId);
     context.res.status(200);
     return result;
