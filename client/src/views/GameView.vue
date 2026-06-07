@@ -197,6 +197,29 @@ function getPlayerList() {
   });
 }
 
+const playerMap = computed(() => {
+  const map = new Map<number, string>();
+  getPlayerList().forEach(p => map.set(p.id, p.name));
+  return map;
+});
+
+const sortedActors = computed(() => {
+  if (!game.value.world?.actors) return [];
+  const currentPlayerId = gamesStore.getCurrentPlayerId();
+  return [...game.value.world.actors].sort((a, b) => {
+    if (a.owner === currentPlayerId && b.owner !== currentPlayerId) return -1;
+    if (a.owner !== currentPlayerId && b.owner === currentPlayerId) return 1;
+    return a.id - b.id;
+  });
+});
+
+const selectedActorOwnerName = computed(() => {
+  if (selectedActorId.value === null) return '';
+  const actor = game.value.world?.actors?.find((a: Actor) => a.id === selectedActorId.value);
+  if (!actor) return '';
+  return playerMap.value.get(actor.owner) || `Player ${actor.owner}`;
+});
+
 async function postOrders(moves: PlannedMove[]) { // Modified signature
   const g = gamesStore.getCurrentGame();
   const playerId = gamesStore.getCurrentPlayerId();
@@ -409,6 +432,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           :hovered-move="hoveredMove"
           :selected-actor-id="selectedActorId"
           :selected-actor-owned="isSelectedActorOwned"
+          :selected-actor-owner-name="selectedActorOwnerName"
           :selected-actor-health="game.world?.actors?.find((a: Actor) => a.id === selectedActorId)?.health ?? 100"
           :selected-actor-max-health="game.world?.actors?.find((a: Actor) => a.id === selectedActorId)?.maxHealth ?? 100"
           @remove-move="handleRemoveMove"
@@ -474,13 +498,13 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         </div>
         
         <h3>
-          Actors ({{ game.world?.actors?.length || 0 }})
+          Actors ({{ sortedActors.length }})
           <span v-if="selectedActorId" class="hint-text">(<kbd>Esc</kbd> to deselect)</span>
         </h3>
         <div class="actors-list">
           <button
             type="button"
-            v-for="actor in game.world?.actors || []"
+            v-for="actor in sortedActors"
             :key="actor.id"
             class="actor-item"
             :class="{
@@ -488,7 +512,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
               'is-hovered': actor.id === hoveredActorId || (hoveredPlayerId !== null && actor.owner === hoveredPlayerId),
               'is-selected': actor.id === selectedActorId
             }"
-            :aria-label="'Actor ' + actor.id + ' at ' + actor.pos.x + ',' + actor.pos.y + ', Health ' + (actor.health ?? 100) + ' of ' + (actor.maxHealth ?? 100) + (actor.id === selectedActorId ? ', Selected' : '')"
+            :aria-label="'Actor ' + actor.id + ' at ' + actor.pos.x + ',' + actor.pos.y + ', Health ' + (actor.health ?? 100) + ' of ' + (actor.maxHealth ?? 100) + (actor.id === selectedActorId ? ', Selected' : '') + (actor.owner === gamesStore.getCurrentPlayerId() ? ', yours' : ', owned by ' + (playerMap.get(actor.owner) || 'Player ' + actor.owner))"
             @mouseenter="hoveredActorId = actor.id"
             @mouseleave="hoveredActorId = null"
             @focus="hoveredActorId = actor.id"
@@ -497,6 +521,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           >
             <div class="actor-header">
               <span>Actor {{ actor.id }}</span>
+              <span v-if="actor.owner !== gamesStore.getCurrentPlayerId()" class="actor-pos"> ({{ playerMap.get(actor.owner) }})</span>
               <span class="actor-pos">({{ actor.pos.x }}, {{ actor.pos.y }})</span>
             </div>
             <div class="status-tags">
