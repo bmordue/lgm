@@ -271,7 +271,9 @@ export async function listGames(): Promise<ListGamesResponse> {
       id: g.id!,
       playerCount,
       maxPlayers: g.maxPlayers || 0,
-      isFull: playerCount >= (g.maxPlayers || 0)
+      isFull: playerCount >= (g.maxPlayers || 0),
+      hostPlayerId: g.hostPlayerId,
+      gameState: g.gameState
     };
   });
   return { gameIds: ids, games: gameSummaries };

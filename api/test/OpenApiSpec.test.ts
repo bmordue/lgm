@@ -16,7 +16,7 @@ describe("OpenAPI spec", function () {
       spec.paths["/games"].post.responses["201"].content["application/json"].schema.$ref,
       "#/components/schemas/GameCreatedResponse"
     );
-    assert.deepEqual(spec.components.schemas.GameCreatedResponse.required, ["gameId"]);
+    assert.deepEqual(spec.components.schemas.GameCreatedResponse.required, ["id", "gameId"]);
     assert.equal(spec.components.schemas.GameCreatedResponse.properties.gameId.type, "integer");
 
     assert.equal(

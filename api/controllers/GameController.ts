@@ -4,7 +4,7 @@ import GameService = require("../service/GameService");
 import GameLifecycleService = require("../service/GameLifecycleService");
 import { RuntimeUser } from "../middleware/auth";
 import { Player, Game, World, Actor } from "../service/Models";
-import { NotFoundError, formatErrorResponse } from "../utils/Errors";
+import { NotFoundError, formatErrorResponse, UnauthorizedError, LGMError } from "../utils/Errors";
 import * as RangeValidation from "../service/RangeValidation";
 import { webSocketService } from "../service/WebSocketService";
 
@@ -15,13 +15,32 @@ function handleControllerError(context: ExegesisContext, error: unknown) {
   return { message };
 }
 
+async function resolvePlayerIdForUser(gameId: number, user?: RuntimeUser): Promise<number> {
+  if (!user || user.isGuest) {
+    throw new UnauthorizedError("Authentication required");
+  }
+
+  const game = await store.read<Game>(store.keys.games, gameId);
+  for (const existingPlayerId of game.players || []) {
+    const player = await store.read<Player>(store.keys.players, existingPlayerId);
+    // Match the canonical session-backed identity first, with username/email as a
+    // compatibility fallback for players created before session tracking existed.
+    if (player.sessionId === user.id || player.username === user.email) {
+      return existingPlayerId;
+    }
+  }
+
+  throw new LGMError("You must join this game before performing player management actions", 403);
+}
+
 module.exports.createGame = async function createGame(context: ExegesisContext) {
   try {
     const maxPlayers = context.requestBody?.maxPlayers;
     const result = await GameLifecycleService.createGame(maxPlayers);
     webSocketService.emitGamesUpdated();
     context.res.status(201);
-    return { gameId: result.gameId };
+    // Return both id and gameId for backward compatibility during migration
+    return { id: result.gameId, gameId: result.gameId };
   } catch (error) {
     return handleControllerError(context, error);
   }
@@ -58,8 +77,9 @@ module.exports.postOrders = async function postOrders(context: ExegesisContext) 
 };
 
 module.exports.turnResults = async function turnResults(context: ExegesisContext) {
-  const { gameId, turn, playerId } = context.params.path;
-
+  const gameId = context.params.path.gameId;
+  const turn = context.params.path.turn;
+  const playerId = context.params.path.playerId;
   try {
     const result = await GameService.turnResults(gameId, turn, playerId);
 
@@ -87,10 +107,9 @@ module.exports.listGames = async function listGames(context: ExegesisContext) {
 };
 
 module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) {
-  const { gameId, playerId } = context.params.path;
-
   try {
-    const requestingPlayerId = context.user?.playerId;
+    const { gameId, playerId } = context.params.path;
+    const requestingPlayerId = await resolvePlayerIdForUser(gameId, context.user as RuntimeUser | undefined);
 
     await GameLifecycleService.kickPlayer(
       gameId,
@@ -109,10 +128,9 @@ module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) 
 }
 
 module.exports.startGame = async function startGame(context: ExegesisContext) {
-  const { gameId } = context.params.path;
-
   try {
-    const requestingPlayerId = context.user?.playerId;
+    const { gameId } = context.params.path;
+    const requestingPlayerId = await resolvePlayerIdForUser(gameId, context.user as RuntimeUser | undefined);
 
     await GameLifecycleService.startGame(gameId, requestingPlayerId);
 
@@ -127,11 +145,10 @@ module.exports.startGame = async function startGame(context: ExegesisContext) {
 }
 
 module.exports.transferHost = async function transferHost(context: ExegesisContext) {
-  const { gameId } = context.params.path;
-
   try {
+    const { gameId } = context.params.path;
     const { newHostPlayerId } = context.requestBody;
-    const requestingPlayerId = context.user?.playerId;
+    const requestingPlayerId = await resolvePlayerIdForUser(gameId, context.user as RuntimeUser | undefined);
 
     await GameLifecycleService.transferHost(
       gameId,
