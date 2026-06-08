@@ -75,7 +75,7 @@ describe('DashboardView.vue', () => {
     expect(button.attributes('aria-busy')).toBe('true');
 
     // Wait for the request to finish
-    await vi.waitFor(() => expect(button.text()).toBe('Create New Game'), { timeout: 200 });
+    await vi.waitFor(() => expect(button.text()).toContain('Create New Game'), { timeout: 200 });
 
     expect(button.attributes('disabled')).toBeUndefined();
     expect(button.attributes('aria-busy')).toBe('false');

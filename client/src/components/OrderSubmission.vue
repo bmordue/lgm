@@ -11,7 +11,7 @@
         <span class="guidance-hint">Click an empty hex on the map to plan a move.</span>
       </p>
       <p v-else>
-        <strong>Tactical Insight:</strong> Actor {{ selectedActorId }} (Enemy)
+        <strong>Tactical Insight:</strong> Actor {{ selectedActorId }} ({{ selectedActorOwnerName }})
         <span style="display: block; font-size: 0.9em; font-weight: bold; margin-top: 4px">
           HP: {{ selectedActorHealth }}/{{ selectedActorMaxHealth }}
         </span>
@@ -140,6 +140,10 @@ const props = defineProps({
   selectedActorOwned: {
     type: Boolean,
     default: true,
+  },
+  selectedActorOwnerName: {
+    type: String,
+    default: '',
   },
   selectedActorHealth: {
     type: Number,
