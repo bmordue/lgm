@@ -77,8 +77,9 @@ module.exports.postOrders = async function postOrders(context: ExegesisContext) 
 };
 
 module.exports.turnResults = async function turnResults(context: ExegesisContext) {
-  const { gameId, turn, playerId } = context.params.path;
-
+  const gameId = context.params.path.gameId;
+  const turn = context.params.path.turn;
+  const playerId = context.params.path.playerId;
   try {
     const result = await GameService.turnResults(gameId, turn, playerId);
 
@@ -106,15 +107,9 @@ module.exports.listGames = async function listGames(context: ExegesisContext) {
 };
 
 module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) {
-  const { gameId, playerId } = context.params.path;
-
   try {
-<<<<<<< implement-player-management-resolved-17288573461442262104
     const { gameId, playerId } = context.params.path;
     const requestingPlayerId = await resolvePlayerIdForUser(gameId, context.user as RuntimeUser | undefined);
-=======
-    const requestingPlayerId = context.user?.playerId;
->>>>>>> main
 
     await GameLifecycleService.kickPlayer(
       gameId,
@@ -133,15 +128,9 @@ module.exports.kickPlayer = async function kickPlayer(context: ExegesisContext) 
 }
 
 module.exports.startGame = async function startGame(context: ExegesisContext) {
-  const { gameId } = context.params.path;
-
   try {
-<<<<<<< implement-player-management-resolved-17288573461442262104
     const { gameId } = context.params.path;
     const requestingPlayerId = await resolvePlayerIdForUser(gameId, context.user as RuntimeUser | undefined);
-=======
-    const requestingPlayerId = context.user?.playerId;
->>>>>>> main
 
     await GameLifecycleService.startGame(gameId, requestingPlayerId);
 
@@ -156,9 +145,8 @@ module.exports.startGame = async function startGame(context: ExegesisContext) {
 }
 
 module.exports.transferHost = async function transferHost(context: ExegesisContext) {
-  const { gameId } = context.params.path;
-
   try {
+    const { gameId } = context.params.path;
     const { newHostPlayerId } = context.requestBody;
     const requestingPlayerId = await resolvePlayerIdForUser(gameId, context.user as RuntimeUser | undefined);
 

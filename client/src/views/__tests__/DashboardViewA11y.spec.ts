@@ -132,10 +132,6 @@ describe('DashboardView.vue accessibility and UX', () => {
     });
 
     const wrapper = mount(DashboardView);
-    await vi.waitFor(() => {
-      const text = wrapper.text();
-      expect(text).toContain('No active games found');
-      expect(text).toContain('Click C or the button below');
-    }, { timeout: 2000 });
+    await vi.waitFor(() => expect(wrapper.text()).toContain('No active games found. Click \'Create New Game\' to start a new journey!'));
   });
 });

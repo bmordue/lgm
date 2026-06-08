@@ -37,22 +37,14 @@ async function fetchGameList() {
 
 let unsubscribeGamesUpdated: (() => void) | null = null;
 
-const handleKeyDown = (event: KeyboardEvent) => {
-  if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement || event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) return;
-  if (event.key.toLowerCase() === 'r' && !isLoading.value) fetchGameList();
-  else if (event.key.toLowerCase() === 'c' && !isCreating.value) callCreate();
-};
-
 onMounted(() => {
   fetchGameList();
-  window.addEventListener('keydown', handleKeyDown);
   unsubscribeGamesUpdated = webSocketService.onGamesUpdated(() => {
     fetchGameList();
   });
 });
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', handleKeyDown);
   if (unsubscribeGamesUpdated) {
     unsubscribeGamesUpdated();
     unsubscribeGamesUpdated = null;
@@ -155,7 +147,7 @@ async function join(game: GameSummary) {
         @click="fetchGameList"
         :disabled="isLoading"
         aria-label="Refresh game list"
-        title="Refresh game list (R)"
+        title="Refresh game list"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -255,12 +247,8 @@ async function join(game: GameSummary) {
         </div>
       </button>
     </TransitionGroup>
-    <div v-if="!isLoading && gameList.length === 0" class="empty-dashboard">
-      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"></circle>
-        <line x1="8" y1="12" x2="16" y2="12"></line><line x1="12" y1="8" x2="12" y2="16"></line>
-      </svg>
-      <p>No active games found. Click <kbd>C</kbd> or the button below to start a new adventure!</p>
+    <div v-if="!isLoading && gameList.length === 0" class="no-games">
+      No active games found. Click 'Create New Game' to start a new journey!
     </div>
   </div>
   <label class="player-limit-label" for="max-players">Player limit</label>
@@ -307,7 +295,6 @@ async function join(game: GameSummary) {
       <line x1="5" y1="12" x2="19" y2="12"></line>
     </svg>
     {{ isCreating ? 'Creating...' : 'Create New Game' }}
-    <span v-if="!isCreating" class="shortcut-hint">(<kbd>C</kbd>)</span>
   </button>
 </template>
 
@@ -446,11 +433,11 @@ async function join(game: GameSummary) {
   font-weight: bold;
 }
 
-.no-games { text-align: center; color: #666; font-style: italic; padding: 20px; }
-.empty-dashboard {
-  background-color: #f8f9fa; border: 2px dashed #dee2e6; border-radius: 12px;
-  padding: 40px 20px; margin: 20px 0; display: flex; flex-direction: column;
-  align-items: center; gap: 12px; text-align: center; color: #6c757d;
+.no-games {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 20px;
 }
 
 
@@ -502,12 +489,5 @@ async function join(game: GameSummary) {
 .create-game-btn:disabled {
   background-color: #ccc;
   cursor: not-allowed;
-}
-
-.shortcut-hint {
-  font-size: 0.8em;
-  opacity: 0.9;
-  margin-left: 8px;
-  font-weight: normal;
 }
 </style>
