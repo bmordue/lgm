@@ -37,7 +37,32 @@ async function fetchGameList() {
 
 let unsubscribeGamesUpdated: (() => void) | null = null;
 
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (
+    event.target instanceof HTMLInputElement ||
+    event.target instanceof HTMLTextAreaElement ||
+    event.target instanceof HTMLSelectElement
+  ) {
+    return;
+  }
+
+  if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
+    return;
+  }
+
+  if (event.key.toLowerCase() === 'r') {
+    if (!isLoading.value) {
+      fetchGameList();
+    }
+  } else if (event.key.toLowerCase() === 'c') {
+    if (!isCreating.value) {
+      callCreate();
+    }
+  }
+};
+
 onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
   fetchGameList();
   unsubscribeGamesUpdated = webSocketService.onGamesUpdated(() => {
     fetchGameList();
@@ -45,6 +70,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
   if (unsubscribeGamesUpdated) {
     unsubscribeGamesUpdated();
     unsubscribeGamesUpdated = null;
@@ -147,7 +173,7 @@ async function join(game: GameSummary) {
         @click="fetchGameList"
         :disabled="isLoading"
         aria-label="Refresh game list"
-        title="Refresh game list"
+        title="Refresh game list (R)"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -165,6 +191,7 @@ async function join(game: GameSummary) {
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
         </svg>
       </button>
+      <kbd title="Keyboard shortcut: R" aria-hidden="true">R</kbd>
     </div>
   </div>
   <div v-if="isLoading" class="no-games" role="status" aria-live="polite">
@@ -264,6 +291,7 @@ async function join(game: GameSummary) {
     :disabled="isCreating"
     :aria-busy="isCreating"
     aria-live="polite"
+    title="Create New Game (C)"
   >
     <svg
       v-if="isCreating"
@@ -295,6 +323,7 @@ async function join(game: GameSummary) {
       <line x1="5" y1="12" x2="19" y2="12"></line>
     </svg>
     {{ isCreating ? 'Creating...' : 'Create New Game' }}
+    <span v-if="!isCreating" class="shortcut-hint" aria-hidden="true">(<kbd>C</kbd>)</span>
   </button>
 </template>
 
@@ -489,5 +518,11 @@ async function join(game: GameSummary) {
 .create-game-btn:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+.shortcut-hint {
+  font-size: 0.85em;
+  opacity: 0.8;
+  margin-left: 4px;
 }
 </style>
