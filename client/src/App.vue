@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, computed } from 'vue'
 import { RouterLink, RouterView } from 'vue-router'
-import { useUserStore } from './stores/User.store'
+import { useUserStore } from '@/stores/User.store'
 
 const userStore = useUserStore()
 const isAuthenticated = computed(() => userStore.isAuthenticated)
@@ -126,7 +126,7 @@ nav {
   color: var(--color-text);
 }
 
-nav a.router-link-exact-active {
+nav .router-link-exact-active {
   color: var(--color-text);
 }
 

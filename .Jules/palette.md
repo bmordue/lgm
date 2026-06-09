@@ -14,9 +14,14 @@
 **Learning:** Replacing disruptive `window.alert()` with non-blocking, accessible inline status messages improves user flow and professional feel. Using `role="status"` for success and `role="alert"` for errors ensures screen reader compatibility while maintaining context.
 **Action:** Always prefer integrated UI feedback over native browser dialogs for application-specific state changes.
 
+## 2025-05-17 - Dynamic Navigation and Session Persistence
+**Learning:** Initializing Pinia state from `localStorage` on creation ensures the UI remains reactive to the user's session even after a page refresh. Using a Pinia getter for `isAuthenticated` and the CSS sibling selector `nav > * + *` allows for clean, conditional navigation with consistent styling across mixed element types (links and buttons).
+**Action:** Always initialize session-dependent stores from persistent storage and use flexible CSS selectors for shared layout components.
+
 ## 2026-04-04 - Persistent Reactive Session Management
 **Learning:** Initializing Pinia state from `localStorage` on store creation, combined with a dedicated logout action, provides a more reliable and reactive authentication state than manual `localStorage` checks in individual methods. This allows for clean, conditional UI rendering and navigation guards.
 **Action:** Always prefer reactive state for session management and initialize from persistent storage at the earliest possible point.
+
 ## 2026-04-07 - Multi-modal Feedback for Planned Actions
 **Learning:** Providing both visual (e.g., dashed borders, subtle fills) and semantic (ARIA labels) feedback for planned but not yet committed actions helps users maintain mental context. For maps/grids, highlighting the destination of a move clarifies intent before submission.
 **Action:** Always pair visual state changes with descriptive ARIA labels to ensure screen reader users can perceive the same intent as sighted users.
