@@ -274,9 +274,31 @@ async function join(game: GameSummary) {
         </div>
       </button>
     </TransitionGroup>
-    <div v-if="!isLoading && gameList.length === 0" class="no-games">
-      No active games found. Click 'Create New Game' to start a new journey!
-    </div>
+    <Transition name="fade">
+      <div v-if="!isLoading && gameList.length === 0" class="no-games empty-dashboard">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="empty-icon"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <p class="secondary-text">
+          No active games found. Click 'Create New Game' <kbd>C</kbd> to start a new journey!
+        </p>
+      </div>
+    </Transition>
   </div>
   <label class="player-limit-label" for="max-players">Player limit</label>
   <select id="max-players" v-model.number="selectedMaxPlayers" class="player-limit-select">
@@ -467,6 +489,30 @@ async function join(game: GameSummary) {
   color: #666;
   font-style: italic;
   padding: 20px;
+}
+
+.empty-dashboard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 2px dashed var(--color-border);
+  border-radius: 12px;
+  margin: 20px 0;
+  font-style: normal;
+}
+
+.empty-icon {
+  color: hsla(160, 100%, 37%, 0.5);
+  margin-bottom: 16px;
+}
+
+.secondary-text {
+  font-size: 0.95em;
+  color: var(--color-text);
+  margin: 0;
 }
 
 
