@@ -25,11 +25,19 @@ const selectedMaxPlayers = ref(4)
 
 async function fetchGameList() {
   isLoading.value = true;
+  errorMessage.value = '';
   try {
     const response = await fetch(`${API_URL}/games`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to fetch games' }));
+      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+    }
     const data = await response.json();
     gameList.value = data.games || [];
     lastRefreshed.value = new Date().toLocaleTimeString();
+  } catch (err) {
+    errorMessage.value = err instanceof Error ? err.message : 'Failed to load games. Please try again.';
+    gameList.value = [];
   } finally {
     isLoading.value = false;
   }
@@ -274,9 +282,29 @@ async function join(game: GameSummary) {
         </div>
       </button>
     </TransitionGroup>
-    <div v-if="!isLoading && gameList.length === 0" class="no-games">
-      No active games found. Click 'Create New Game' to start a new journey!
-    </div>
+    <Transition name="fade">
+      <div v-if="!isLoading && gameList.length === 0" class="no-games empty-dashboard">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="empty-icon"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <p>No active games found. Click 'Create New Game' or press <kbd>C</kbd> to start a new journey!</p>
+      </div>
+    </Transition>
   </div>
   <label class="player-limit-label" for="max-players">Player limit</label>
   <select id="max-players" v-model.number="selectedMaxPlayers" class="player-limit-select">
@@ -467,6 +495,22 @@ async function join(game: GameSummary) {
   color: #666;
   font-style: italic;
   padding: 20px;
+}
+
+.empty-dashboard {
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.02);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 20px;
+  margin: 20px 0;
+}
+
+.empty-icon {
+  color: #adb5bd;
 }
 
 

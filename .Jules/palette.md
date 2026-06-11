@@ -197,3 +197,7 @@
 ## 2026-06-05 - Semantic Navigation Icons and Alignment
 **Learning:** Adding semantic inline SVG icons to global navigation significantly improves scannability and visual affordance. Using `display: inline-flex` with `align-items: center` and a standardized `gap: 8px` ensures icons and text are perfectly aligned across different browsers and zoom levels.
 **Action:** Always pair navigation links with semantic icons and use the standardized flexbox alignment pattern to maintain a professional and accessible interface.
+
+## 2026-06-10 - Actionable Empty States and Robust Fetch Feedback
+**Learning:** A "dead-end" empty state (e.g., just text) is a missed opportunity for onboarding. Including a visual anchor (SVG icon) and a clear call-to-action that incorporates keyboard shortcuts (`<kbd>`) makes the UI feel alive even when data is missing. Furthermore, `fetch` operations must always handle `!response.ok` explicitly to ensure error messages reach the user rather than failing silently.
+**Action:** Always design empty states with both visual affordance and actionable hints, and ensure every data-fetching action has a corresponding user-visible error state.
