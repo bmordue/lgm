@@ -98,8 +98,17 @@ export const SERVER_CONFIG = {
 
 /**
  * Security configuration
+ * Read once per server creation; restart the process to apply env changes.
  */
-export const SECURITY_CONFIG = {
-  /** Number of bcrypt salt rounds for password hashing */
-  bcryptSaltRounds: parseInt(process.env.LGM_BCRYPT_SALT_ROUNDS || '10', 10) || 10,
-};
+export function getSecurityConfig() {
+  return {
+    /** Number of bcrypt salt rounds for password hashing */
+    bcryptSaltRounds: parseInt(process.env.LGM_BCRYPT_SALT_ROUNDS || '10', 10) || 10,
+    /** Maximum parsed request body size in bytes */
+    maxBodySizeBytes: parseInt(process.env.LGM_MAX_BODY_SIZE_BYTES || '16384', 10) || 16384,
+    /** Maximum number of requests allowed within the rate limit window */
+    rateLimitMaxRequests: parseInt(process.env.LGM_RATE_LIMIT_MAX_REQUESTS || '100', 10) || 100,
+    /** Rolling rate limit window in milliseconds */
+    rateLimitWindowMs: parseInt(process.env.LGM_RATE_LIMIT_WINDOW_MS || '900000', 10) || 900000,
+  };
+}

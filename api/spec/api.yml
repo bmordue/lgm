@@ -23,9 +23,13 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 maxPlayers:
                   type: integer
+                  description: Player cap per game; must be within the supported 2-8 range used by server-side game setup.
+                  minimum: 2
+                  maximum: 8
       responses:
         "201":
           description: metadata about newly created game
@@ -247,9 +251,13 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
+              required:
+                - newHostPlayerId
               properties:
                 newHostPlayerId:
                   type: integer
+                  minimum: 0
       responses:
         "200":
           description: host transferred
@@ -328,11 +336,16 @@ paths:
           application/json:
             schema:
               type: object
+              additionalProperties: false
               properties:
                 username:
                   type: string
+                  minLength: 1
+                  maxLength: 256
                 password:
                   type: string
+                  minLength: 1
+                  maxLength: 256
       responses:
         "410":
           description: Login no longer supported; authentication handled by proxy
@@ -554,9 +567,19 @@ components:
               type: boolean
     TurnOrders:
       type: object
+      additionalProperties: false
       required:
         - orders
       properties:
+        gameId:
+          type: integer
+          minimum: 0
+        turn:
+          type: integer
+          minimum: 1
+        playerId:
+          type: integer
+          minimum: 0
         orders:
           type: array
           items:
@@ -651,12 +674,14 @@ components:
           type: integer
     ActorOrders:
       type: object
+      additionalProperties: false
       required:
         - actorId
         - orderType
       properties:
         actorId:
           type: integer
+          minimum: 0
         orderType:
           type: integer
           description: "Order type (0: MOVE, 1: ATTACK)"
@@ -674,6 +699,7 @@ components:
       description: "0: UP_LEFT, 1: UP_RIGHT, 2: LEFT, 3: RIGHT, 4: DOWN_LEFT, 5: DOWN_RIGHT, 6: NONE"
       enum: [0, 1, 2, 3, 4, 5, 6]
     ListGamesResponse:
+      type: object
       properties:
         gameIds:
           type: array
@@ -684,6 +710,7 @@ components:
           items:
             $ref: '#/components/schemas/GameSummary'
     GameSummary:
+      type: object
       required:
         - id
         - playerCount

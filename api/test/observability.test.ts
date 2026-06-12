@@ -18,7 +18,9 @@ describe('observability endpoints', () => {
   });
 
   after(async () => {
-    await new Promise<void>((resolve) => server.close(() => resolve()));
+    if (server) {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+    }
   });
 
   it('returns health status', async () => {
