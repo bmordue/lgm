@@ -1,5 +1,27 @@
 <template>
   <svg :viewBox="viewBox" @click="handleSvgClick"> <!-- Changed click handler to svg specific -->
+    <defs>
+      <marker
+        id="arrowhead"
+        markerWidth="10"
+        markerHeight="7"
+        refX="9"
+        refY="3.5"
+        orient="auto"
+      >
+        <polygon points="0 0, 10 3.5, 0 7" fill="#d35400" />
+      </marker>
+      <marker
+        id="arrowhead-hover"
+        markerWidth="10"
+        markerHeight="7"
+        refX="9"
+        refY="3.5"
+        orient="auto"
+      >
+        <polygon points="0 0, 10 3.5, 0 7" fill="#2196f3" />
+      </marker>
+    </defs>
     <g
       v-for="(hex, index) in hexes"
       :key="index"
@@ -26,6 +48,19 @@
         dy=".3em"
         :font-size="getHexFontSize()">{{ getHexText(hex) }}</text>
     </g>
+      <g class="planned-moves-layer" style="pointer-events: none">
+        <line
+          v-for="(move, index) in plannedMoves"
+          :key="'move-' + index"
+          :x1="getPixelPos(move.startPos.x, move.startPos.y).x"
+          :y1="getPixelPos(move.startPos.x, move.startPos.y).y"
+          :x2="getPixelPos(move.endPos.x, move.endPos.y).x"
+          :y2="getPixelPos(move.endPos.x, move.endPos.y).y"
+          class="planned-move-line"
+          :class="{ 'is-hovered': isSameMove(move, hoveredMove) }"
+          :marker-end="isSameMove(move, hoveredMove) ? 'url(#arrowhead-hover)' : 'url(#arrowhead)'"
+        />
+      </g>
       <g v-for="(hex, index) in hexes" :key="'hp-' + index" style="pointer-events: none">
         <rect v-if="getActorForHex(hex)"
           :x="getHPBarPos(hex).x" :y="getHPBarPos(hex).y"
@@ -40,8 +75,8 @@
 
 <script lang="ts">
 import { defineComponent, computed, type PropType, type CSSProperties } from 'vue'; // Added ref
-import { Terrain } from '../../../api/service/Models';
-import { Hex, Point, Layout, OffsetCoord } from '../../../api/Hex';
+import { Terrain } from '@lgm/shared-types/models';
+import { Hex, Point, Layout, OffsetCoord } from '@lgm/shared-types/hex';
 import { useGamesStore, type Actor, type PlannedMove, type World } from '../stores/Games.store'; // Added imports
 
 interface HexStyle extends CSSProperties {
@@ -367,6 +402,18 @@ export default defineComponent({
       return p > 60 ? '#2ecc71' : p > 25 ? '#f39c12' : '#e74c3c';
     };
 
+    const getPixelPos = (row: number, col: number): Point => {
+      const hex = OffsetCoord.roffsetToCube(offsetType, new OffsetCoord(col, row));
+      return layout.hexToPixel(hex);
+    };
+
+    const isSameMove = (m1: PlannedMove, m2: PlannedMove | null): boolean => {
+      if (!m2) return false;
+      return m1.actorId === m2.actorId &&
+             m1.startPos.x === m2.startPos.x && m1.startPos.y === m2.startPos.y &&
+             m1.endPos.x === m2.endPos.x && m1.endPos.y === m2.endPos.y;
+    };
+
     return {
       hexes,
       viewBox,
@@ -387,6 +434,8 @@ export default defineComponent({
       getHPBarPos,
       getHPWidth,
       getHPColor,
+      getPixelPos,
+      isSameMove,
     };
   },
 });
@@ -518,5 +567,26 @@ g:focus-visible .hex-polygon {
 
 .is-dark-terrain .hex-text {
   fill: #ecf0f1; /* Lighter text color for better contrast on dark terrain */
+}
+
+@keyframes marching-ants {
+  to {
+    stroke-dashoffset: -20;
+  }
+}
+
+.planned-move-line {
+  stroke: #d35400;
+  stroke-width: 3;
+  stroke-dasharray: 10, 5;
+  animation: marching-ants 1s infinite linear;
+  transition: stroke 0.2s ease, stroke-width 0.2s ease;
+}
+
+.planned-move-line.is-hovered {
+  stroke: #2196f3;
+  stroke-width: 5;
+  stroke-dasharray: none;
+  animation: none;
 }
 </style>

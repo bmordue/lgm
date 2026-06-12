@@ -10,7 +10,9 @@ export const useGamesStore = defineStore('games', {
       currentGameTurn: 0,
       currentGamePlayerId: null as number | null,
       currentPlayerCount: 0,
-      maxPlayers: 4
+      maxPlayers: 4,
+      currentHostPlayerId: null as number | null,
+      currentGameState: 'LOBBY' as GameState
     }
   },
   actions: {
@@ -30,13 +32,15 @@ export const useGamesStore = defineStore('games', {
     setCurrentGamePlayerId(playerId :number) {
       this.currentGamePlayerId = playerId;
     },
-    updateJoinResponse(resp :{gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number}) {
+    updateJoinResponse(resp :{gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number, hostPlayerId?: number, gameState?: GameState}) {
       this.setCurrentGameId(resp.gameId);
       this.setCurrentGameTurn(resp.turn);
       this.setCurrentGameWorld(resp.world);
       this.setCurrentGamePlayerId(resp.playerId);
       this.currentPlayerCount = resp.playerCount;
       this.maxPlayers = resp.maxPlayers;
+      this.currentHostPlayerId = resp.hostPlayerId ?? null;
+      this.currentGameState = resp.gameState ?? 'LOBBY';
     },
     getCurrentGame() {
       return {
@@ -44,7 +48,9 @@ export const useGamesStore = defineStore('games', {
         turn: this.currentGameTurn, 
         world: this.currentGameWorld,
         playerCount: this.currentPlayerCount,
-        maxPlayers: this.maxPlayers
+        maxPlayers: this.maxPlayers,
+        hostPlayerId: this.currentHostPlayerId,
+        gameState: this.currentGameState
       };
     },
     getCurrentPlayerId() {
@@ -76,12 +82,55 @@ export const useGamesStore = defineStore('games', {
           alert(`Error fetching game details: ${error.message || response.statusText}`);
           return;
         }
-        const gameData = await response.json() as {gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number};
+        const gameData = await response.json() as {gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number, hostPlayerId?: number, gameState?: GameState};
         this.updateJoinResponse(gameData); // Reuse existing action to update state
       } catch (error) {
         console.error(`Network error fetching game details for game ${gameId}:`, error);
         alert(`Network error fetching game details. Please try again.`);
       }
+    },
+    async kickPlayer(gameId: number, playerId: number) {
+      const response = await fetch(`${API_URL}/games/${gameId}/players/${playerId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to kick player' }));
+        throw new Error(error.message || response.statusText);
+      }
+
+      await this.fetchGameDetails(gameId);
+    },
+    async transferHost(gameId: number, newHostPlayerId: number) {
+      const response = await fetch(`${API_URL}/games/${gameId}/host`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ newHostPlayerId }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to transfer host' }));
+        throw new Error(error.message || response.statusText);
+      }
+
+      await this.fetchGameDetails(gameId);
+    },
+    async startGame(gameId: number) {
+      const response = await fetch(`${API_URL}/games/${gameId}/start`, {
+        method: 'PUT',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ message: 'Failed to start game' }));
+        throw new Error(error.message || response.statusText);
+      }
+
+      await this.fetchGameDetails(gameId);
     }
   }
 }
@@ -99,7 +148,14 @@ export interface TurnResultsResponse {
 
 export interface GameInfo {
   id: number,
+  playerCount?: number,
+  maxPlayers?: number,
+  isFull?: boolean,
+  hostPlayerId?: number,
+  gameState?: GameState,
 }
+
+export type GameState = 'LOBBY' | 'IN_PROGRESS' | 'COMPLETED';
 
 export interface World {
   id: number,

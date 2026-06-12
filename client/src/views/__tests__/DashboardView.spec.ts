@@ -21,6 +21,12 @@ vi.mock('../../stores/User.store', () => ({
   }),
 }));
 
+vi.mock('../../services/webSocketService', () => ({
+  webSocketService: {
+    onGamesUpdated: vi.fn(() => () => undefined),
+  },
+}));
+
 describe('DashboardView.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia());
@@ -34,8 +40,8 @@ describe('DashboardView.vue', () => {
 
   it('renders "Create New Game" button', () => {
     const wrapper = mount(DashboardView);
-    const button = wrapper.find('button');
-    expect(button.text()).toBe('Create New Game');
+    const button = wrapper.find('.create-game-btn');
+    expect(button.text()).toContain('Create New Game');
   });
 
   it('sets isCreating to true when "Create New Game" is clicked', async () => {
@@ -59,7 +65,7 @@ describe('DashboardView.vue', () => {
     });
 
     const wrapper = mount(DashboardView);
-    const button = wrapper.find('button');
+    const button = wrapper.find('.create-game-btn');
 
     await button.trigger('click');
 
@@ -69,7 +75,7 @@ describe('DashboardView.vue', () => {
     expect(button.attributes('aria-busy')).toBe('true');
 
     // Wait for the request to finish
-    await vi.waitFor(() => expect(button.text()).toBe('Create New Game'), { timeout: 200 });
+    await vi.waitFor(() => expect(button.text()).toContain('Create New Game'), { timeout: 200 });
 
     expect(button.attributes('disabled')).toBeUndefined();
     expect(button.attributes('aria-busy')).toBe('false');
@@ -90,10 +96,45 @@ describe('DashboardView.vue', () => {
     });
 
     const wrapper = mount(DashboardView);
-    const button = wrapper.find('button');
+    const select = wrapper.find('#max-players');
+    await select.setValue('6');
+    const button = wrapper.find('.create-game-btn');
 
     await button.trigger('click');
 
     await vi.waitFor(() => expect(wrapper.text()).toContain('Game created successfully!'), { timeout: 200 });
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/games'),
+      expect.objectContaining({
+        method: 'post',
+        body: JSON.stringify({ maxPlayers: 6 }),
+      })
+    );
+  });
+
+  it('sends the default player limit when creating a game without changing the selector', async () => {
+    fetchMock.mockImplementation((url, options) => {
+      if (options?.method === 'post') {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ games: [] }),
+      });
+    });
+
+    const wrapper = mount(DashboardView);
+    await wrapper.find('.create-game-btn').trigger('click');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/games'),
+      expect.objectContaining({
+        method: 'post',
+        body: JSON.stringify({ maxPlayers: 4 }),
+      })
+    );
   });
 });

@@ -30,6 +30,16 @@ export interface CombatConfig {
     
     // Cover
     coverEffectiveness: number;     // 1.0 = 100% effective
+
+    // Factor weighting (0 = ignore factor, 1 = default, >1 = amplify)
+    damageFactorWeights: {
+        distance: number;
+        terrain: number;
+        cover: number;
+        armor: number;
+        random: number;
+        critical: number;
+    };
     
     // Special attacks
     overwatchAccuracy: number;      // 0.7 = 70% accuracy on overwatch
@@ -48,6 +58,14 @@ export const COMBAT_CONFIG: CombatConfig = {
     maxAccuracyModifier: 1.5,
     highGroundBonus: 20,
     coverEffectiveness: 1.0,
+    damageFactorWeights: {
+        distance: 1.0,
+        terrain: 1.0,
+        cover: 1.0,
+        armor: 1.0,
+        random: 1.0,
+        critical: 1.0
+    },
     overwatchAccuracy: 0.7,
     meleeBonus: 1.1
 };

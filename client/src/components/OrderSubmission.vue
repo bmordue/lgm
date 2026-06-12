@@ -17,10 +17,14 @@
         </span>
         <span class="guidance-hint">Enemy units cannot receive orders.</span>
       </p>
-      <button type="button" @click="$emit('deselect-actor')" class="cancel-selection-btn" :aria-label="`Cancel selection of Actor ${selectedActorId}`">Cancel selection</button>
+      <button type="button" @click="$emit('deselect-actor')" class="cancel-selection-btn" :aria-label="`Cancel selection of Actor ${selectedActorId}`">
+        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        Cancel selection
+      </button>
     </div>
 
     <div v-if="(!plannedMoves || plannedMoves.length === 0) && selectedActorId === null" class="empty-state">
+      <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#adb5bd" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="empty-icon" aria-hidden="true"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
       <p>No moves planned yet. Select a unit from the map or list to begin planning moves.</p>
     </div>
 
@@ -30,6 +34,7 @@
         :key="`${move.actorId}-${move.startPos.x}-${move.startPos.y}-${move.endPos.x}-${move.endPos.y}`"
         class="planned-move-item"
         :class="{ 'is-hovered': hoveredMove && isSameMove(move, hoveredMove) }"
+        tabindex="0"
         @mouseenter="handleHover(move, true)"
         @mouseleave="handleHover(move, false)"
         @focusin="handleHover(move, true)"
@@ -46,6 +51,7 @@
           :aria-label="`Remove move for Actor ${move.actorId} to (${move.endPos.x}, ${move.endPos.y})`"
           :disabled="isSubmitting"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
           Remove
         </button>
       </li>
@@ -93,7 +99,8 @@
       class="submit-orders-btn"
       :aria-busy="isSubmitting"
       aria-live="polite"
-      :title="(!plannedMoves || plannedMoves.length === 0) ? 'Plan at least one move to submit orders' : ''"
+      aria-keyshortcuts="Control+Enter Meta+Enter"
+      :title="(!plannedMoves || plannedMoves.length === 0) ? 'Plan at least one move to submit orders' : 'Submit all orders (Ctrl/Cmd + Enter)'"
     >
       <svg
         v-if="isSubmitting"
@@ -109,6 +116,7 @@
         <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
       </svg>
       {{ isSubmitting ? 'Submitting...' : 'Submit All Orders' }}
+      <span v-if="!isSubmitting && (plannedMoves && plannedMoves.length > 0)" class="shortcut-hint">(<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Enter</kbd>)</span>
     </button>
   </div>
 </template>
@@ -256,7 +264,9 @@ const handleSubmitOrders = () => {
   cursor: pointer;
   text-decoration: underline;
   margin-top: 8px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   transition: color 0.2s;
 }
 
@@ -295,6 +305,13 @@ const handleSubmitOrders = () => {
   border-left-color: hsla(160, 100%, 37%, 1);
 }
 
+.planned-move-item:focus-visible {
+  background-color: #f0f0f0;
+  border-left-color: hsla(160, 100%, 37%, 1);
+  outline: 2px solid hsla(160, 100%, 37%, 1);
+  outline-offset: -2px;
+}
+
 .planned-move-item span {
   flex-grow: 1;
   margin-right: 10px;
@@ -308,6 +325,9 @@ const handleSubmitOrders = () => {
   cursor: pointer;
   font-size: 0.9em;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .remove-move-btn:active:not(:disabled), .submit-orders-btn:active:not(:disabled) {
@@ -414,8 +434,23 @@ const handleSubmitOrders = () => {
   cursor: not-allowed;
 }
 
+.shortcut-hint {
+  font-size: 0.8em;
+  opacity: 0.7;
+  margin-left: 8px;
+  font-weight: normal;
+}
+
 .empty-state {
   margin-bottom: 10px;
+  text-align: center;
+  padding: 20px 10px;
+  background: rgba(0,0,0,0.02);
+  border-radius: 8px;
+}
+
+.empty-icon {
+  margin-bottom: 12px;
 }
 
 /* List Transitions */

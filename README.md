@@ -37,6 +37,10 @@ npm start  # Production server on port 3000
 npm run monitor  # Development server with auto-restart
 ```
 
+Operational endpoints (no auth required):
+- `GET /health` - service health and uptime
+- `GET /metrics` - baseline in-memory API request/response metrics
+
 ### Running the Frontend (manual setup)
 ```bash
 # Install dependencies and start frontend

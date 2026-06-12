@@ -20,15 +20,15 @@ describe("UsersController", function () {
         }
       };
 
-      await UsersController.loginUser(mockContext);
+      const result = await UsersController.loginUser(mockContext);
 
       assert.equal(mockContext.res.statusCode, 410);
-      assert(mockContext.res.jsonData.message, "Should have a message");
+      assert(result.message, "Should have a message");
     });
   });
 
   describe("getCurrentUser", function () {
-    it("should return guest user when no proxy headers are set", function () {
+    it("should return guest user when no proxy headers are set", async function () {
       const mockContext: any = {
         req: {
           res: {
@@ -40,23 +40,18 @@ describe("UsersController", function () {
             this.statusCode = code;
             return this;
           },
-          json: function(data: any) {
-            this.jsonData = data;
-            return this;
-          },
-          statusCode: 0,
-          jsonData: {}
+          statusCode: 0
         }
       };
 
-      UsersController.getCurrentUser(mockContext);
+      const result = await UsersController.getCurrentUser(mockContext);
 
       assert.equal(mockContext.res.statusCode, 200);
-      assert.equal(mockContext.res.jsonData.id, 'guest');
-      assert.equal(mockContext.res.jsonData.isGuest, true);
+      assert.equal(result.id, 'guest');
+      assert.equal(result.isGuest, true);
     });
 
-    it("should return user from res.locals when set by middleware", function () {
+    it("should return user from res.locals when set by middleware", async function () {
       const mockUser = {
         id: 'alice@example.com',
         email: 'alice@example.com',
@@ -76,22 +71,17 @@ describe("UsersController", function () {
             this.statusCode = code;
             return this;
           },
-          json: function(data: any) {
-            this.jsonData = data;
-            return this;
-          },
-          statusCode: 0,
-          jsonData: {}
+          statusCode: 0
         }
       };
 
-      UsersController.getCurrentUser(mockContext);
+      const result = await UsersController.getCurrentUser(mockContext);
 
       assert.equal(mockContext.res.statusCode, 200);
-      assert.equal(mockContext.res.jsonData.id, 'alice@example.com');
-      assert.equal(mockContext.res.jsonData.email, 'alice@example.com');
-      assert.equal(mockContext.res.jsonData.name, 'Alice');
-      assert.equal(mockContext.res.jsonData.isGuest, false);
+      assert.equal(result.id, 'alice@example.com');
+      assert.equal(result.email, 'alice@example.com');
+      assert.equal(result.name, 'Alice');
+      assert.equal(result.isGuest, false);
     });
   });
 });

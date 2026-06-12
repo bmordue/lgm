@@ -13,6 +13,7 @@ import {
   Actor,
 } from "./Models";
 import { inspect } from "util";
+import { GameError, PlayerError } from "../utils/Errors";
 
 export interface CreateGameResponse {
   gameId: number;
@@ -76,11 +77,11 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
     
     // Validation checks
     if (game.gameState !== GameState.LOBBY) {
-        throw new Error("Cannot join game: Game already started");
+        throw new GameError("Cannot join game: Game already started", 400);
     }
     
     if (game.players.length >= game.maxPlayers) {
-        throw new Error("Game is full");
+        throw new GameError("Game is full", 400);
     }
 
     // Check for duplicate username in this game
@@ -132,7 +133,7 @@ async function validateUniqueUsername(game: Game, username: string) {
     for (const existingPlayerId of game.players) {
         const existingPlayer = await store.read<Player>(store.keys.players, existingPlayerId);
         if (existingPlayer.username === username) {
-            throw new Error("Player already joined this game");
+            throw new PlayerError("Player already joined this game", 400);
         }
     }
 }
@@ -142,7 +143,7 @@ async function validateUniqueSession(game: Game, sessionId: string) {
     for (const existingPlayerId of game.players) {
         const existingPlayer = await store.read<Player>(store.keys.players, existingPlayerId);
         if (existingPlayer.sessionId === sessionId) {
-            throw new Error("Player with this session has already joined the game");
+            throw new PlayerError("Player with this session has already joined the game", 400);
         }
     }
 }
@@ -152,11 +153,11 @@ export async function kickPlayer(gameId: number, playerIdToKick: number, request
     await validateHostPermissions(game, requestingPlayerId);
 
     if (game.gameState !== GameState.LOBBY) {
-        throw new Error("Cannot kick players: Game already started");
+        throw new GameError("Cannot kick players: Game already started", 400);
     }
 
     if (playerIdToKick === game.hostPlayerId) {
-        throw new Error("Cannot kick the host player");
+        throw new PlayerError("Cannot kick the host player", 400);
     }
 
     // Remove player from game
@@ -175,11 +176,11 @@ export async function startGame(gameId: number, requestingPlayerId: number): Pro
     await validateHostPermissions(game, requestingPlayerId);
 
     if (game.gameState !== GameState.LOBBY) {
-        throw new Error("Game already started");
+        throw new GameError("Game already started", 400);
     }
 
     if (game.players.length < 2) {
-        throw new Error("Need at least 2 players to start game");
+        throw new GameError("Need at least 2 players to start game", 400);
     }
 
     game.gameState = GameState.IN_PROGRESS;
@@ -192,7 +193,7 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
     await validateHostPermissions(game, requestingPlayerId);
 
     if (!game.players.includes(newHostPlayerId)) {
-        throw new Error("New host must be a player in the game");
+        throw new PlayerError("New host must be a player in the game", 400);
     }
 
     // Read player records before any modifications for potential rollback
@@ -235,7 +236,7 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
 
 async function validateHostPermissions(game: Game, requestingPlayerId: number) {
     if (game.hostPlayerId !== requestingPlayerId) {
-        throw new Error("Only the host can perform this action");
+        throw new PlayerError("Only the host can perform this action", 403);
     }
 }
 
@@ -254,7 +255,7 @@ export async function getPlayerGameState(gameId: number, playerId: number): Prom
     const game = await store.read<Game>(store.keys.games, gameId);
 
     if (!game.players || !game.players.includes(playerId)) {
-        throw new Error("Player does not belong to this game");
+        throw new PlayerError("Player does not belong to this game", 404);
     }
 
     // Return the filtered game state for this player
@@ -270,7 +271,9 @@ export async function listGames(): Promise<ListGamesResponse> {
       id: g.id!,
       playerCount,
       maxPlayers: g.maxPlayers || 0,
-      isFull: playerCount >= (g.maxPlayers || 0)
+      isFull: playerCount >= (g.maxPlayers || 0),
+      hostPlayerId: g.hostPlayerId,
+      gameState: g.gameState
     };
   });
   return { gameIds: ids, games: gameSummaries };

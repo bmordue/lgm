@@ -63,9 +63,9 @@ describe('e2e tests', () => {
         .post(`${BASE_URL}/games`)
         .set('Remote-User', userEmail)
         .send();
-      assert.equal(response.statusCode, 200);
-      assert(typeof response.body.id === 'number' && response.body.id >= 0, "response.body.id should be a non-negative number");
-      createdGameId = response.body.id;
+      assert.equal(response.statusCode, 201);
+      assert(typeof response.body.gameId === 'number' && response.body.gameId >= 0, "response.body.gameId should be a non-negative number");
+      createdGameId = response.body.gameId;
     });
 
     it("should include the new game in the games list", async () => {
@@ -129,7 +129,8 @@ describe('e2e tests', () => {
         .post(`${BASE_URL}/games`)
         .set('Remote-User', emailP1)
         .send();
-      gameId = createResp.body.id;
+      assert.equal(createResp.statusCode, 201);
+      gameId = createResp.body.gameId;
 
       const joinResp1 = await superagent
         .put(`${BASE_URL}/games/${gameId}`)
@@ -196,11 +197,15 @@ describe('e2e tests', () => {
       assert.equal(p1Submit.statusCode, 200);
       assert.equal(p1Submit.body.turnStatus.complete, false);
 
-      const p1EarlyResult = await superagent
-        .get(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerIdP1))
-        .set('Remote-User', emailP1);
-      assert.equal(p1EarlyResult.statusCode, 200);
-      assert.equal(p1EarlyResult.body.message, "turn results not available");
+      try {
+        await superagent
+          .get(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerIdP1))
+          .set('Remote-User', emailP1);
+        assert.fail("Expected turn results to be unavailable until all players submit orders");
+      } catch (err: any) {
+        assert.equal(err.status, 404);
+        assert.equal(err.response.body.message, "turn results not available");
+      }
 
       const p2Submit = await superagent
         .post(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerIdP2))
@@ -244,7 +249,8 @@ describe('e2e tests', () => {
         .post(`${BASE_URL}/games`)
         .set('Remote-User', userEmail)
         .send();
-      gameId = createResp.body.id;
+      assert.equal(createResp.statusCode, 201);
+      gameId = createResp.body.gameId;
     });
 
     it("should reject creating a game without proxy headers (guest user)", async () => {
@@ -274,7 +280,8 @@ describe('e2e tests', () => {
           .send();
         assert.fail("Expected error for non-existent game");
       } catch (err: any) {
-        assert(err.status >= 400, `Expected 4xx status, got ${err.status}`);
+        assert.equal(err.status, 404);
+        assert.equal(err.response.body.message, `games with id ${nonExistentGameId} not found`);
       }
     });
 
@@ -284,7 +291,7 @@ describe('e2e tests', () => {
         .post(`${BASE_URL}/games`)
         .set('Remote-User', duplicateEmail)
         .send();
-      const duplicateGameId = createResp.body.id;
+      const duplicateGameId = createResp.body.gameId;
 
       await superagent
         .put(`${BASE_URL}/games/${duplicateGameId}`)
@@ -308,7 +315,7 @@ describe('e2e tests', () => {
         .post(`${BASE_URL}/games`)
         .set('Remote-User', "e2e_full_host@example.com")
         .send({ maxPlayers: 2 });
-      const fullGameId = createResp.body.id;
+      const fullGameId = createResp.body.gameId;
 
       await superagent
         .put(`${BASE_URL}/games/${fullGameId}`)
@@ -340,7 +347,7 @@ describe('e2e tests', () => {
         .post(`${BASE_URL}/games`)
         .set('Remote-User', p1)
         .send();
-      const duplicateOrderGameId = createResp.body.id;
+      const duplicateOrderGameId = createResp.body.gameId;
 
       const join1 = await superagent
         .put(`${BASE_URL}/games/${duplicateOrderGameId}`)

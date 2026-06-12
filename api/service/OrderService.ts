@@ -14,7 +14,7 @@ import {
   TurnOrders,
   OrderType
 } from "./Models";
-import { calculateHexDistance } from "./HexGrid";
+import { ValidationError } from "../utils/Errors";
 
 export interface RequestActorOrders {
   actorId: number;
@@ -69,16 +69,16 @@ function validateRequestOrders(
 
     if (orderType === OrderType.MOVE) {
       if (!o.ordersList) {
-        throw new Error(`Move order for actor ${o.actorId} must have ordersList`);
+        throw new ValidationError(`Move order for actor ${o.actorId} must have ordersList`);
       }
       out.ordersList = fillOrTruncateOrdersList(numbersToDirections(o.ordersList));
     } else if (orderType === OrderType.ATTACK) {
       if (o.targetId === undefined) {
-        throw new Error(`Attack order for actor ${o.actorId} must have targetId`);
+        throw new ValidationError(`Attack order for actor ${o.actorId} must have targetId`);
       }
       out.targetId = o.targetId;
     } else {
-      throw new Error(`Unknown order type: ${orderType} for actor ${o.actorId}`);
+      throw new ValidationError(`Unknown order type: ${orderType} for actor ${o.actorId}`);
     }
 
     logger.debug(util.format("ActorOrder: %j", out));
@@ -112,7 +112,7 @@ async function validateOrders(
   };
   if (!game.players.includes(playerId)) {
     logger.debug("reject: playerId is not in game.players array");
-    return Promise.reject(new Error("playerId is not in game.players array"));
+    return Promise.reject(new ValidationError("playerId is not in game.players array"));
   }
 
   if (game.turn != turn) {
@@ -123,7 +123,7 @@ async function validateOrders(
         game.turn
       )
     );
-    return Promise.reject(new Error("orders turn does not match game turn"));
+    return Promise.reject(new ValidationError("orders turn does not match game turn"));
   }
 
   // Load all actors in the world to validate attack orders
@@ -136,22 +136,22 @@ async function validateOrders(
     const actor = allActorsInWorld.find((a: any) => a.id === actorId);
 
     if (!actor) {
-      return Promise.reject(new Error(`Actor with ID ${actorId} not found in game`));
+      return Promise.reject(new ValidationError(`Actor with ID ${actorId} not found in game`));
     }
 
     if (actor.owner !== playerId) {
-      return Promise.reject(new Error(`Player ${playerId} does not own actor ${actorId}`));
+      return Promise.reject(new ValidationError(`Player ${playerId} does not own actor ${actorId}`));
     }
 
     // For attack orders, validate that the target exists and has a weapon
     if (requestOrder.orderType === OrderType.ATTACK) {
       if (requestOrder.targetId === undefined) {
-        return Promise.reject(new Error(`Attack order for actor ${actorId} must have targetId`));
+        return Promise.reject(new ValidationError(`Attack order for actor ${actorId} must have targetId`));
       }
 
       const targetActor = allActorsInWorld.find((a: any) => a.id === requestOrder.targetId);
       if (!targetActor) {
-        return Promise.reject(new Error(`Target actor with ID ${requestOrder.targetId} not found in game`));
+        return Promise.reject(new ValidationError(`Target actor with ID ${requestOrder.targetId} not found in game`));
       }
 
       // Use RangeValidation service for comprehensive preliminary validation
@@ -167,7 +167,7 @@ async function validateOrders(
         );
 
         if (fatalErrors.length > 0) {
-          return Promise.reject(new Error(`Invalid attack order for actor ${actorId}: ${fatalErrors.join(', ')}`));
+          return Promise.reject(new ValidationError(`Invalid attack order for actor ${actorId}: ${fatalErrors.join(', ')}`));
         }
 
         // Non-fatal errors (range, LOS) are logged as they might change during simulation
@@ -200,7 +200,7 @@ async function storeOrders(
   if (existing.length > 0) {
     const msg =
       "storeOrders: turnOrders already exists for this game-turn-player";
-    return Promise.reject(new Error(msg));
+    return Promise.reject(new ValidationError(msg));
   }
   const ordersId = await store.create<TurnOrders>(
     store.keys.turnOrders,

@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { ref, watchEffect } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import  router  from '../router';
 import { useGamesStore, type World } from '@/stores/Games.store';
 import { API_URL } from '@/config';
+import { webSocketService } from '@/services/webSocketService';
 
 interface GameSummary {
   id: number;
   playerCount: number;
   maxPlayers: number;
   isFull: boolean;
+  hostPlayerId?: number;
+  gameState?: 'LOBBY' | 'IN_PROGRESS' | 'COMPLETED';
 }
 
 const gameList = ref<GameSummary[]>([])
@@ -18,21 +21,68 @@ const successMessage = ref('')
 const errorMessage = ref('')
 const joiningGameId = ref<number | null>(null)
 const lastRefreshed = ref<string | null>(null)
+const selectedMaxPlayers = ref(4)
 
 async function fetchGameList() {
   isLoading.value = true;
+  errorMessage.value = '';
   try {
     const response = await fetch(`${API_URL}/games`);
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ message: 'Failed to fetch games' }));
+      throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+    }
     const data = await response.json();
     gameList.value = data.games || [];
     lastRefreshed.value = new Date().toLocaleTimeString();
+  } catch (err) {
+    errorMessage.value = err instanceof Error ? err.message : 'Failed to load games. Please try again.';
+    gameList.value = [];
   } finally {
     isLoading.value = false;
   }
 }
 
-watchEffect(() => {
+let unsubscribeGamesUpdated: (() => void) | null = null;
+
+const handleKeyDown = (event: KeyboardEvent) => {
+  if (
+    event.target instanceof HTMLInputElement ||
+    event.target instanceof HTMLTextAreaElement ||
+    event.target instanceof HTMLSelectElement
+  ) {
+    return;
+  }
+
+  if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
+    return;
+  }
+
+  if (event.key.toLowerCase() === 'r') {
+    if (!isLoading.value) {
+      fetchGameList();
+    }
+  } else if (event.key.toLowerCase() === 'c') {
+    if (!isCreating.value) {
+      callCreate();
+    }
+  }
+};
+
+onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
   fetchGameList();
+  unsubscribeGamesUpdated = webSocketService.onGamesUpdated(() => {
+    fetchGameList();
+  });
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleKeyDown);
+  if (unsubscribeGamesUpdated) {
+    unsubscribeGamesUpdated();
+    unsubscribeGamesUpdated = null;
+  }
 });
 
 async function callCreate() {
@@ -42,6 +92,10 @@ async function callCreate() {
     const response = await fetch(`${API_URL}/games`, {
       method: "post",
       credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ maxPlayers: selectedMaxPlayers.value }),
     });
 
     if (response.ok) {
@@ -81,7 +135,7 @@ async function join(game: GameSummary) {
       return;
     }
 
-    const joinBody = await resp.json() as {gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number};
+    const joinBody = await resp.json() as {gameId: number, playerId :number, turn :number, world :World, playerCount: number, maxPlayers: number, hostPlayerId?: number, gameState?: 'LOBBY' | 'IN_PROGRESS' | 'COMPLETED'};
     const gamesStore = useGamesStore();
     gamesStore.updateJoinResponse(joinBody);
     router.push('/game');
@@ -127,7 +181,7 @@ async function join(game: GameSummary) {
         @click="fetchGameList"
         :disabled="isLoading"
         aria-label="Refresh game list"
-        title="Refresh game list"
+        title="Refresh game list (R)"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -145,6 +199,7 @@ async function join(game: GameSummary) {
           <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
         </svg>
       </button>
+      <kbd title="Keyboard shortcut: R" aria-hidden="true">R</kbd>
     </div>
   </div>
   <div v-if="isLoading" class="no-games" role="status" aria-live="polite">
@@ -170,7 +225,26 @@ async function join(game: GameSummary) {
           <div class="game-details">
             <div class="game-id">
               <svg
-                v-if="joiningGameId === game.id"
+                v-if="joiningGameId !== game.id"
+                xmlns="http://www.w3.org/2000/svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="game-icon"
+                aria-hidden="true"
+              >
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              <svg
+                v-else
                 class="btn-spinner spinning"
                 viewBox="0 0 24 24"
                 fill="none"
@@ -208,10 +282,36 @@ async function join(game: GameSummary) {
         </div>
       </button>
     </TransitionGroup>
-    <div v-if="!isLoading && gameList.length === 0" class="no-games">
-      No active games found. Click 'Create New Game' to start a new journey!
-    </div>
+    <Transition name="fade">
+      <div v-if="!isLoading && gameList.length === 0" class="no-games empty-dashboard">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="48"
+          height="48"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="empty-icon"
+          aria-hidden="true"
+        >
+          <rect x="3" y="3" width="7" height="7"></rect>
+          <rect x="14" y="3" width="7" height="7"></rect>
+          <rect x="14" y="14" width="7" height="7"></rect>
+          <rect x="3" y="14" width="7" height="7"></rect>
+        </svg>
+        <p>No active games found. Click 'Create New Game' or press <kbd>C</kbd> to start a new journey!</p>
+      </div>
+    </Transition>
   </div>
+  <label class="player-limit-label" for="max-players">Player limit</label>
+  <select id="max-players" v-model.number="selectedMaxPlayers" class="player-limit-select">
+    <option v-for="count in [2, 3, 4, 5, 6, 7, 8]" :key="count" :value="count">
+      {{ count }} players
+    </option>
+  </select>
   <button
     type="button"
     class="create-game-btn"
@@ -219,6 +319,7 @@ async function join(game: GameSummary) {
     :disabled="isCreating"
     :aria-busy="isCreating"
     aria-live="polite"
+    title="Create New Game (C)"
   >
     <svg
       v-if="isCreating"
@@ -233,7 +334,24 @@ async function join(game: GameSummary) {
     >
       <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
     </svg>
+    <svg
+      v-else
+      xmlns="http://www.w3.org/2000/svg"
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
+      <line x1="12" y1="5" x2="12" y2="19"></line>
+      <line x1="5" y1="12" x2="19" y2="12"></line>
+    </svg>
     {{ isCreating ? 'Creating...' : 'Create New Game' }}
+    <span v-if="!isCreating" class="shortcut-hint" aria-hidden="true">(<kbd>C</kbd>)</span>
   </button>
 </template>
 
@@ -357,6 +475,9 @@ async function join(game: GameSummary) {
   font-weight: bold;
   font-size: 1.1em;
   margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .game-status {
@@ -376,33 +497,22 @@ async function join(game: GameSummary) {
   padding: 20px;
 }
 
-.error-message, .success-message {
-  padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  font-size: 0.9em;
-  border: 1px solid;
+.empty-dashboard {
+  border: 2px dashed #ccc;
+  border-radius: 12px;
+  background-color: rgba(0, 0, 0, 0.02);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
+  gap: 16px;
+  padding: 40px 20px;
+  margin: 20px 0;
 }
 
-.error-message {
-  background-color: #fce4e4;
-  border-color: #fcc2c2;
-  color: #cc0000;
+.empty-icon {
+  color: #adb5bd;
 }
 
-.success-message {
-  background-color: hsla(160, 100%, 37%, 0.1);
-  border-color: hsla(160, 100%, 37%, 1);
-  color: hsla(160, 100%, 37%, 1);
-}
-
-.status-icon {
-  flex-shrink: 0;
-}
 
 .create-game-btn {
   background-color: hsla(160, 100%, 37%, 1);
@@ -415,6 +525,25 @@ async function join(game: GameSummary) {
   transition: background-color 0.2s, transform 0.1s;
   width: 100%;
   font-size: 1em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.player-limit-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.player-limit-select {
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background: white;
 }
 
 .create-game-btn:hover:not(:disabled) {
@@ -433,5 +562,11 @@ async function join(game: GameSummary) {
 .create-game-btn:disabled {
   background-color: #ccc;
   cursor: not-allowed;
+}
+
+.shortcut-hint {
+  font-size: 0.85em;
+  opacity: 0.8;
+  margin-left: 4px;
 }
 </style>

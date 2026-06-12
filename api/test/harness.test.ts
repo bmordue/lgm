@@ -43,7 +43,8 @@ env.RUN_E2E_TESTS &&
             const createResp = await createAGame();
             console.log(JSON.stringify(createResp.body, null, 4));
 
-            gameId = createResp.body.id;
+            assert.equal(createResp.statusCode, 201);
+            gameId = createResp.body.gameId;
             const response = await joinAGame(gameId);
             console.log(JSON.stringify(response.body, null, 4));
 

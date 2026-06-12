@@ -42,7 +42,8 @@
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
     "js-yaml": "^4.1.1",
-    "pg": "^8.17.2"
+    "pg": "^8.17.2",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@stryker-mutator/core": "^9.6.0",
@@ -63,7 +64,7 @@
     "mocha-junit-reporter": "^2.2.1",
     "mocha-multi-reporters": "^1.5.1",
     "nodemon": "^3.0.3",
-    "nyc": "^17.1.0",
+    "nyc": "^18.0.0",
     "prisma": "^7.6.0",
     "snyk": "^1.1297.3",
     "source-map-support": "^0.5.21",

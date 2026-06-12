@@ -1,5 +1,5 @@
 import * as bodyParser from 'body-parser';
-import * as express from 'express';
+import express = require('express');
 import * as exegesisExpress from 'exegesis-express';
 import { rateLimit } from 'express-rate-limit';
 import helmet from 'helmet';
@@ -8,6 +8,9 @@ import * as http from "http";
 import { loadUser, RuntimeUser } from './middleware/auth';
 import { inspect } from 'util';
 import { getSecurityConfig, SERVER_CONFIG } from './config/GameConfig';
+import { webSocketService } from './service/WebSocketService';
+import * as logger from './utils/Logger';
+const APP_VERSION = (require('../package.json').version as string) || '0.0.1';
 
 /* 
 // import * as path from 'path';
@@ -80,14 +83,38 @@ function createSecureJsonParser(maxBodySize: number) {
     };
 }
 
+
+
+interface ApiMetrics {
+    startedAt: string;
+    requestsTotal: number;
+    totalResponseTimeMs: number;
+    responsesByStatus: Record<string, number>;
+    requestsByMethod: Record<string, number>;
+    requestsByPath: Record<string, number>;
+}
+
+function increment(counter: Record<string, number>, key: string): void {
+    counter[key] = (counter[key] || 0) + 1;
+}
+
+function createMetrics(): ApiMetrics {
+    return {
+        startedAt: new Date().toISOString(),
+        requestsTotal: 0,
+        totalResponseTimeMs: 0,
+        responsesByStatus: {},
+        requestsByMethod: {},
+        requestsByPath: {},
+    };
+}
+
 /**
  * Create and configure the HTTP server without starting it.
  * Used by the runtime entrypoint and integration tests.
  */
 export async function createServer() {
-    const securityConfig = getSecurityConfig();
-
-    async function sessionAuthenticator(pluginContext) {
+    const securityConfig = getSecurityConfig();    async function sessionAuthenticator(pluginContext) {
         // The loadUser middleware sets res.locals.user on the Express response.
         // In Exegesis's PluginContext, the original Express response is accessible
         // via pluginContext.req.res (Express sets req.res = res internally).
@@ -141,6 +168,58 @@ export async function createServer() {
         },
     }));
 
+    const metrics = createMetrics();
+
+    app.use((req, res, next) => {
+        const start = process.hrtime.bigint();
+        res.on('finish', () => {
+            const durationMs = Number(process.hrtime.bigint() - start) / 1e6;
+            const pathKey = req.path || req.url;
+            metrics.requestsTotal += 1;
+            metrics.totalResponseTimeMs += durationMs;
+            increment(metrics.requestsByMethod, req.method);
+            increment(metrics.responsesByStatus, String(res.statusCode));
+            increment(metrics.requestsByPath, pathKey);
+            logger.info({
+                event: 'http_request',
+                method: req.method,
+                path: pathKey,
+                statusCode: res.statusCode,
+                durationMs: Number(durationMs.toFixed(3)),
+                remoteAddress: req.ip,
+            });
+        });
+        next();
+    });
+
+    app.get('/health', (_req, res) => {
+        res.status(200).json({
+            status: 'healthy',
+            timestamp: new Date().toISOString(),
+            uptimeSeconds: Number(process.uptime().toFixed(3)),
+            version: APP_VERSION,
+        });
+    });
+
+    app.get('/metrics', (_req, res) => {
+        const averageResponseTimeMs = metrics.requestsTotal > 0
+            ? metrics.totalResponseTimeMs / metrics.requestsTotal
+            : 0;
+        res.status(200).json({
+            startedAt: metrics.startedAt,
+            uptimeSeconds: Number(process.uptime().toFixed(3)),
+            requests: {
+                total: metrics.requestsTotal,
+                byMethod: metrics.requestsByMethod,
+                byPath: metrics.requestsByPath,
+            },
+            responses: {
+                byStatus: metrics.responsesByStatus,
+                averageResponseTimeMs: Number(averageResponseTimeMs.toFixed(3)),
+            },
+        });
+    });
+
     // Load user identity from proxy headers (or DEV_STUB_USER in dev)
     app.use(loadUser);
 
@@ -167,10 +246,18 @@ export async function createServer() {
             ? (isProduction ? 'Internal server error' : `Internal error: ${err.message}\n\n${inspect(err)}`)
             : (err?.message || 'Bad request');
 
+        logger.error({
+            event: 'unhandled_error',
+            method: req.method,
+            path: req.path || req.url,
+            message: err?.message,
+            stack: err?.stack,
+        });
         res.status(status).json({ message });
     });
 
     const server = http.createServer(app);
+    webSocketService.initialize(server);
 
     return server;
 }
@@ -178,16 +265,18 @@ export async function createServer() {
 const port = SERVER_CONFIG.port;
 const host = process.env.NODE_ENV === 'production' ? '127.0.0.1' : undefined;
 
-async function startServer() {
-    const server = await createServer();
-    server.listen(port, host);
-    console.log(`Listening on port ${port}`);
-}
 
 if (require.main === module) {
-    startServer()
+    const port = SERVER_CONFIG.port;
+    const host = process.env.NODE_ENV === 'production' ? '127.0.0.1' : undefined;
+
+    createServer()
+        .then(server => {
+            server.listen(port, host);
+            logger.info({ event: 'server_started', port, requestedHost: host || 'all_interfaces' });
+        })
         .catch(err => {
-            console.error('Failed to start server:', err);
+            logger.error({ event: 'server_start_failed', message: err?.message, stack: err?.stack });
             process.exit(1);
         });
 }

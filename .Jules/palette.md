@@ -14,6 +14,14 @@
 **Learning:** Replacing disruptive `window.alert()` with non-blocking, accessible inline status messages improves user flow and professional feel. Using `role="status"` for success and `role="alert"` for errors ensures screen reader compatibility while maintaining context.
 **Action:** Always prefer integrated UI feedback over native browser dialogs for application-specific state changes.
 
+## 2025-05-17 - Dynamic Navigation and Session Persistence
+**Learning:** Initializing Pinia state from `localStorage` on creation ensures the UI remains reactive to the user's session even after a page refresh. Using a Pinia getter for `isAuthenticated` and the CSS sibling selector `nav > * + *` allows for clean, conditional navigation with consistent styling across mixed element types (links and buttons).
+**Action:** Always initialize session-dependent stores from persistent storage and use flexible CSS selectors for shared layout components.
+
+## 2026-04-04 - Persistent Reactive Session Management
+**Learning:** Initializing Pinia state from `localStorage` on store creation, combined with a dedicated logout action, provides a more reliable and reactive authentication state than manual `localStorage` checks in individual methods. This allows for clean, conditional UI rendering and navigation guards.
+**Action:** Always prefer reactive state for session management and initialize from persistent storage at the earliest possible point.
+
 ## 2026-04-07 - Multi-modal Feedback for Planned Actions
 **Learning:** Providing both visual (e.g., dashed borders, subtle fills) and semantic (ARIA labels) feedback for planned but not yet committed actions helps users maintain mental context. For maps/grids, highlighting the destination of a move clarifies intent before submission.
 **Action:** Always pair visual state changes with descriptive ARIA labels to ensure screen reader users can perceive the same intent as sighted users.
@@ -98,6 +106,10 @@
 **Learning:** Using parenthetical counts in section headings (e.g., 'Actors (9)', 'Planned Moves (1)') and appending a '(Planned)' text indicator to entity names in sidebars provides at-a-glance status updates. This reduces cognitive load by summarizing list state and highlighting active planning without requiring full list scanning.
 **Action:** Always include item counts in headings for primary lists and use explicit textual indicators for active states to supplement visual cues.
 
+## 2026-06-01 - Animated Spatial Feedback and SVG Test Robustness
+**Learning:** Visualizing planned actions (like moves) using animated "marching ants" lines (`stroke-dashoffset`) with directional markers significantly improves tactical clarity. When testing SVG-heavy components, using generic tag selectors (like `polygon`) is brittle if decorators (like markers) use the same tags; specific class-based selectors are essential for robust tests.
+**Action:** Always use specific CSS classes for functional SVG elements in unit tests to avoid collisions with decorative or definition elements.
+
 ## 2026-05-06 - Standardized Manual Refresh and Async State Management
 **Learning:** Manual refresh buttons should follow a consistent visual pattern (inline spinning SVG, brand-aligned styling) and always manage their loading state within a `try...finally` block. This ensures the UI remains interactive and accurate even if the network request fails, preventing "stuck" loading indicators.
 **Action:** Always wrap async state toggles in `try...finally` and reuse the established `.refresh-btn` and `.spinning` CSS patterns for consistency.
@@ -173,3 +185,19 @@
 ## 2026-05-27 - Interactive Legend Highlighting Pattern
 **Learning:** Making a static Map Legend interactive by using hover/focus states to trigger spatial highlights on a grid drastically improves the discoverability and clarity of complex visual states. Using `tabindex="0"` and `focusin`/`focusout` ensures this "delightful" feature is also accessible to keyboard users.
 **Action:** Always implement cross-highlighting between legends and their associated spatial representations to strengthen the mental link between abstract categories and their concrete instances.
+
+## 2026-06-03 - [Keyboard Shortcut Visibility]
+**Learning:** Standardizing keyboard shortcut hints using the `<kbd>` tag significantly improves discoverability and provides a professional, tactile feel to the UI that users find more intuitive than plain text hints.
+**Action:** Always wrap keyboard shortcut hints (like Esc, Ctrl, Enter) in `<kbd>` tags and provide global styling for them.
+
+## 2026-06-04 - Synchronized Unit-Owner Selection Highlighting
+**Learning:** Linking the selection state of a spatial entity (unit) to its metadata in a separate list (player owner) provides critical context and reduces cognitive load. Using a consistent visual language (e.g., the same red outline) for both reinforces this relationship and helps users quickly identify ownership in multi-player environments.
+**Action:** Always implement cross-highlighting between units and their owners in sidebars to maintain clear ownership context during tactical analysis.
+
+## 2026-06-05 - Semantic Navigation Icons and Alignment
+**Learning:** Adding semantic inline SVG icons to global navigation significantly improves scannability and visual affordance. Using `display: inline-flex` with `align-items: center` and a standardized `gap: 8px` ensures icons and text are perfectly aligned across different browsers and zoom levels.
+**Action:** Always pair navigation links with semantic icons and use the standardized flexbox alignment pattern to maintain a professional and accessible interface.
+
+## 2026-06-10 - Actionable Empty States and Robust Fetch Feedback
+**Learning:** A "dead-end" empty state (e.g., just text) is a missed opportunity for onboarding. Including a visual anchor (SVG icon) and a clear call-to-action that incorporates keyboard shortcuts (`<kbd>`) makes the UI feel alive even when data is missing. Furthermore, `fetch` operations must always handle `!response.ok` explicitly to ensure error messages reach the user rather than failing silently.
+**Action:** Always design empty states with both visual affordance and actionable hints, and ensure every data-fetching action has a corresponding user-visible error state.

@@ -41,9 +41,8 @@ Comprehensive validation checks several factors before an attack is considered v
 
 ### 1. Order Submission (`api/service/OrderService.ts`)
 
-When a player submits an `ATTACK` order, a preliminary validation is performed:
-- **Fatal Errors**: If the order violates fundamental rules (no weapon, friendly fire, attacking a dead unit), the submission is rejected with an error.
-- **Informational Warnings**: If the target is currently out of range or LOS, the order is accepted but a warning is logged, as positions may change during the turn simulation.
+When a player submits an `ATTACK` order, validation is performed and invalid attacks are rejected:
+- **Submission Rejection**: If any validation check fails (weapon, ownership, target state, range, or LOS), the order is rejected with an error.
 
 ### 2. Turn Simulation (`api/service/Rules.ts`)
 
