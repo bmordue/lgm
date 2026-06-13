@@ -66,6 +66,7 @@
           :disabled="isSubmitting"
           aria-label="Clear all planned moves"
         >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
           Clear All
         </button>
       </template>
@@ -78,6 +79,7 @@
             class="confirm-btn"
             :disabled="isSubmitting"
           >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"></polyline></svg>
             Confirm Clear
           </button>
           <button
@@ -115,7 +117,23 @@
       >
         <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
       </svg>
-      {{ isSubmitting ? 'Submitting...' : 'Submit All Orders' }}
+      <svg
+        v-else
+        xmlns="http://www.w3.org/2000/svg"
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <line x1="22" y1="2" x2="11" y2="13"></line>
+        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+      </svg>
+      {{ isSubmitting ? 'Submitting...' : `Submit ${plannedMoves.length} Order${plannedMoves.length !== 1 ? 's' : ''}` }}
       <span v-if="!isSubmitting && (plannedMoves && plannedMoves.length > 0)" class="shortcut-hint">(<kbd>Ctrl</kbd>/<kbd>Cmd</kbd>+<kbd>Enter</kbd>)</span>
     </button>
   </div>
@@ -360,6 +378,10 @@ const handleSubmitOrders = () => {
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 
 .clear-all-btn:active:not(:disabled), .confirm-btn:active:not(:disabled), .cancel-btn:active:not(:disabled) {

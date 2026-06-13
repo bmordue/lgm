@@ -477,9 +477,12 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             @mouseenter="hoveredPlayerId = player.id"
             @mouseleave="hoveredPlayerId = null"
           >
-            <span>
+            <span style="display: inline-flex; align-items: center; gap: 4px;">
               {{ player.name }}{{ player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
-              <span v-if="player.id === game.hostPlayerId" class="player-badge">Host</span>
+              <span v-if="player.id === game.hostPlayerId" class="player-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
+                Host
+              </span>
             </span>
             <div
               v-if="isHost && isLobby && player.id !== gamesStore.getCurrentPlayerId()"
@@ -630,8 +633,14 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
               <span class="actor-pos">({{ actor.pos.x }}, {{ actor.pos.y }})</span>
             </div>
             <div class="status-tags">
-              <span v-if="actor.owner === gamesStore.getCurrentPlayerId()" class="tag you-tag">You</span>
-              <span v-if="plannedMoves.some(m => m.actorId === actor.id)" class="tag planned-tag">Planned</span>
+              <span v-if="actor.owner === gamesStore.getCurrentPlayerId()" class="tag you-tag">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                You
+              </span>
+              <span v-if="plannedMoves.some(m => m.actorId === actor.id)" class="tag planned-tag">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
+                Planned
+              </span>
             </div>
             <div class="hp-container">
               <div
@@ -758,6 +767,9 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   color: hsla(160, 100%, 20%, 1);
   font-size: 0.75em;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .player-actions {
@@ -907,6 +919,9 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   padding: 1px 6px;
   border-radius: 4px;
   font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .you-tag {
