@@ -431,8 +431,13 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="game-info-icon" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
         Players: {{ game.playerCount }}/{{ game.maxPlayers }}
       </span>
-      <span class="player-info">
-        State: {{ game.gameState }}
+      <span class="game-state-container">
+        <span class="state-badge" :class="`state-${game.gameState?.toLowerCase()}`">
+          <svg v-if="game.gameState === 'LOBBY'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+          <svg v-else-if="game.gameState === 'IN_PROGRESS'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+          <svg v-else-if="game.gameState === 'COMPLETED'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+          {{ game.gameState }}
+        </span>
       </span>
       <span v-if="lastRefreshed" class="last-refreshed">
         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clock-icon" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
@@ -474,12 +479,24 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
               'is-selected': player.id === selectedActorOwnerId
             }"
             :aria-label="player.name + (player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '') + (player.id === selectedActorOwnerId ? ', owns selected unit' : '')"
+            tabindex="0"
             @mouseenter="hoveredPlayerId = player.id"
             @mouseleave="hoveredPlayerId = null"
+            @focusin="hoveredPlayerId = player.id"
+            @focusout="hoveredPlayerId = null"
           >
-            <span>
+            <span class="player-name-container">
+              <svg v-if="player.id === gamesStore.getCurrentPlayerId()" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="player-icon self-icon" aria-hidden="true">
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
+              </svg>
               {{ player.name }}{{ player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
-              <span v-if="player.id === game.hostPlayerId" class="player-badge">Host</span>
+              <span v-if="player.id === game.hostPlayerId" class="player-badge">
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="player-icon crown-icon" aria-hidden="true">
+                  <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path>
+                </svg>
+                Host
+              </span>
             </span>
             <div
               v-if="isHost && isLobby && player.id !== gamesStore.getCurrentPlayerId()"
@@ -658,12 +675,41 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   border-radius: 5px;
 }
 
-.turn-info, .player-info {
+.turn-info, .player-info, .game-state-container {
   font-weight: bold;
   color: #333;
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+.state-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.85em;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.state-lobby {
+  background: #e3f2fd;
+  color: #0b5394;
+  border: 1px solid #bbdefb;
+}
+
+.state-in_progress {
+  background: hsla(160, 100%, 37%, 0.1);
+  color: hsla(160, 100%, 25%, 1);
+  border: 1px solid hsla(160, 100%, 37%, 0.3);
+}
+
+.state-completed {
+  background: #f5f5f5;
+  color: #616161;
+  border: 1px solid #e0e0e0;
 }
 
 .game-info-icon {
@@ -750,6 +796,25 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   outline-offset: -2px;
 }
 
+.player-name-container {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.player-icon {
+  flex-shrink: 0;
+}
+
+.self-icon {
+  color: hsla(160, 100%, 37%, 1);
+}
+
+.crown-icon {
+  margin-right: 2px;
+}
+
 .player-badge {
   margin-left: 8px;
   padding: 2px 8px;
@@ -758,6 +823,8 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   color: hsla(160, 100%, 20%, 1);
   font-size: 0.75em;
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
 }
 
 .player-actions {
