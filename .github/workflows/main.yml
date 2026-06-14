@@ -28,17 +28,25 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
 
-      - name: Install dependencies
+      - name: Install API dependencies
         working-directory: ./api
         run: npm install
 
-      - name: Build
+      - name: Build API
         working-directory: ./api
         run: npm run build
 
-      - name: Run tests
+      - name: Run API unit tests
         working-directory: ./api
         run: npm run test:ci
+
+      - name: API Unit Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: API Unit Tests
+          path: api/test-results/unit-results.xml
+          reporter: java-junit
 
       - name: Start server for E2E tests
         working-directory: ./api
@@ -62,6 +70,14 @@ jobs:
         working-directory: ./api
         run: npm run test:e2e:ci
 
+      - name: API E2E Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: API E2E Tests
+          path: api/test-results/e2e-results.xml
+          reporter: java-junit
+
       - name: Stop server after E2E tests
         if: always()
         run: |
@@ -69,20 +85,24 @@ jobs:
             kill $(cat /tmp/server.pid) || true
           fi
 
-      - name: Install client dependencies
+      - name: Install Client dependencies
         working-directory: ./client
         run: npm install
 
-      - name: Run client unit tests
+      - name: Build Client
         working-directory: ./client
-        run: npm run test:unit -- --run --reporter=default --reporter=junit --outputFile.junit=test-results/client-results.xml
+        run: npm run build
 
-      - name: Test Report
+      - name: Run Client unit tests
+        working-directory: ./client
+        run: npm run test:unit
+
+      - name: Client Unit Test Report
         uses: dorny/test-reporter@v1
         if: always()
         with:
-          name: Test Results
-          path: '**/test-results/*.xml'
+          name: Client Unit Tests
+          path: client/test-results/client-results.xml
           reporter: java-junit
 
       - name: Run Stryker.js mutation testing
@@ -90,4 +110,3 @@ jobs:
         run: npx stryker run
         env:
           STRYKER_DASHBOARD_API_KEY: ${{ secrets.STRYKER_DASHBOARD_API_KEY }}
-
