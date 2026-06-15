@@ -112,8 +112,10 @@ describe('GameView.vue', () => {
       wrapper = mountComponent();
       const playerItems = wrapper.findAll('.player-item');
       // sampleWorld includes owner 1, and mockUserStore has name 'Test User'
-      // so 'Test User (You)' should be in the list
-      const selfPlayerItem = playerItems.find(item => item.text().includes('Test User (You)'));
+      // The "(You)" is now in a separate badge with class 'you-badge'
+      const selfPlayerItem = playerItems.find(item =>
+        item.text().includes('Test User') && item.find('.you-badge').exists()
+      );
       expect(selfPlayerItem).toBeTruthy();
       expect(selfPlayerItem?.classes()).toContain('is-self');
     });
