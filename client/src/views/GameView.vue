@@ -262,19 +262,29 @@ const handleSubmitOrders = async (movesToSubmit: PlannedMove[]) => {
 };
 // --- End Event Handlers ---
 
-function getPlayerList() {
+const playerList = computed(() => {
   if (!game.value.world?.actors) return [];
   const actors = game.value.world.actors as Actor[];
-  const playerIds = [...new Set(actors.map((actor: Actor) => actor.owner))];
+  const playerCounts = actors.reduce((acc: Record<number, number>, actor: Actor) => {
+    acc[actor.owner] = (acc[actor.owner] || 0) + 1;
+    return acc;
+  }, {});
+
+  const playerIds = Object.keys(playerCounts).map(Number);
   const currentPlayerId = gamesStore.getCurrentPlayerId();
+
   return playerIds.map(id => {
     let name = `Player ${id}`;
     if (id === currentPlayerId && userStore.user?.name) {
       name = userStore.user.name;
     }
-    return { id, name };
+    return {
+      id,
+      name,
+      unitCount: playerCounts[id]
+    };
   });
-}
+});
 
 async function postOrders(moves: PlannedMove[]) { // Modified signature
   const g = gamesStore.getCurrentGame();
@@ -467,10 +477,10 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
     
     <div class="game-content">
       <div class="left-panel">
-        <h3>Players ({{ getPlayerList().length }})</h3>
+        <h3>Players ({{ playerList.length }})</h3>
         <div class="player-list">
           <div
-            v-for="player in getPlayerList()"
+            v-for="player in playerList"
             :key="`player-${player.id}`"
             class="player-item"
             :class="{
@@ -478,7 +488,7 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
               'is-hovered': player.id === hoveredPlayerId || player.id === hoveredActorOwnerId,
               'is-selected': player.id === selectedActorOwnerId
             }"
-            :aria-label="player.name + (player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '') + (player.id === selectedActorOwnerId ? ', owns selected unit' : '')"
+            :aria-label="`${player.name}${player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : ''}, ${player.unitCount} ${player.unitCount === 1 ? 'Unit' : 'Units'}${player.id === selectedActorOwnerId ? ', owns selected unit' : ''}`"
             tabindex="0"
             @mouseenter="hoveredPlayerId = player.id"
             @mouseleave="hoveredPlayerId = null"
@@ -490,13 +500,15 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
-              {{ player.name }}{{ player.id === gamesStore.getCurrentPlayerId() ? ' (You)' : '' }}
-              <span v-if="player.id === game.hostPlayerId" class="player-badge">
+              {{ player.name }}
+              <span v-if="player.id === gamesStore.getCurrentPlayerId()" class="player-badge you-badge">You</span>
+              <span v-if="player.id === game.hostPlayerId" class="player-badge host-badge">
                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="player-icon crown-icon" aria-hidden="true">
                   <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"></path>
                 </svg>
                 Host
               </span>
+              <span class="unit-count">{{ player.unitCount }} {{ player.unitCount === 1 ? 'Unit' : 'Units' }}</span>
             </span>
             <div
               v-if="isHost && isLobby && player.id !== gamesStore.getCurrentPlayerId()"
@@ -816,15 +828,35 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
 }
 
 .player-badge {
-  margin-left: 8px;
-  padding: 2px 8px;
+  margin-left: 4px;
+  padding: 1px 6px;
   border-radius: 999px;
-  background: hsla(160, 100%, 37%, 0.15);
-  color: hsla(160, 100%, 20%, 1);
-  font-size: 0.75em;
+  font-size: 0.7em;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.you-badge {
+  background: hsla(160, 100%, 37%, 1);
+  color: white;
+}
+
+.host-badge {
+  background: hsla(160, 100%, 37%, 0.15);
+  color: hsla(160, 100%, 20%, 1);
+}
+
+.unit-count {
+  margin-left: auto;
+  font-size: 0.75em;
+  color: #666;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 .player-actions {
