@@ -326,5 +326,30 @@ describe('GameView.vue', () => {
       await wrapper.find('.start-game-btn').trigger('click');
       expect(mockGamesStore.startGame).toHaveBeenCalledWith(1);
     });
+
+    it('shows a spinner in the Start Game button when starting', async () => {
+      wrapper.vm.isStartingGame = true;
+      await wrapper.vm.$nextTick();
+      const startGameBtn = wrapper.find('.start-game-btn');
+      expect(startGameBtn.find('.btn-spinner.spinning').exists()).toBe(true);
+      expect(startGameBtn.text()).toContain('Starting...');
+    });
+  });
+
+  describe('Keyboard Shortcuts and Refresh UI', () => {
+    it('refreshes the game when R is pressed', async () => {
+      wrapper = mountComponent();
+      const event = new KeyboardEvent('keydown', { key: 'r' });
+      window.dispatchEvent(event);
+      expect(mockGamesStore.fetchGameDetails).toHaveBeenCalledWith(1);
+    });
+
+    it('displays the refresh shortcut hint and last-refreshed in the header', () => {
+      wrapper = mountComponent();
+      const refreshContainer = wrapper.find('.header-container .refresh-container');
+      expect(refreshContainer.exists()).toBe(true);
+      expect(refreshContainer.find('kbd').text()).toBe('R');
+      expect(refreshContainer.find('.last-refreshed').exists()).toBe(true);
+    });
   });
 });
