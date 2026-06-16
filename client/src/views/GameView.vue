@@ -84,14 +84,31 @@ const isSelectedActorOwned = computed(() => {
 });
 
 const handleKeyDown = (event: KeyboardEvent) => {
+  if (
+    event.target instanceof HTMLInputElement ||
+    event.target instanceof HTMLTextAreaElement ||
+    event.target instanceof HTMLSelectElement
+  ) {
+    return;
+  }
+
   if (event.key === 'Escape') {
     selectedActorId.value = null;
   }
 
-  // Ctrl+Enter or Cmd+Enter to submit orders
-  if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-    if (plannedMoves.value && plannedMoves.value.length > 0 && !isSubmitting.value) {
-      handleSubmitOrders(plannedMoves.value);
+  if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey) {
+    // Ctrl+Enter or Cmd+Enter to submit orders
+    if (event.key === 'Enter') {
+      if (plannedMoves.value && plannedMoves.value.length > 0 && !isSubmitting.value) {
+        handleSubmitOrders(plannedMoves.value);
+      }
+    }
+    return;
+  }
+
+  if (event.key.toLowerCase() === 'r') {
+    if (!isRefreshing.value) {
+      refreshGame();
     }
   }
 };
@@ -407,30 +424,37 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           <span v-if="copySuccess" class="copy-feedback" role="status">Copied!</span>
         </button>
       </div>
-      <button
-        type="button"
-        class="refresh-btn"
-        @click="refreshGame"
-        :disabled="isRefreshing"
-        aria-label="Refresh game state"
-        title="Refresh game state"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          :class="{ 'spinning': isRefreshing }"
+      <div class="refresh-container">
+        <span v-if="lastRefreshed" class="last-refreshed">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clock-icon" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          Last Refreshed: {{ lastRefreshed }}
+        </span>
+        <button
+          type="button"
+          class="refresh-btn"
+          @click="refreshGame"
+          :disabled="isRefreshing"
+          aria-label="Refresh game state"
+          title="Refresh game state (R)"
         >
-          <path d="M23 4v6h-6"></path>
-          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-        </svg>
-      </button>
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            :class="{ 'spinning': isRefreshing }"
+          >
+            <path d="M23 4v6h-6"></path>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+          </svg>
+        </button>
+        <kbd title="Keyboard shortcut: R" aria-hidden="true">R</kbd>
+      </div>
     </div>
     <div class="game-info" v-if="game.gameId !== undefined && game.gameId !== null">
       <span class="turn-info">
@@ -448,10 +472,6 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
           <svg v-else-if="game.gameState === 'COMPLETED'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
           {{ game.gameState }}
         </span>
-      </span>
-      <span v-if="lastRefreshed" class="last-refreshed">
-        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="clock-icon" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-        Last Refreshed: {{ lastRefreshed }}
       </span>
     </div>
 
@@ -555,7 +575,21 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
             class="start-game-btn"
             :disabled="isStartingGame || (game.playerCount || 0) < 2"
             @click="handleStartGame"
+            :aria-busy="isStartingGame"
           >
+            <svg
+              v-if="isStartingGame"
+              class="btn-spinner spinning"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
+            </svg>
             {{ isStartingGame ? 'Starting...' : 'Start Game' }}
           </button>
         </div>
@@ -729,13 +763,18 @@ async function postOrders(moves: PlannedMove[]) { // Modified signature
   flex-shrink: 0;
 }
 
+.refresh-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .last-refreshed {
-  font-size: 0.9em;
+  font-size: 0.85em;
   color: #666;
   display: flex;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
 }
 
 .clock-icon {
