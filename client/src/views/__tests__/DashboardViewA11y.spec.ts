@@ -43,8 +43,8 @@ describe('DashboardView.vue accessibility and UX', () => {
       ok: true,
       json: () => Promise.resolve({
         games: [
-          { id: 1, playerCount: 1, maxPlayers: 4, isFull: false },
-          { id: 2, playerCount: 4, maxPlayers: 4, isFull: true }
+          { id: 1, playerCount: 1, maxPlayers: 4, isFull: false, gameState: 'LOBBY' },
+          { id: 2, playerCount: 4, maxPlayers: 4, isFull: true, gameState: 'LOBBY' }
         ]
       }),
     });
@@ -54,7 +54,7 @@ describe('DashboardView.vue accessibility and UX', () => {
     await vi.waitFor(() => expect(wrapper.findAll('.game-item').length).toBe(2));
 
     const gameButtons = wrapper.findAll('.game-item');
-    expect(gameButtons[0].attributes('aria-label')).toBe('Game #1, 1 of 4 players');
+    expect(gameButtons[0].attributes('aria-label')).toBe('Game #1, State: LOBBY, 1 of 4 players');
     expect(gameButtons[0].attributes('aria-busy')).toBe('false');
     expect(gameButtons[1].attributes('disabled')).toBeDefined();
   });
@@ -75,8 +75,8 @@ describe('DashboardView.vue accessibility and UX', () => {
         ok: true,
         json: () => Promise.resolve({
           games: [
-            { id: 1, playerCount: 1, maxPlayers: 4, isFull: false },
-            { id: 2, playerCount: 1, maxPlayers: 4, isFull: false }
+            { id: 1, playerCount: 1, maxPlayers: 4, isFull: false, gameState: 'LOBBY' },
+            { id: 2, playerCount: 1, maxPlayers: 4, isFull: false, gameState: 'LOBBY' }
           ]
         }),
       });
@@ -108,7 +108,7 @@ describe('DashboardView.vue accessibility and UX', () => {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve({
-          games: [{ id: 1, playerCount: 1, maxPlayers: 4, isFull: false }]
+          games: [{ id: 1, playerCount: 1, maxPlayers: 4, isFull: false, gameState: 'LOBBY' }]
         }),
       });
     });

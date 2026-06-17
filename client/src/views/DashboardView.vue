@@ -215,9 +215,10 @@ async function join(game: GameSummary) {
         v-for="game in gameList"
         :key="game.id"
         class="game-item"
-        :class="{ 'game-full': game.isFull }"
-        :disabled="joiningGameId !== null || game.isFull"
-        :aria-label="`Game #${game.id}, ${game.playerCount} of ${game.maxPlayers} players${game.isFull ? ', Full' : (joiningGameId === game.id ? ', Joining' : '')}`"
+        :class="{ 'game-unjoinable': game.isFull || (game.gameState && game.gameState !== 'LOBBY') }"
+        :disabled="joiningGameId !== null || game.isFull || (game.gameState && game.gameState !== 'LOBBY')"
+        :aria-label="`Game #${game.id}, State: ${(game.gameState || 'LOBBY').replace('_', ' ')}, ${game.playerCount} of ${game.maxPlayers} players${game.isFull ? ', Full' : (joiningGameId === game.id ? ', Joining' : '')}`"
+        :title="game.gameState && game.gameState !== 'LOBBY' ? `Cannot join: Game is ${game.gameState.replace('_', ' ').toLowerCase()}` : (game.isFull ? 'Cannot join: Game is full' : 'Click to join game')"
         :aria-busy="joiningGameId === game.id"
         @click="join(game)"
       >
@@ -259,12 +260,20 @@ async function join(game: GameSummary) {
               {{ joiningGameId === game.id ? 'Joining...' : 'Game #' + game.id }}
             </div>
             <div class="game-status">
-              Players: {{ game.playerCount }}/{{ game.maxPlayers }}
+              <span class="state-badge" :class="`state-${game.gameState?.toLowerCase()}`">
+                <svg v-if="game.gameState === 'LOBBY'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                <svg v-else-if="game.gameState === 'IN_PROGRESS'" xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                <svg v-else xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                {{ game.gameState?.replace('_', ' ') || 'LOBBY' }}
+              </span>
+              <span class="player-count-info">
+                Players: {{ game.playerCount }}/{{ game.maxPlayers }}
+              </span>
               <span v-if="game.isFull" class="full-indicator"> (FULL)</span>
             </div>
           </div>
           <svg
-            v-if="!game.isFull && joiningGameId !== game.id"
+            v-if="game.gameState === 'LOBBY' && !game.isFull && joiningGameId !== game.id"
             class="chevron-icon"
             xmlns="http://www.w3.org/2000/svg"
             width="20"
@@ -440,15 +449,50 @@ async function join(game: GameSummary) {
   outline-offset: 2px;
 }
 
-.game-item.game-full {
+.game-item.game-unjoinable {
   background: #f5f5f5;
   color: #666;
   cursor: not-allowed;
 }
 
-.game-item.game-full:hover {
+.game-item.game-unjoinable:hover {
   background: #f5f5f5;
   transform: none;
+}
+
+.state-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75em;
+  font-weight: bold;
+  text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+.state-lobby {
+  background: #e3f2fd;
+  color: #1976d2;
+  border: 1px solid #bbdefb;
+}
+
+.state-in_progress {
+  background: hsla(160, 100%, 37%, 0.1);
+  color: hsla(160, 100%, 25%, 1);
+  border: 1px solid hsla(160, 100%, 37%, 0.3);
+}
+
+.state-completed {
+  background: #f5f5f5;
+  color: #616161;
+  border: 1px solid #e0e0e0;
+}
+
+.player-count-info {
+  display: inline-flex;
+  align-items: center;
 }
 
 .game-item-content {
