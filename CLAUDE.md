@@ -19,7 +19,7 @@ startup-servers     # Start both API and frontend servers
 ```
 
 The `shell.nix` environment provides:
-- Node.js 20.x LTS with npm
+- Node.js 24.x LTS with npm
 - All development tools (curl, jq, git)
 - Automatic symlink creation (`lib -> api`)
 - **git beads** (`bd`) - Distributed task tracking system

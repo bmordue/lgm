@@ -6,8 +6,8 @@ Thank you for your interest in contributing to LGM! This document provides guide
 
 ### Prerequisites
 
-- Node.js 20.x LTS
-- npm 10.x
+- Node.js 24.x LTS
+- npm 11.x
 - Git
 
 ### Development Setup

@@ -22,7 +22,7 @@ startup-servers     # Start both API and frontend servers
 ```
 
 **CRITICAL**: Always use `nix-shell` first. The shell.nix environment provides:
-- Node.js 20.x LTS with npm  
+- Node.js 24.x LTS with npm  
 - All development tools (curl, jq, git)
 - Automatic symlink creation (`lib -> api`)
 - Helpful aliases and environment setup
@@ -148,7 +148,7 @@ If you see frontend build errors about "Could not resolve", ensure you're workin
 
 ## CI/CD Pipeline
 The GitHub workflow (`.github/workflows/main.yml`) requires:
-- Node.js 22.x
+- Node.js 24.x
 - Backend build and test in `api/` directory
 - Mutation testing with Stryker
 

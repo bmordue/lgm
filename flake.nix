@@ -17,7 +17,7 @@
 
           buildInputs = with pkgs; [
             # Core development tools
-            nodejs_20        # Node.js 20.x LTS
+            nodejs_24        # Node.js 24.x LTS
             nodePackages.npm # npm package manager
             git             # Version control
             

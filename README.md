@@ -23,7 +23,7 @@ This provides Node.js, npm, git, and helpful development tools. The environment 
 ## Manual Setup (NOT RECOMMENDED - Use Nix instead)
 
 ### Running the API server (manual setup)
-To run the server manually, first ensure you have Node.js 20.x and npm installed, then:
+To run the server manually, first ensure you have Node.js 24.x and npm installed, then:
 
 ```bash
 # Create required symlink
