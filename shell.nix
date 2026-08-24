@@ -19,7 +19,7 @@ pkgs.mkShell {
   # Development dependencies
   buildInputs = with pkgs; [
     # Core development tools
-    nodejs_20        # Node.js 20.x LTS - matches current environment
+    nodejs_24        # Node.js 24.x LTS - matches current environment
     nodePackages.npm # npm package manager
     git             # Version control
     

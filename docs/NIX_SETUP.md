@@ -5,7 +5,7 @@ This directory contains Nix configuration files to set up a complete development
 ## What's Included
 
 The Nix environment provides:
-- **Node.js 20.x LTS** - JavaScript runtime
+- **Node.js 24.x LTS** - JavaScript runtime
 - **npm** - Package manager
 - **git** - Version control
 - **curl** & **jq** - API testing tools
@@ -111,7 +111,7 @@ The `lib -> api` symlink is required for the frontend to access backend models. 
 - Make sure these ports are available
 
 ### Node.js Version
-The Nix environment provides Node.js 20.x LTS, which matches the project requirements.
+The Nix environment provides Node.js 24.x LTS, which matches the project requirements.
 
 ## Development URLs
 
