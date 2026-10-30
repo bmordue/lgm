@@ -1,121 +1,162 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for AI coding agents working in this repository. Keep this file and
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) aligned with the code; do not add
+another architecture review document.
 
-## Development Environment Setup
+## Development Environment
 
-**ALWAYS use shell.nix for development environment setup:**
+The project expects the Nix shell, which provides Node.js 24, npm, git, curl, and
+jq:
 
 ```bash
-# Enter the Nix development shell (required first step)
 nix-shell
 
-# Quick setup: Install dependencies and start both servers
+# Install dependencies and start both servers
 startup-servers
 
-# Manual setup alternative:
-install-deps        # Install all dependencies (API + client)
-startup-servers     # Start both API and frontend servers
+# Or separately
+install-deps
+start-api
+start-client
 ```
 
-The `shell.nix` environment provides:
-- Node.js 24.x LTS with npm
-- All development tools (curl, jq, git)
-- Automatic symlink creation (`lib -> api`)
-- **git beads** (`bd`) - Distributed task tracking system
-- Helpful aliases and functions
-- Environment variables and PATH setup
+The shell also creates a legacy `lib -> api` symlink. The client uses
+`@lgm/shared-types` from `packages/shared-types`, so that symlink is not needed
+for client builds.
 
-**Never install Node.js manually or use system Node.js - always use `nix-shell` first.**
+Avoid installing or using a system Node.js version.
 
-## Task Management with git beads
+## Task Tracking
 
-This project uses **git beads** for issue tracking. All planned work is tracked as beads that persist in the repository.
-
-```bash
-# See available work (unblocked tasks)
-bd ready
-
-# View issue details
-bd show <id>
-
-# Update issue status
-bd update <id> --status in_progress
-
-# Complete work
-bd close <id>
-
-# List all issues
-bd list
-
-# Sync with git
-bd sync
-```
-
-Before starting work, run `bd ready` to see what tasks are available and not blocked by dependencies.
+[ROADMAP.md](ROADMAP.md) is the single backlog. Check
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#known-technical-debt) for known
+technical debt. Keep completed work in the roadmap's `Shipped` section and do
+not introduce a separate issue tracker.
 
 ## Commands
 
-### Backend Development (run inside nix-shell)
-- `npm run build` - Compile TypeScript to `built/` directory
-- `npm run watch` - Watch mode compilation
-- `npm start` - Build and run server (port 3000, configurable via `LGM_PORT`)
-- `npm run monitor` - Development server with nodemon auto-restart
-- `npm test` - Run all tests with coverage (nyc + mocha)
-- `RUN_E2E_TESTS=true npm test` - Run tests including e2e scenarios
-- `npz stryker run --config-file stryker.conf.js` - Mutation testing
+### Backend (`api/`)
 
-**Shell aliases available after `nix-shell`:**
-- `start-api` - Start API server (production)
-- `dev-api` - Start API server (development with auto-restart)
-- `test-api` - Run API tests
-- `build-all` - Build both API and client
-- `install-deps` - Install all dependencies
+```bash
+npm run build        # tsc -> built/
+npm run watch        # watch mode
+npm start            # build and run on port 3000
+npm run monitor      # nodemon development server
+npm test             # unit/integration tests with nyc coverage
+npm run test:e2e     # E2E tests; requires a running server
+npx stryker run      # mutation testing (api/stryker.config.json)
+```
 
-### Frontend Development (run inside nix-shell)
-- `cd client && npm run dev` - Development server with hot reload
-- `cd client && npm run build` - Production build with type checking
-- `cd client && npm run type-check` - TypeScript validation only
-- `cd client && npm run test:unit` - Run Vitest unit tests
-- `cd client && npm run lint` - ESLint with auto-fix
+### Frontend (`client/`)
 
-**Shell aliases available after `nix-shell`:**
-- `start-client` - Start client development server
-- `test-client` - Run client unit tests
-- `startup-servers` - Start both API and frontend servers together
+```bash
+npm run dev          # Vite dev server on port 5173
+npm run build        # type-check + production build
+npm run type-check   # vue-tsc only
+npm run test:unit    # Vitest
+npm run lint         # ESLint with auto-fix
+```
 
 ## Architecture
 
-### Game Logic Flow
-LGM is a turn-based strategy game where players control 9 actors (units) on a hexagonal grid world.
+LGM is a turn-based strategy game: players control nine actors on a hex grid and
+submit simultaneous orders for a turn of up to ten timesteps.
 
-**Turn Processing**: Each turn has 10 timesteps. Players submit movement orders, then the server processes all orders simultaneously across timesteps, handling collisions and invalid moves.
+```
+Vue 3 client (:5173) --/api--> Express + Exegesis API (:3000)
+                                  |-- PostgreSQL (DATABASE_URL set)
+                                  '-- in-memory store (otherwise)
+```
 
-**Core Services**:
-- `GameService` - High-level game operations (create, join, submit orders, get results)
-- `Rules` - Game mechanics, movement validation, turn processing
-- `Store` - In-memory persistence layer (no database)
-- `Models` - Core data structures (Game, World, Actor, TurnOrders, TurnResult)
+- **API** (`api/`): TypeScript, Express 5, Exegesis with strict OpenAPI
+  validation (`api/spec/api.yml`). Controllers live in `api/controllers`.
+- **Client** (`client/`): Vue 3, Pinia, Vue Router, Vite. `API_URL` is `/api`;
+  Vite proxies `/api` to `localhost:3000` in development.
+- **Shared types** (`packages/shared-types`): hex/grid types imported by the
+  client as `@lgm/shared-types`.
 
-### API Design
-OpenAPI 3.0 specification (`api/spec/api.yml`) with Exegesis middleware. Authentication via bearer tokens stored in memory. Main endpoints:
-- Game lifecycle: `POST /games`, `PUT /games/{id}` (join), `GET /games`
-- Turn mechanics: `POST /games/{gameId}/turns/{turn}/players/{playerId}` (orders), `GET` variant (results)
-- Auth: `POST /users/login`
+### Authentication
 
-### Frontend State Management
-Vue 3 + Pinia stores:
-- `Games.store` - Current game state, world data, turn information
-- `User.store` - Authentication token, persisted to localStorage
+Authentication is delegated to an upstream nginx + Authelia proxy. The API reads
+`Remote-User` (or `Remote-Email`), `Remote-Name`, and `Remote-Groups` in
+`api/middleware/auth.ts`. It does **not** issue or validate bearer tokens, and
+`POST /users/login` always returns `410 Gone`.
 
-### Testing Patterns
-Backend uses Mocha with comprehensive integration tests in `GameService.test.ts`. Tests cover game creation, multi-player joining, order validation, and turn processing scenarios. Frontend uses Vitest for component testing.
+- Public: `GET /games`, `GET /users/me`, `GET /health`, `GET /metrics`.
+- Other game endpoints require a non-guest identity.
+- In non-production, `DEV_STUB_USER="email:Name:group1,group2"` provides a local
+  identity when no proxy headers are present.
+- Production binds to `127.0.0.1`. See [docs/auth.md](docs/auth.md).
 
-### Key Development Notes
-- All TypeScript compilation outputs to `built/` directory
-- Game world is hardcoded 20x20 grid with predefined terrain
-- Actors spawn in 3x3 formations per player
-- Movement uses 6 hex directions: N, NE, SE, S, SW, NW
-- In-memory storage means server restarts lose all game state
-- Frontend expects backend on localhost:3000 by default
-- **Required symlink `lib -> api` is automatically created by `shell.nix`**
+### Storage
+
+`api/service/DatabaseStore.ts` selects the backend on first use:
+
+- `DATABASE_URL` set: `pg` client, runs `api/database/migration.sql`, then
+  `PostgresStore`.
+- Unset: `MemoryStore`; all state is lost on restart.
+
+Both implement `api/service/StoreInterface.ts`. Ignore the unused Prisma files;
+the runtime does not use Prisma.
+
+### Core Services
+
+- `GameLifecycleService` — create/join/start/kick/transfer host/player state/list.
+- `OrderService` — validate and store turn orders.
+- `TurnResultService` — read resolved turn results.
+- `Rules` — world creation, actor setup, turn simulation.
+- `Visibility` — per-player fog of war / filtered worlds.
+- `RangeValidation` + `CombatMath` — attack validation and damage.
+- `ActorPlacement` — spawn-zone heuristic.
+- `DatabaseStore` — Postgres/memory selection and serialized operations.
+- `WebSocketService` — Socket.IO rooms and `games:updated` / `game:updated`.
+
+`GameService.ts` and `Store.ts` are thin compatibility re-exports.
+
+### Game Flow
+
+1. Create game: generated world, `LOBBY`, `maxPlayers` clamped 2–8 (default 4).
+2. Join: lobby-only, capacity and duplicate username/session checks, first player
+   becomes host, nine actors placed, player-filtered world returned.
+3. Start: host-only, at least two players, state becomes `IN_PROGRESS`.
+4. Orders: one submission per player per turn; `MOVE` directions or `ATTACK`
+   target; ownership and target validity checked.
+5. Resolve: when all players submit, timesteps are simulated, combat applied,
+   results filtered per player and stored, turn advances.
+6. Read: `GET /games/{gameId}/players/{playerId}` or the turn-results endpoint.
+
+### API Endpoints
+
+Defined in `api/spec/api.yml`. Main routes: `GET/POST /games`,
+`PUT /games/{id}` (join), `GET/DELETE /games/{gameId}/players/{playerId}`,
+`PUT /games/{gameId}/start`, `PUT /games/{gameId}/host`,
+`GET /games/{gameId}/actors/{actorId}/targets`,
+`GET/POST /games/{gameId}/turns/{turn}/players/{playerId}`,
+`GET /users/me`, and the deprecated `POST /users/login`.
+
+### Configuration
+
+Defaults are in `api/config/GameConfig.ts`; see
+[CONFIGURATION.md](CONFIGURATION.md). The world defaults to 10×10 and is
+configurable via `LGM_WORLD_WIDTH` / `LGM_WORLD_HEIGHT`. Other useful variables:
+`LGM_MAX_PLAYERS`, `LGM_TIMESTEP_MAX`, `LGM_VISIBILITY_RANGE`,
+`LGM_DEFAULT_SIGHT_RANGE`, `LGM_PORT`, `LGM_DEBUG`, `DATABASE_URL`,
+`DEV_STUB_USER`, `REQUIRE_PROXY_AUTH`, and `CLIENT_ORIGIN`.
+
+### Testing
+
+- Backend: Mocha + `tsc`; `npm test` runs the suite. E2E tests are opt-in.
+- Frontend: Vitest + Vue Test Utils; `npm run test:unit`.
+- CI builds both packages, runs unit tests, starts the API for E2E, and runs
+  Stryker.
+
+## Conventions
+
+- Put tunable constants in `api/config/*` and document new environment variables.
+- Use typed errors from `api/utils/Errors.ts`.
+- Keep `api/spec/api.yml` in sync with controllers and tests.
+- Do not add duplicate architecture/review documents; update
+  [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) or [ROADMAP.md](ROADMAP.md).
+- The client no longer imports backend models through `lib/`; use
+  `@lgm/shared-types` or client-local types.

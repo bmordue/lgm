@@ -17,7 +17,6 @@ test-results/
 api/test-results/
 client/test-results/
 
-# bv (beads viewer) local config and caches
-.bv/
+# local tooling config and caches
 .direnv/
 .qwen/
