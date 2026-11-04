@@ -41,7 +41,7 @@
     "express-openid-connect": "^2.18.1",
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
-    "js-yaml": "^4.3.1",
+    "js-yaml": "^4.3.2",
     "pg": "^8.17.2",
     "socket.io": "^4.8.3"
   },
@@ -60,7 +60,7 @@
     "@typescript-eslint/eslint-plugin": "^8.34.0",
     "@typescript-eslint/parser": "^8.34.0",
     "eslint": "^9.28.0",
-    "mocha": "^11.7.0",
+    "mocha": "^12.0.0",
     "mocha-junit-reporter": "^2.2.1",
     "mocha-multi-reporters": "^1.5.1",
     "nodemon": "^3.0.3",
