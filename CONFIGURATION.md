@@ -11,6 +11,14 @@ LGM can be configured using the following environment variables:
 | `LGM_PORT` | `3000` | Port number for the API server |
 | `LGM_DEBUG` | `false` | Enable debug logging (set to `true` to enable) |
 
+### Persistent Storage
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | *(empty — in-memory only)* | PostgreSQL connection string. Set this to enable persistent game state (e.g. `postgresql://user:pass@host:port/db`). Without it, the server uses an in-memory store and all data is lost on restart. |
+
+### Game Configuration
+
 ### Game Configuration
 
 | Variable | Default | Description |
