@@ -5,7 +5,7 @@ import logger = require('../utils/Logger');
 import util = require('util');
 import {
     Game, GridPosition, Direction, ActorOrders, Actor, ActorState, World,
-    Terrain, TurnStatus, TurnOrders, TurnResult, OrderType, Weapon
+    Terrain, TurnStatus, TurnOrders, TurnResult, OrderType, Weapon, VisibilityInfo
 } from './Models';
 import { JoinGameResponse } from './GameService';
 import { getVisibleWorldForPlayer, hasLineOfSight } from '../service/Visibility';
@@ -18,6 +18,23 @@ import { calculateDamage, applyDamage } from './CombatMath';
 
 const config = getConfig();
 export const TIMESTEP_MAX = config.timestepMax;
+
+/**
+ * In-memory per-game, per-player visibility history.
+ * gameId -> playerId -> (tileKey | "actor:<id>") -> VisibilityInfo.
+ * This lets explored terrain and last-known enemy positions persist across turns
+ * within a single server process. A durable store can be substituted later.
+ */
+const gameVisibilityHistory = new Map<number, Map<number, Map<string, VisibilityInfo>>>();
+
+function getGameVisibilityHistory(gameId: number): Map<number, Map<string, VisibilityInfo>> {
+    let history = gameVisibilityHistory.get(gameId);
+    if (!history) {
+        history = new Map<number, Map<string, VisibilityInfo>>();
+        gameVisibilityHistory.set(gameId, history);
+    }
+    return history;
+}
 
 function findOrdersForTurn(gameId: number, turn: number) {
     logger.debug("rules.ordersForTurn");
@@ -203,7 +220,8 @@ export function simulateTurn(
     game: Game,
     world: World,
     orders: Array<ActorOrders>,
-    actors: Array<Actor>
+    actors: Array<Actor>,
+    visibilityHistory?: Map<number, Map<string, VisibilityInfo>>
 ): { updatedActors: Array<Actor>, turnResults: Array<TurnResult> } {
     // 1. Apply rules to get updated actors
     const updatedActors = applyRulesToActorOrders(game, world, orders, actors);
@@ -214,7 +232,17 @@ export function simulateTurn(
             terrain: world.terrain,
             actors: updatedActors
         };
-        const visibleWorld = getVisibleWorldForPlayer(fullWorldState, playerId);
+        // Resolve (or lazily create) this player's visibility history so explored
+        // terrain and last-known positions persist across turns.
+        let playerHistory: Map<string, VisibilityInfo> | undefined;
+        if (visibilityHistory) {
+            playerHistory = visibilityHistory.get(playerId);
+            if (!playerHistory) {
+                playerHistory = new Map<string, VisibilityInfo>();
+                visibilityHistory.set(playerId, playerHistory);
+            }
+        }
+        const visibleWorld = getVisibleWorldForPlayer(fullWorldState, playerId, playerHistory, game.turn);
         return {
             gameId: game.id,
             playerId: playerId,
@@ -222,7 +250,8 @@ export function simulateTurn(
             world: {
                 terrain: visibleWorld.terrain,
                 actorIds: visibleWorld.actorIds,
-                actors: visibleWorld.actors
+                actors: visibleWorld.actors,
+                visibility: visibleWorld.visibility
             }
         };
     });
@@ -326,7 +355,7 @@ async function processGameTurn(gameId: number): Promise<TurnStatus> {
     let playerTurnResults: TurnResult[];
     logger.debug("processGameTurn: about to simulate turn");
     try {
-        const result = simulateTurn(game, world, flattenedActorOrders, allActorsInWorld);
+        const result = simulateTurn(game, world, flattenedActorOrders, allActorsInWorld, getGameVisibilityHistory(game.id));
         updatedActors = result.updatedActors;
         playerTurnResults = result.turnResults;
     } catch (e) {
@@ -412,11 +441,11 @@ export async function createWorld(): Promise<number> {
     }
 }
 
-export async function filterWorldForPlayer(world: World, playerId: number, allActors?: Actor[]): Promise<World> {
+export async function filterWorldForPlayer(world: World, playerId: number, allActors?: Actor[], visibilityHistory?: Map<string, VisibilityInfo>): Promise<World> {
     const actors = allActors || await Promise.all(world.actorIds.map(id => store.read<Actor>(store.keys.actors, id)));
 
     // Use the new getVisibleWorldForPlayer from Visibility service
-    const visibleWorld = getVisibleWorldForPlayer({ terrain: world.terrain, actors }, playerId);
+    const visibleWorld = getVisibleWorldForPlayer({ terrain: world.terrain, actors }, playerId, visibilityHistory);
 
     // Ensure that the owning player's actors are always included in the filtered
     // result. In some edge cases the visibility function can return an empty
@@ -438,7 +467,8 @@ export async function filterWorldForPlayer(world: World, playerId: number, allAc
         ...world,
         actorIds: visibleWorld.actorIds,
         actors: visibleWorld.actors, // Populate actors for API response
-        terrain: visibleWorld.terrain
+        terrain: visibleWorld.terrain,
+        visibility: visibleWorld.visibility
     });
 }
 

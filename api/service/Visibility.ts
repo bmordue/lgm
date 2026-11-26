@@ -1,4 +1,4 @@
-import { GridPosition, Terrain, Actor, ActorState, World } from "./Models"; // Added ActorState and World
+import { GridPosition, Terrain, Actor, ActorState, World, VisibilityInfo, VisibilityState } from "./Models"; // Added ActorState and World
 import { Hex, OffsetCoord } from "../Hex"; // Added Hex and OffsetCoord
 import { warn } from "../utils/Logger";
 import { getConfig } from "../config/GameConfig";
@@ -237,16 +237,58 @@ export function hasLineOfSight(
     return true;
 }
 
+export interface VisibleWorldResult {
+    terrain: Terrain[][];
+    actorIds: number[];
+    actors: Actor[];
+    visibility: VisibilityInfo[];
+}
+
+/**
+ * Key used to store per-tile visibility history. Tiles are keyed by "row,col".
+ * Enemy actors are keyed by "actor:<id>" so their last known position can be
+ * tracked separately from terrain exploration.
+ */
+export function tileKey(x: number, y: number): string {
+    return `${x},${y}`;
+}
+
+export function actorKey(actorId: number): string {
+    return `actor:${actorId}`;
+}
+
+/**
+ * Produce a copy of an enemy actor with detailed stats removed. Position, id,
+ * state and owner are preserved so the player still knows an enemy is present,
+ * but health/weapon/armor/ammo and combat bonuses are hidden.
+ */
+export function redactActor(actor: Actor): Actor {
+    const {
+        health,
+        maxHealth,
+        weapon,
+        armor,
+        currentAmmo,
+        isUnderCover,
+        coverBonus,
+        isAiming,
+        aimBonus,
+        ...visible
+    } = actor;
+    return visible as Actor;
+}
+
 export function getVisibleWorldForPlayer(
     world: { terrain: Terrain[][], actors: Actor[] }, // Simplified World type for input
-    playerId: number
-): { terrain: Terrain[][], actorIds: number[], actors: Actor[] } {
-    const playerActors = world.actors.filter(actor => actor.owner === playerId && actor.state !== ActorState.DEAD);
+    playerId: number,
+    visibilityHistory?: Map<string, VisibilityInfo>,
+    currentTurn?: number
+): VisibleWorldResult {
+    const rows = world.terrain.length;
+    const cols = rows > 0 ? world.terrain[0].length : 0;
+    const history = visibilityHistory ?? new Map<string, VisibilityInfo>();
 
-    if (playerActors.length === 0) {
-        const unexploredTerrain = world.terrain.map(row => row.map(() => Terrain.UNEXPLORED));
-        return { terrain: unexploredTerrain, actorIds: [], actors: [] };
-    }
+    const playerActors = world.actors.filter(actor => actor.owner === playerId && actor.state !== ActorState.DEAD);
 
     // Initialize a 2D boolean array for combined visibility, matching terrain dimensions
     const visibleMap: boolean[][] = world.terrain.map(row => row.map(() => false));
@@ -256,8 +298,8 @@ export function getVisibleWorldForPlayer(
         const actorHex = gridPositionToHex(actor.pos);
         const sightRange = (actor.weapon && typeof actor.weapon.maxRange === 'number') ? actor.weapon.maxRange : config.visibility.defaultSightRange;
 
-        for (let r = 0; r < world.terrain.length; r++) {
-            for (let c = 0; c < world.terrain[r].length; c++) {
+        for (let r = 0; r < rows; r++) {
+            for (let c = 0; c < cols; c++) {
                 const targetGridPos: GridPosition = { x: r, y: c };
                 const targetHex = gridPositionToHex(targetGridPos);
 
@@ -270,24 +312,56 @@ export function getVisibleWorldForPlayer(
         }
     }
 
-    // Filter terrain based on the visibleMap
+    // Build the per-tile visibility array and filter terrain.
+    // VISIBLE and EXPLORED tiles reveal their real terrain; UNEXPLORED stays hidden.
+    const visibility: VisibilityInfo[] = [];
     const filteredTerrain = world.terrain.map((row, r) =>
-        row.map((tile, c) => (visibleMap[r][c] ? tile : Terrain.UNEXPLORED))
+        row.map((tile, c) => {
+            const key = tileKey(r, c);
+            let info: VisibilityInfo;
+            if (visibleMap[r][c]) {
+                info = { state: VisibilityState.VISIBLE, lastSeenTurn: currentTurn };
+                history.set(key, info);
+            } else {
+                const previous = history.get(key);
+                if (previous && previous.state !== VisibilityState.UNEXPLORED) {
+                    // Seen before (VISIBLE or EXPLORED) but not currently visible.
+                    info = {
+                        state: VisibilityState.EXPLORED,
+                        lastSeenTurn: previous.lastSeenTurn,
+                        lastKnownPosition: previous.lastKnownPosition
+                    };
+                    history.set(key, info);
+                } else {
+                    info = { state: VisibilityState.UNEXPLORED };
+                }
+            }
+            visibility.push(info);
+            return info.state === VisibilityState.UNEXPLORED ? Terrain.UNEXPLORED : tile;
+        })
     );
 
-    // Filter actors: include player's own actors + any other actor on a visible tile
-    const filteredActors = world.actors.filter(actor => {
-        if (actor.owner === playerId) {
-            return true; // Always include player's own actors
-        }
-        // For other actors, check if their position is on the visibleMap
-        if (within(actor.pos.x, actor.pos.y, visibleMap) && visibleMap[actor.pos.x][actor.pos.y]) {
-            // TODO: Potentially redact information for enemy actors if they are not fully identified.
-            // For now, include them fully if visible.
-            return true;
-        }
-        return false;
-    });
+    // Filter actors: include player's own actors + any other actor on a visible tile.
+    // Enemy actors have their detailed stats redacted.
+    const filteredActors = world.actors
+        .filter(actor => {
+            if (actor.owner === playerId) {
+                return true; // Always include player's own actors
+            }
+            return within(actor.pos.x, actor.pos.y, visibleMap) && visibleMap[actor.pos.x][actor.pos.y];
+        })
+        .map(actor => {
+            if (actor.owner === playerId) {
+                return actor;
+            }
+            // Record last known position for enemies currently observed.
+            history.set(actorKey(actor.id), {
+                state: VisibilityState.VISIBLE,
+                lastSeenTurn: currentTurn,
+                lastKnownPosition: { x: actor.pos.x, y: actor.pos.y }
+            });
+            return redactActor(actor);
+        });
 
-    return { terrain: filteredTerrain, actorIds: filteredActors.map(a => a.id), actors: filteredActors };
+    return { terrain: filteredTerrain, actorIds: filteredActors.map(a => a.id), actors: filteredActors, visibility };
 }

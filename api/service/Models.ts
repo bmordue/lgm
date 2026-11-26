@@ -10,6 +10,27 @@ export enum ActorState {
     DEAD, ALIVE
 }
 
+/**
+ * Visibility state of a single tile from a given player's perspective.
+ * - VISIBLE: currently observed by one of the player's actors
+ * - EXPLORED: seen in a previous turn but not currently visible
+ * - UNEXPLORED: never observed
+ */
+export enum VisibilityState {
+    VISIBLE = 'visible',
+    EXPLORED = 'explored',
+    UNEXPLORED = 'unexplored'
+}
+
+/**
+ * Per-tile (and per-actor) visibility metadata tracked across turns.
+ */
+export interface VisibilityInfo {
+    state: VisibilityState;
+    lastSeenTurn?: number;
+    lastKnownPosition?: GridPosition;
+}
+
 export enum GameState {
     LOBBY = 'LOBBY',
     IN_PROGRESS = 'IN_PROGRESS',
@@ -42,6 +63,7 @@ export interface World {
     actorIds: Array<number>;
     actors?: Array<Actor>; // Optional, populated for API responses
     terrain: Array<Array<Terrain>>
+    visibility?: Array<VisibilityInfo>; // Optional, row-major per-tile visibility for the requesting player
 }
 
 export interface Actor {
