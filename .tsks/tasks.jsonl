@@ -14,6 +14,6 @@
 {"id":"14","title":"Improve actor visibility information","status":"done","created_at":"2026-03-30T17:45:01.08507694Z","doc_hash":"21ff5b6d4007ea7d2f36c0275d34107830ac614478a94da3c01b5a3b2a163d9a"}
 {"id":"15","title":"Add actor indication to hex grid","status":"done","created_at":"2026-03-30T17:45:01.097621324Z","doc_hash":"c8e5b254aaee7471148369a6b3b503fd8fdfa08c771f3cb1df8ad675ff48aeeb"}
 {"id":"16","title":"Standardize error handling patterns","status":"done","created_at":"2026-03-30T17:45:01.111440509Z","doc_hash":"d8f8921db40fc11ec103c9610d5d3ecf2f8bbfe11bc37d171b37f2bec5fb57af"}
-{"id":"17","title":"Expand E2E test coverage","status":"todo","created_at":"2026-03-30T17:45:01.127244654Z","doc_hash":"9e2b5a5a05f29967cfed6cabad4eb6c46ab193e2d524d73f5b7ce7aea06d09b5"}
-{"id":"18","title":"Add Vue component tests","status":"todo","created_at":"2026-03-30T17:45:01.196368253Z","doc_hash":"56bb33a13eecc67c74af69d432b272fe7fe1b7dbb6e6563b238f8ff0055baefe"}
+{"id":"17","title":"Expand E2E test coverage","status":"done","created_at":"2026-03-30T17:45:01.127244654Z","doc_hash":"9e2b5a5a05f29967cfed6cabad4eb6c46ab193e2d524d73f5b7ce7aea06d09b5"}
+{"id":"18","title":"Add Vue component tests","status":"done","created_at":"2026-03-30T17:45:01.196368253Z","doc_hash":"56bb33a13eecc67c74af69d432b272fe7fe1b7dbb6e6563b238f8ff0055baefe"}
 {"id":"19","title":"Improve Draw utility function","status":"done","created_at":"2026-03-30T17:45:01.209798763Z","doc_hash":"0ca5a36de5de298f2fd36d4515b04ee01180b7f3417f3002e3033f55cd2d2e2a"}

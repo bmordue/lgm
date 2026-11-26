@@ -117,6 +117,54 @@ describe('e2e tests', () => {
     });
   });
 
+  describe("turn result visibility", () => {
+    const userEmail = "e2e_visibility@example.com";
+    let gameId: number;
+    let playerId: number;
+
+    it("should create and join a game", async () => {
+      const createResponse = await superagent
+        .post(`${BASE_URL}/games`)
+        .set('Remote-User', userEmail)
+        .send();
+      assert.equal(createResponse.statusCode, 201);
+      gameId = createResponse.body.gameId;
+
+      const joinResponse = await superagent
+        .put(`${BASE_URL}/games/${gameId}`)
+        .set('Remote-User', userEmail)
+        .send();
+      assert.equal(joinResponse.statusCode, 200);
+      playerId = joinResponse.body.playerId;
+    });
+
+    it("should include per-tile visibility in turn results", async () => {
+      assert(typeof gameId === 'number', "[E2E PRE-REQ] gameId should be set");
+      assert(typeof playerId === 'number', "[E2E PRE-REQ] playerId should be set");
+      const turn = 1;
+
+      const ordersResponse = await superagent
+        .post(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerId))
+        .set('Remote-User', userEmail)
+        .send({ gameId, turn, playerId, orders: [] });
+      assert.equal(ordersResponse.statusCode, 200);
+
+      const resultsResponse = await superagent
+        .get(util.format(`${BASE_URL}/games/%s/turns/%s/players/%s`, gameId, turn, playerId))
+        .set('Remote-User', userEmail)
+        .send();
+      assert.equal(resultsResponse.statusCode, 200);
+
+      const world = resultsResponse.body.world;
+      assert(Array.isArray(world.visibility), "world.visibility should be an array");
+      const expectedTiles = world.terrain.length * world.terrain[0].length;
+      assert.equal(world.visibility.length, expectedTiles, "one visibility entry per tile");
+
+      const states = new Set(world.visibility.map((v: any) => v.state));
+      assert(states.has('visible'), "at least one tile should be visible to the player");
+    });
+  });
+
   describe("multi-player game flow", () => {
     const emailP1 = "e2e_player_one@example.com";
     const emailP2 = "e2e_player_two@example.com";

@@ -614,6 +614,21 @@ components:
             type: array
             items:
               $ref: '#/components/schemas/TerrainTile'
+        visibility:
+          type: array
+          description: Row-major per-tile visibility for the requesting player.
+          items:
+            $ref: '#/components/schemas/VisibilityInfo'
+    VisibilityInfo:
+      type: object
+      properties:
+        state:
+          type: string
+          enum: [visible, explored, unexplored]
+        lastSeenTurn:
+          type: integer
+        lastKnownPosition:
+          $ref: '#/components/schemas/GridPosition'
     Actor:
       type: object
       required:
