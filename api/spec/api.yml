@@ -544,6 +544,9 @@ components:
       properties:
         message:
           type: string
+        code:
+          type: string
+          description: Optional machine-readable error code for client-side handling.
     SuccessResponse:
       type: object
       description: Generic success payload for operations that do not return resource data.

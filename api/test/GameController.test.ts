@@ -436,7 +436,7 @@ describe("GameController", function () {
 
       const result = await GameController.getPlayerGameState(mockContext);
       assert.equal(mockContext.res.statusCode, 404);
-      assert.equal(result.message, "Player not found");
+      assert.equal(result.message, "players with id 9999 not found");
     });
 
     it("should return 404 when the player belongs to another game", async function () {
@@ -497,7 +497,8 @@ describe("GameController", function () {
       try {
         const result = await GameController.getPlayerGameState(mockContext);
         assert.equal(mockContext.res.statusCode, 500);
-        assert.equal(result.message, "Unexpected store failure");
+        assert.equal(result.message, "An unexpected error occurred");
+        assert.equal(result.code, "INTERNAL_ERROR");
       } finally {
         mutableDatabaseStore.read = originalRead;
       }
