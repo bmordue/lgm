@@ -22,6 +22,22 @@ LGM can be configured using the following environment variables:
 | `LGM_VISIBILITY_RANGE` | `10` | Maximum visibility range for actors (in hexes) |
 | `LGM_DEFAULT_SIGHT_RANGE` | `7` | Default sight range for actors without weapons (in hexes) |
 
+### Database Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | _(unset)_ | PostgreSQL connection string. When set, the server persists all state to PostgreSQL; when unset, an in-memory store is used (data is lost on restart). |
+
+When `DATABASE_URL` is provided, the server connects on first use, applies
+`api/database/migration.sql` automatically, and closes the connection cleanly on
+`SIGINT`/`SIGTERM`.
+
+```bash
+# Persist state to PostgreSQL
+export DATABASE_URL="postgresql://user:password@localhost:5432/lgm?schema=public"
+npm start
+```
+
 ## Usage Examples
 
 ### Development

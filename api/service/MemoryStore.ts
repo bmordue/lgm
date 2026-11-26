@@ -82,4 +82,8 @@ export class MemoryStore implements Store {
     store.splice(index, 1);
     return true;
   }
+
+  async close(): Promise<void> {
+    // In-memory store holds no external resources to release.
+  }
 }

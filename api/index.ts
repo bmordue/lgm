@@ -9,6 +9,7 @@ import { loadUser, RuntimeUser } from './middleware/auth';
 import { inspect } from 'util';
 import { getSecurityConfig, SERVER_CONFIG } from './config/GameConfig';
 import { webSocketService } from './service/WebSocketService';
+import { closeStore } from './service/DatabaseStore';
 import * as logger from './utils/Logger';
 const APP_VERSION = (require('../package.json').version as string) || '0.0.1';
 
@@ -269,6 +270,20 @@ const host = process.env.NODE_ENV === 'production' ? '127.0.0.1' : undefined;
 if (require.main === module) {
     const port = SERVER_CONFIG.port;
     const host = process.env.NODE_ENV === 'production' ? '127.0.0.1' : undefined;
+
+    let shuttingDown = false;
+    const shutdown = (signal: string) => {
+        if (shuttingDown) {
+            return;
+        }
+        shuttingDown = true;
+        logger.info({ event: 'server_shutdown', signal });
+        closeStore()
+            .catch(err => logger.error({ event: 'store_close_failed', message: err?.message }))
+            .finally(() => process.exit(0));
+    };
+    process.once('SIGINT', () => shutdown('SIGINT'));
+    process.once('SIGTERM', () => shutdown('SIGTERM'));
 
     createServer()
         .then(server => {
