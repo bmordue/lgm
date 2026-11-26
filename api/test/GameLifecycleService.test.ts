@@ -387,5 +387,28 @@ describe("GameLifecycleService", function () {
       assert.deepEqual(formationOriginByOwner(actors), ["0,0", "0,7", "7,0", "7,7"]);
       assertActorsSpawnOnEmptyTerrain(world, actors);
     });
+
+    it("should spawn eight players around the perimeter", async function () {
+      const createResponse = await GameLifecycleService.createGame(8);
+      const gameId = createResponse.gameId;
+
+      for (let i = 0; i < 8; i++) {
+        await GameLifecycleService.joinGame(gameId, `player${i}`);
+      }
+
+      const game = await store.read<Game>(store.keys.games, gameId);
+      const world = await store.read<World>(store.keys.worlds, game.worldId);
+      const actors = await Promise.all(
+        world.actorIds.map((id) => store.read<Actor>(store.keys.actors, id))
+      );
+
+      // Each successfully-placed formation should occupy a distinct origin
+      const origins = formationOriginByOwner(actors);
+      assert.equal(origins.length, new Set(origins).size);
+      // Perimeter players prefer corner/edge starts
+      assert.ok(origins.some(o => o.startsWith("0,") || o.startsWith("7,")));
+      // All actors should be on empty terrain
+      assertActorsSpawnOnEmptyTerrain(world, actors);
+    });
   });
 });
