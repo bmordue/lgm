@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS players (
     "sessionId" VARCHAR(255)
 );
 
-CREATE INDEX idx_players_game_id ON players("gameId");
+CREATE INDEX IF NOT EXISTS idx_players_game_id ON players("gameId");
 
 CREATE TABLE IF NOT EXISTS worlds (
     "id" SERIAL PRIMARY KEY,
@@ -60,8 +60,8 @@ CREATE TABLE IF NOT EXISTS "turnOrders" (
     "orders" JSONB NOT NULL -- Store array of orders as JSON
 );
 
-CREATE INDEX idx_turn_orders_game_id ON "turnOrders"("gameId");
-CREATE INDEX idx_turn_orders_player_id ON "turnOrders"("playerId");
+CREATE INDEX IF NOT EXISTS idx_turn_orders_game_id ON "turnOrders"("gameId");
+CREATE INDEX IF NOT EXISTS idx_turn_orders_player_id ON "turnOrders"("playerId");
 
 CREATE TABLE IF NOT EXISTS "turnResults" (
     "id" SERIAL PRIMARY KEY,
@@ -71,8 +71,8 @@ CREATE TABLE IF NOT EXISTS "turnResults" (
     "world" JSONB NOT NULL -- Store world state as JSON
 );
 
-CREATE INDEX idx_turn_results_game_id ON "turnResults"("gameId");
-CREATE INDEX idx_turn_results_player_id ON "turnResults"("playerId");
+CREATE INDEX IF NOT EXISTS idx_turn_results_game_id ON "turnResults"("gameId");
+CREATE INDEX IF NOT EXISTS idx_turn_results_player_id ON "turnResults"("playerId");
 
 -- Create a function to create a new game with associated world
 CREATE OR REPLACE FUNCTION create_new_game(p_max_players INTEGER DEFAULT 4)

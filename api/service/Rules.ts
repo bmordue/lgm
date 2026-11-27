@@ -517,7 +517,7 @@ export async function setupActors(game: Game, playerId: number) {
         ACTOR_GRID_SIZE
     );
     const preferredZone = playerIndex >= 0 ? spawnZones[Math.min(playerIndex, spawnZones.length - 1)] : undefined;
-    const spawnOrigin = ActorPlacement.findSpawnOrigin(
+    const spawnOrigin = ActorPlacement.findOptimalSpawnPosition(
         world.terrain,
         ACTOR_GRID_SIZE,
         existingActorObjects,
