@@ -17,4 +17,5 @@ export interface Store {
   replace<T>(key: keys, id: number, newObj: T): Promise<T>;
   update<T>(key: keys, id: number, diffObj: T): Promise<T>;
   remove<T>(key: keys, id: number): Promise<boolean>;
+  close(): Promise<void>;
 }

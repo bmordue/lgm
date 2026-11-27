@@ -308,4 +308,9 @@ export class PostgresStore implements Store {
     }
     return true;
   }
+
+  async close(): Promise<void> {
+    store_debug("PostgresStore.close");
+    await this.client.end();
+  }
 }

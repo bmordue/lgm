@@ -21,6 +21,13 @@ start-api
 start-client
 ```
 
+The `shell.nix` environment provides:
+- Node.js 24.x LTS with npm
+- All development tools (curl, jq, git)
+- Automatic symlink creation (`lib -> api`)
+- **git beads** (`bd`) - Distributed task tracking system
+- Helpful aliases and functions
+- Environment variables and PATH setup
 The shell also creates a legacy `lib -> api` symlink. The client uses
 `@lgm/shared-types` from `packages/shared-types`, so that symlink is not needed
 for client builds.

@@ -4,20 +4,13 @@ import GameService = require("../service/GameService");
 import GameLifecycleService = require("../service/GameLifecycleService");
 import { RuntimeUser } from "../middleware/auth";
 import { Player, Game, World, Actor } from "../service/Models";
-import { NotFoundError, formatErrorResponse, UnauthorizedError, LGMError } from "../utils/Errors";
+import { ApiError, handleControllerError } from "../utils/ErrorHandler";
 import * as RangeValidation from "../service/RangeValidation";
 import { webSocketService } from "../service/WebSocketService";
 
-function handleControllerError(context: ExegesisContext, error: unknown) {
-  const normalizedError = error instanceof Error ? error : new Error("Unexpected error");
-  const { message, statusCode } = formatErrorResponse(normalizedError);
-  context.res.status(statusCode);
-  return { message };
-}
-
 async function resolvePlayerIdForUser(gameId: number, user?: RuntimeUser): Promise<number> {
   if (!user || user.isGuest) {
-    throw new UnauthorizedError("Authentication required");
+    throw new ApiError(401, "Authentication required", 'UNAUTHORIZED');
   }
 
   const game = await store.read<Game>(store.keys.games, gameId);
@@ -30,7 +23,7 @@ async function resolvePlayerIdForUser(gameId: number, user?: RuntimeUser): Promi
     }
   }
 
-  throw new LGMError("You must join this game before performing player management actions", 403);
+  throw new ApiError(403, "You must join this game before performing player management actions", 'FORBIDDEN');
 }
 
 module.exports.createGame = async function createGame(context: ExegesisContext) {
@@ -174,23 +167,17 @@ module.exports.getPlayerGameState = async function getPlayerGameState(context: E
     const authenticatedUser = context.user as RuntimeUser;
 
     if (player.gameId !== gameId) {
-      context.res.status(404);
-      return { message: "Player not found" };
+      throw new ApiError(404, "Player not found", 'PLAYER_NOT_FOUND');
     }
 
     if (player.sessionId !== authenticatedUser.id && player.username !== authenticatedUser.email) {
-      context.res.status(403);
-      return { message: "You can only access your own game state" };
+      throw new ApiError(403, "You can only access your own game state", 'FORBIDDEN');
     }
 
     const result = await GameLifecycleService.getPlayerGameState(gameId, playerId);
     context.res.status(200);
     return result;
   } catch (error) {
-    if (error instanceof NotFoundError) {
-      context.res.status(404);
-      return { message: "Player not found" };
-    }
     return handleControllerError(context, error);
   }
 }
@@ -212,8 +199,7 @@ module.exports.getValidTargets = async function getValidTargets(context: Exegesi
         const currentPlayer = players.find(p => p.sessionId === authenticatedUser.id || p.username === authenticatedUser.email);
 
         if (!currentPlayer || actor.owner !== currentPlayer.id) {
-            context.res.status(403);
-            return { message: "Not your actor" };
+            throw new ApiError(403, "Not your actor", 'FORBIDDEN');
         }
 
         // 3. Get all actors in the world

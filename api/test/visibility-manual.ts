@@ -4,10 +4,13 @@ import {
   findPath,
   within,
   hasLineOfSight,
-  getVisibleWorldForPlayer // Added new function
+  getVisibleWorldForPlayer, // Added new function
+  redactActor,
+  tileKey,
+  actorKey
 } from "../service/Visibility";
 import { generateTerrain } from "../service/Rules"; // Used for old visibility tests
-import { Terrain, GridPosition, Actor, ActorState, Weapon } from "../service/Models";
+import { Terrain, GridPosition, Actor, ActorState, Weapon, VisibilityState, VisibilityInfo } from "../service/Models";
 import { Hex } from "../Hex";
 import { readFileSync } from "fs";
 import assert = require("assert");
@@ -551,6 +554,135 @@ describe('getVisibleWorldForPlayer tests', () => {
 
     });
 
+});
+
+describe("enhanced visibility (states, exploration, redaction)", () => {
+    const createSimpleTerrain = (rows: number, cols: number, blockedCells: GridPosition[] = []): Terrain[][] => {
+        const terrain: Terrain[][] = Array(rows).fill(null).map(() => Array(cols).fill(Terrain.EMPTY));
+        for (const cell of blockedCells) {
+            if (cell.x >= 0 && cell.x < rows && cell.y >= 0 && cell.y < cols) {
+                terrain[cell.x][cell.y] = Terrain.BLOCKED;
+            }
+        }
+        return terrain;
+    };
+
+    it('returns a visibility entry for every tile (row-major)', () => {
+        const R = 4, C = 5;
+        const terrain = createSimpleTerrain(R, C);
+        const playerActor: Actor = { id: 1, owner: 1, pos: { x: 1, y: 1 }, state: ActorState.ALIVE, weapon: { name: "pistol", minRange: 0, maxRange: 2, damage: 5 } };
+        const world = { actors: [playerActor], terrain };
+
+        const result = getVisibleWorldForPlayer(world, 1, new Map<string, VisibilityInfo>(), 0);
+
+        assert.strictEqual(result.visibility.length, R * C, "one visibility entry per tile");
+        // The player's own tile is always visible.
+        assert.strictEqual(result.visibility[1 * C + 1].state, VisibilityState.VISIBLE);
+    });
+
+    it('tracks explored terrain across turns using shared history', () => {
+        const R = 5, C = 5;
+        const terrain = createSimpleTerrain(R, C);
+        const history = new Map<string, VisibilityInfo>();
+
+        // Turn 0: player at (2,2) sees adjacent tiles (short range).
+        const actorAtCenter: Actor = { id: 1, owner: 1, pos: { x: 2, y: 2 }, state: ActorState.ALIVE, weapon: { name: "pistol", minRange: 0, maxRange: 1, damage: 5 } };
+        const first = getVisibleWorldForPlayer({ actors: [actorAtCenter], terrain }, 1, history, 0);
+
+        // Pick a tile that was visible in turn 0 but far from the new position.
+        let exploredKey: string | null = null;
+        let exploredR = -1, exploredC = -1;
+        for (let r = 0; r < R && !exploredKey; r++) {
+            for (let c = 0; c < C && !exploredKey; c++) {
+                if (first.terrain[r][c] !== Terrain.UNEXPLORED && (r !== 2 || c !== 2)) {
+                    // ensure it will be out of range from (0,0) with range 1
+                    const dist = Math.abs(r - 0) + Math.abs(c - 0);
+                    if (dist > 1) { exploredKey = tileKey(r, c); exploredR = r; exploredC = c; }
+                }
+            }
+        }
+        assert.ok(exploredKey, "expected at least one non-origin visible tile to test exploration");
+
+        // Turn 1: player moves to corner (0,0) with short range; previously seen tile is now out of sight.
+        const actorAtCorner: Actor = { id: 1, owner: 1, pos: { x: 0, y: 0 }, state: ActorState.ALIVE, weapon: { name: "fists", minRange: 0, maxRange: 1, damage: 1 } };
+        const second = getVisibleWorldForPlayer({ actors: [actorAtCorner], terrain }, 1, history, 1);
+
+        assert.strictEqual(second.visibility[exploredR * C + exploredC].state, VisibilityState.EXPLORED, "previously seen tile becomes EXPLORED");
+        assert.strictEqual(second.terrain[exploredR][exploredC], terrain[exploredR][exploredC], "explored terrain is revealed");
+        assert.strictEqual(second.visibility[exploredR * C + exploredC].lastSeenTurn, 0, "lastSeenTurn records when it was last visible");
+
+        // A tile never seen in turn 0 and not visible in turn 1 remains UNEXPLORED.
+        const originHex = testGridPositionToHex({ x: 0, y: 0 });
+        let neverR = -1, neverC = -1;
+        for (let r = 0; r < R && neverR < 0; r++) {
+            for (let c = 0; c < C && neverR < 0; c++) {
+                const d = originHex.distance(testGridPositionToHex({ x: r, y: c }));
+                if (first.terrain[r][c] === Terrain.UNEXPLORED && d > 1) {
+                    neverR = r; neverC = c;
+                }
+            }
+        }
+        assert.ok(neverR >= 0, "expected at least one never-seen tile in turn 0");
+        assert.strictEqual(second.visibility[neverR * C + neverC].state, VisibilityState.UNEXPLORED);
+        assert.strictEqual(second.terrain[neverR][neverC], Terrain.UNEXPLORED);
+    });
+
+    it('redacts enemy stats while keeping own actors intact', () => {
+        const R = 7, C = 7;
+        const terrain = createSimpleTerrain(R, C);
+        const p1 = 1, e1 = 2;
+        const own: Actor = { id: 1, owner: p1, pos: { x: 1, y: 1 }, state: ActorState.ALIVE, health: 100, maxHealth: 100, weapon: { name: "Rifle", minRange: 1, maxRange: 3, damage: 10 }, armor: 5, currentAmmo: 30, isAiming: true, aimBonus: 15 };
+        const enemy: Actor = { id: 10, owner: e1, pos: { x: 1, y: 3 }, state: ActorState.ALIVE, health: 50, maxHealth: 50, weapon: { name: "Rifle", minRange: 1, maxRange: 3, damage: 10 }, armor: 2, currentAmmo: 12 };
+        const world = { actors: [own, enemy], terrain };
+
+        const result = getVisibleWorldForPlayer(world, p1, new Map<string, VisibilityInfo>(), 0);
+
+        const ownResult = result.actors.find(a => a.id === own.id);
+        const enemyResult = result.actors.find(a => a.id === enemy.id);
+        assert.ok(ownResult, "own actor present");
+        assert.strictEqual(ownResult!.health, 100, "own actor keeps health");
+        assert.ok(ownResult!.weapon, "own actor keeps weapon");
+
+        assert.ok(enemyResult, "visible enemy present");
+        assert.strictEqual(enemyResult!.health, undefined, "enemy health redacted");
+        assert.strictEqual(enemyResult!.weapon, undefined, "enemy weapon redacted");
+        assert.strictEqual(enemyResult!.armor, undefined, "enemy armor redacted");
+        assert.strictEqual(enemyResult!.currentAmmo, undefined, "enemy ammo redacted");
+        // Identity is preserved so the player knows an enemy is there.
+        assert.strictEqual(enemyResult!.id, enemy.id);
+        assert.strictEqual(enemyResult!.owner, e1);
+        assert.deepStrictEqual(enemyResult!.pos, enemy.pos);
+    });
+
+    it('records last known position for visible enemies in history', () => {
+        const R = 7, C = 7;
+        const terrain = createSimpleTerrain(R, C);
+        const p1 = 1, e1 = 2;
+        const own: Actor = { id: 1, owner: p1, pos: { x: 1, y: 1 }, state: ActorState.ALIVE, weapon: { name: "Rifle", minRange: 1, maxRange: 3, damage: 10 } };
+        const enemy: Actor = { id: 10, owner: e1, pos: { x: 1, y: 3 }, state: ActorState.ALIVE, weapon: { name: "Rifle", minRange: 1, maxRange: 3, damage: 10 } };
+        const history = new Map<string, VisibilityInfo>();
+
+        getVisibleWorldForPlayer({ actors: [own, enemy], terrain }, p1, history, 4);
+
+        const info = history.get(actorKey(enemy.id));
+        assert.ok(info, "enemy last-known entry recorded");
+        assert.strictEqual(info!.state, VisibilityState.VISIBLE);
+        assert.strictEqual(info!.lastSeenTurn, 4);
+        assert.deepStrictEqual(info!.lastKnownPosition, { x: enemy.pos.x, y: enemy.pos.y });
+    });
+
+    it('redactActor keeps identity fields and drops stats', () => {
+        const actor: Actor = { id: 7, owner: 3, pos: { x: 0, y: 0 }, state: ActorState.ALIVE, health: 10, weapon: { name: "x", minRange: 0, maxRange: 1 }, armor: 1, currentAmmo: 5 };
+        const redacted = redactActor(actor);
+        assert.strictEqual(redacted.id, 7);
+        assert.strictEqual(redacted.owner, 3);
+        assert.deepStrictEqual(redacted.pos, { x: 0, y: 0 });
+        assert.strictEqual(redacted.state, ActorState.ALIVE);
+        assert.strictEqual(redacted.health, undefined);
+        assert.strictEqual(redacted.weapon, undefined);
+        assert.strictEqual(redacted.armor, undefined);
+        assert.strictEqual(redacted.currentAmmo, undefined);
+    });
 });
 
 describe("within function tests", () => {

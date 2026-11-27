@@ -11,6 +11,14 @@ export import keys = StoreKeys;
 let storePromise: Promise<Store> | undefined;
 let operationQueue: Promise<unknown> = Promise.resolve();
 
+/**
+ * True when a PostgreSQL connection string has been provided. When false the
+ * store falls back to an in-memory implementation (useful for tests/dev).
+ */
+export function isDatabaseConfigured(): boolean {
+  return !!process.env.DATABASE_URL;
+}
+
 async function createStore(): Promise<Store> {
   if (!process.env.DATABASE_URL) {
     return new MemoryStore();
@@ -70,4 +78,22 @@ export async function update<T>(key: StoreKeys, id: number, diffObj: T): Promise
 
 export async function remove<T>(key: StoreKeys, id: number): Promise<boolean> {
   return queueStoreOperation((store) => store.remove(key, id));
+}
+
+/**
+ * Release the underlying store resources (e.g. close the PostgreSQL client).
+ * Safe to call when no store has been created. After closing, a subsequent
+ * store operation will lazily recreate the store.
+ */
+export async function closeStore(): Promise<void> {
+  await operationQueue;
+  if (!storePromise) {
+    return;
+  }
+  try {
+    const store = await storePromise;
+    await store.close();
+  } finally {
+    storePromise = undefined;
+  }
 }

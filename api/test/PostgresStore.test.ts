@@ -80,4 +80,16 @@ describe('PostgresStore', () => {
     const actor = await store.read<any>(keys.actors, 11);
     assert.strictEqual(actor.state, ActorState.DEAD);
   });
+
+  it('ends the underlying client on close', async () => {
+    let ended = false;
+    const fakeClient = {
+      query: async () => ({ rows: [] }),
+      end: async () => { ended = true; }
+    } as any;
+    const store = new PostgresStore(fakeClient);
+
+    await store.close();
+    assert.strictEqual(ended, true);
+  });
 });

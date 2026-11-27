@@ -1,4 +1,5 @@
 import { ExegesisContext } from "exegesis";
+import { ApiError, handleControllerError } from "../utils/ErrorHandler";
 
 /**
  * POST /users/login — deprecated.
@@ -7,9 +8,7 @@ import { ExegesisContext } from "exegesis";
  */
 export async function loginUser(context: ExegesisContext) {
   context.res.status(410);
-  return {
-    message: 'Login is no longer supported. Authentication is handled by the upstream proxy.',
-  };
+  return handleControllerError(context, new ApiError(410, 'Login is no longer supported. Authentication is handled by the upstream proxy.', 'LOGIN_GONE'));
 }
 
 /**

@@ -13,7 +13,7 @@ import {
   Actor,
 } from "./Models";
 import { inspect } from "util";
-import { GameError, PlayerError } from "../utils/Errors";
+import { ApiError } from "../utils/ErrorHandler";
 
 export interface CreateGameResponse {
   gameId: number;
@@ -77,11 +77,11 @@ export async function joinGame(gameId: number, username?: string, sessionId?: st
     
     // Validation checks
     if (game.gameState !== GameState.LOBBY) {
-        throw new GameError("Cannot join game: Game already started", 400);
+        throw new ApiError(400, "Cannot join game: Game already started", 'GAME_STARTED');
     }
     
     if (game.players.length >= game.maxPlayers) {
-        throw new GameError("Game is full", 400);
+        throw new ApiError(400, "Game is full", 'GAME_FULL');
     }
 
     // Check for duplicate username in this game
@@ -133,7 +133,7 @@ async function validateUniqueUsername(game: Game, username: string) {
     for (const existingPlayerId of game.players) {
         const existingPlayer = await store.read<Player>(store.keys.players, existingPlayerId);
         if (existingPlayer.username === username) {
-            throw new PlayerError("Player already joined this game", 400);
+            throw new ApiError(400, "Player already joined this game", 'PLAYER_ALREADY_JOINED');
         }
     }
 }
@@ -143,7 +143,7 @@ async function validateUniqueSession(game: Game, sessionId: string) {
     for (const existingPlayerId of game.players) {
         const existingPlayer = await store.read<Player>(store.keys.players, existingPlayerId);
         if (existingPlayer.sessionId === sessionId) {
-            throw new PlayerError("Player with this session has already joined the game", 400);
+            throw new ApiError(400, "Player with this session has already joined the game", 'PLAYER_SESSION_ALREADY_JOINED');
         }
     }
 }
@@ -153,11 +153,11 @@ export async function kickPlayer(gameId: number, playerIdToKick: number, request
     await validateHostPermissions(game, requestingPlayerId);
 
     if (game.gameState !== GameState.LOBBY) {
-        throw new GameError("Cannot kick players: Game already started", 400);
+        throw new ApiError(400, "Cannot kick players: Game already started", 'GAME_STARTED');
     }
 
     if (playerIdToKick === game.hostPlayerId) {
-        throw new PlayerError("Cannot kick the host player", 400);
+        throw new ApiError(400, "Cannot kick the host player", 'CANNOT_KICK_HOST');
     }
 
     // Remove player from game
@@ -176,11 +176,11 @@ export async function startGame(gameId: number, requestingPlayerId: number): Pro
     await validateHostPermissions(game, requestingPlayerId);
 
     if (game.gameState !== GameState.LOBBY) {
-        throw new GameError("Game already started", 400);
+        throw new ApiError(400, "Game already started", 'GAME_ALREADY_STARTED');
     }
 
     if (game.players.length < 2) {
-        throw new GameError("Need at least 2 players to start game", 400);
+        throw new ApiError(400, "Need at least 2 players to start game", 'GAME_TOO_FEW_PLAYERS');
     }
 
     game.gameState = GameState.IN_PROGRESS;
@@ -193,7 +193,7 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
     await validateHostPermissions(game, requestingPlayerId);
 
     if (!game.players.includes(newHostPlayerId)) {
-        throw new PlayerError("New host must be a player in the game", 400);
+        throw new ApiError(400, "New host must be a player in the game", 'PLAYER_NOT_IN_GAME');
     }
 
     // Read player records before any modifications for potential rollback
@@ -236,7 +236,7 @@ export async function transferHost(gameId: number, newHostPlayerId: number, requ
 
 async function validateHostPermissions(game: Game, requestingPlayerId: number) {
     if (game.hostPlayerId !== requestingPlayerId) {
-        throw new PlayerError("Only the host can perform this action", 403);
+        throw new ApiError(403, "Only the host can perform this action", 'FORBIDDEN');
     }
 }
 
@@ -255,7 +255,7 @@ export async function getPlayerGameState(gameId: number, playerId: number): Prom
     const game = await store.read<Game>(store.keys.games, gameId);
 
     if (!game.players || !game.players.includes(playerId)) {
-        throw new PlayerError("Player does not belong to this game", 404);
+        throw new ApiError(404, "Player does not belong to this game", 'PLAYER_NOT_IN_GAME');
     }
 
     // Return the filtered game state for this player
