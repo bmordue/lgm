@@ -1,24 +1,26 @@
 # GitHub Copilot Instructions for LGM Repository
 
-**ALWAYS follow these instructions first and only fallback to additional search and context gathering if the information here is incomplete or found to be in error.**
+Treat this file and [docs/ARCHITECTURE.md](../docs/ARCHITECTURE.md) as the
+authoritative project guidance. If they disagree with the code, fix the docs.
 
 ## Project Overview
 
-LGM is a turn-based strategy game with a TypeScript backend API and Vue 3 frontend client. Players control 9 actors (units) on a hexagonal grid world through a RESTful API.
+LGM is a turn-based strategy game with a TypeScript API and a Vue 3 client.
+Players control nine actors on a hexagonal grid, submit orders for a turn of up
+to ten timesteps, and receive a visibility-filtered world.
 
-## Required Dependencies and Setup
+## Setup
 
-### Initial Setup Commands - ALWAYS use shell.nix
+Use the Nix shell (Node.js 24 + npm + git + curl + jq):
+
 ```bash
-# Enter the Nix development environment (REQUIRED first step)
 nix-shell
+startup-servers      # install deps and start API + client
 
-# Quick setup: Install dependencies and start both servers
-startup-servers
-
-# Alternative manual setup within nix-shell:
-install-deps        # Install all dependencies (API + client)
-startup-servers     # Start both API and frontend servers
+# Or manually
+install-deps
+start-api
+start-client
 ```
 
 **CRITICAL**: Always use `nix-shell` first. The shell.nix environment provides:
@@ -28,70 +30,72 @@ startup-servers     # Start both API and frontend servers
 - Helpful aliases and environment setup
 - Takes ~90 seconds for full dependency installation, NEVER CANCEL
 
-## Backend Development (./api/) - Run within nix-shell
+## Backend (`api/`)
 
-### Build and Test Commands
 ```bash
-# Build backend (TypeScript compilation)
-npm run build  # Takes ~4 seconds, outputs to built/ directory
-
-# Run all tests including unit and integration
-npm test  # Takes ~7 seconds, NEVER CANCEL, set timeout to 30+ seconds
-
-# Run tests including E2E (requires running server)
-RUN_E2E_TESTS=true npm test  # Takes ~7 seconds, E2E tests fail without running server
-
-# Run mutation testing with Stryker
-npx stryker run stryker.config.json  # Takes ~42 seconds, NEVER CANCEL, set timeout to 120+ seconds
+npm run build        # TypeScript -> built/
+npm run watch        # watch compilation
+npm start            # build and run on :3000 (LGM_PORT)
+npm run monitor      # nodemon development server
+npm test             # Mocha + nyc
+npm run test:e2e     # requires a running server
+npx stryker run      # mutation testing (api/stryker.config.json)
 ```
 
-### Server Commands
+### Backend architecture
+
+- **API spec**: `api/spec/api.yml` (OpenAPI 3, strict Exegesis validation).
+- **Controllers**: `api/controllers/`.
+- **Services**: `GameLifecycleService` (create/join/start/kick/host/list),
+  `OrderService`, `TurnResultService`, `Rules` (turn simulation), `Visibility`,
+  `RangeValidation`, `CombatMath`, `ActorPlacement`, `DatabaseStore`.
+- **Storage**: PostgreSQL when `DATABASE_URL` is set (schema in
+  `api/database/migration.sql`), otherwise an in-memory store that loses state on
+  restart. The unused Prisma files are not part of the runtime.
+- **Auth**: reverse-proxy identity headers (`Remote-User`, `Remote-Name`,
+  `Remote-Email`, `Remote-Groups`) read by `api/middleware/auth.ts`. No bearer
+  tokens are issued or validated. `POST /users/login` returns `410 Gone`.
+- **Config**: `api/config/GameConfig.ts`; world defaults to 10×10 and is
+  configurable (`LGM_WORLD_WIDTH`, `LGM_WORLD_HEIGHT`). See
+  [CONFIGURATION.md](../CONFIGURATION.md).
+- **Operations**: `/health` and `/metrics`; Socket.IO events `games:updated` and
+  `game:updated`.
+
+### Local API testing
+
+Without a proxy, set `DEV_STUB_USER` or send identity headers:
+
 ```bash
-# Start production server (builds first)
-npm start  # Builds then runs on port 3000 (configurable via LGM_PORT)
+DEV_STUB_USER="alice@example.com:Alice Smith:players" npm start
 
-# Development server with auto-restart
-npm run monitor  # Uses nodemon, builds then watches for changes
-
-# Watch mode compilation only
-npm run watch  # TypeScript compiler in watch mode
+curl -X POST http://localhost:3000/games \
+  -H "Remote-User: alice@example.com" \
+  -H "Content-Type: application/json" \
+  -d '{"maxPlayers":2}'
+curl -X PUT http://localhost:3000/games/0 -H "Remote-User: alice@example.com"
 ```
 
-### Backend Validation Scenarios
-After making backend changes, ALWAYS run these validation steps:
+Do not use `Authorization: Bearer ...` or the login endpoint; both are obsolete.
 
-1. **Build and test**: `npm run build && npm test`
-2. **Start server**: `npm start` - Should show "Listening on port 3000"
-3. **Test login**: `curl -X POST http://localhost:3000/users/login -H "Content-Type: application/json" -d '{"username":"test","password":"test"}'`
-4. **Create game**: Extract token and `curl -X POST http://localhost:3000/games -H "Authorization: Bearer <token>"`
-5. **Join game**: `curl -X PUT http://localhost:3000/games/0 -H "Authorization: Bearer <token>"`
+## Frontend (`client/`)
 
-### Backend Architecture Notes
-- **TypeScript compilation**: All source compiles to `built/` directory
-- **API spec**: Located at `spec/api.yml` (OpenAPI 3.0)
-- **Authentication**: Bearer tokens stored in memory
-- **Storage**: In-memory only, server restart loses all game state
-- **Core services**: GameService, Rules, Store, Models in `service/` directory
-- **Game world**: Hardcoded 20x20 hexagonal grid with predefined terrain
-
-## Frontend Development (./client/) - Run within nix-shell
-
-### Build and Development Commands
 ```bash
-# Development server with hot reload
-npm run dev  # Starts Vite dev server on port 5173
-
-# Production build
-npm run build  # Takes ~5 seconds, runs type-check and build-only in parallel
-
-# Type checking only
-npm run type-check  # Vue TypeScript compilation check
-
-# Build without type checking
-npm run build-only  # Vite build only
+npm run dev          # Vite on :5173
+npm run build        # type-check + build
+npm run type-check   # vue-tsc
+npm run build-only   # Vite build only
+npm run test:unit    # Vitest
+npm run lint         # ESLint with auto-fix
+npm run format       # Prettier
 ```
 
-### Frontend Testing and Linting
+- Vue 3 Composition API, Pinia (`Games.store`, `User.store`), Vue Router, Vite.
+- `API_URL` is `/api`; the dev server proxies `/api` to `localhost:3000`.
+- Shared hex types come from `@lgm/shared-types` (`packages/shared-types`), not
+  from the `lib/` symlink.
+
+## Validation Before Committing
+
 ```bash
 # Run unit tests with Vitest
 npm run test:unit  # Takes ~3 seconds
@@ -218,24 +222,23 @@ ALWAYS run these commands and ensure they pass:
 ```bash
 # Backend validation
 cd api && npm run build && npm test
-
-# Frontend validation  
-cd client && npm run build && npm run lint && npm run test:unit
-
-# Manual testing
-# Start both servers and test the complete user scenario above
+cd client && npm run build && npm run test:unit
 ```
 
-### When Making API Changes
-1. Update OpenAPI spec in `api/spec/api.yml`
-2. Update controllers in `api/controllers/`
-3. Update models in `api/service/Models.ts`
-4. Rebuild and test: `npm run build && npm test`
-5. Test with frontend integration
+For API changes: update `api/spec/api.yml`, controller, and tests together. For
+frontend changes: run `npm run type-check` and `npm run test:unit`.
 
-### When Making Frontend Changes
-1. Ensure backend models are properly imported via `../../../lib/`
-2. Update Pinia stores if state management changes
-3. Run type checking: `npm run type-check`
-4. Test with running backend: Start backend and frontend servers
-5. Verify complete user flows work in browser
+## Manual End-to-End Scenario
+
+1. Start the API with `DEV_STUB_USER` and start the client.
+2. Open http://localhost:5173/ and confirm the UI loads.
+3. Create a game, join it, and verify the hex grid and actors render.
+4. Select actors, plan movement, submit orders, and read turn results.
+
+## Common Issues
+
+- **E2E tests fail**: the API must be running on port 3000.
+- **401 on game actions**: no proxy identity; set `DEV_STUB_USER` in development.
+- **Data disappears after restart**: `DATABASE_URL` is unset (in-memory mode).
+- **Shared type import errors**: run `npm install` in `client/` so the local
+  `@lgm/shared-types` dependency is linked.

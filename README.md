@@ -18,7 +18,7 @@ nix-shell
 startup-servers
 ```
 
-This provides Node.js, npm, git, and helpful development tools. The environment automatically creates the required `lib -> api` symlink and provides convenient aliases. See [NIX_SETUP.md](NIX_SETUP.md) for detailed instructions.
+This provides Node.js, npm, git, and helpful development tools. The environment also creates the legacy `lib -> api` symlink and provides convenient aliases; the client itself uses `@lgm/shared-types` and does not need that symlink. See [docs/NIX_SETUP.md](docs/NIX_SETUP.md) for detailed instructions.
 
 ## Manual Setup (NOT RECOMMENDED - Use Nix instead)
 
@@ -26,9 +26,6 @@ This provides Node.js, npm, git, and helpful development tools. The environment 
 To run the server manually, first ensure you have Node.js 24.x and npm installed, then:
 
 ```bash
-# Create required symlink
-ln -s api lib
-
 # Install dependencies and start API server
 cd api
 npm install
@@ -36,6 +33,9 @@ npm start  # Production server on port 3000
 # OR
 npm run monitor  # Development server with auto-restart
 ```
+
+Without `DATABASE_URL` the API uses an in-memory store and loses state on
+restart. Set `DATABASE_URL` to use PostgreSQL; migrations run on first use.
 
 Operational endpoints (no auth required):
 - `GET /health` - service health and uptime
@@ -51,22 +51,21 @@ npm run dev  # Development server on port 5173
 
 ### Tests
 
-Run `npm test`.
+```bash
+# API (Mocha)
+cd api && npm test
 
-Some tests only run if an env var is set:
+# Client (Vitest)
+cd client && npm run test:unit
 
-`RUN_E2E_TESTS=true npm test`
-
-or 
-
-`RUN_E2E_TESTS=true npx mocha built/test/e2e.js` for just the e2e tests.
-
+# API E2E tests; these need a running API server
+cd api && RUN_E2E_TESTS=true npm test
+```
 
 ### Running Stryker.js Mutation Testing Locally
 
-Run `npz stryker run --config-file stryker.conf.js` in the root directory of the project.
-
-Stryker.js will perform mutation testing and provide a report on the code coverage.
+From `api/`, run `npx stryker run` (it uses `api/stryker.config.json`). Stryker
+performs mutation testing and reports on the quality of the test suite.
 
 # Architecture & Development
 
@@ -88,59 +87,30 @@ See **[docs/auth.md](docs/auth.md)** for the full deployment topology, nginx con
 
 ## 📋 Documentation
 
-- **[Configuration Guide](CONFIGURATION.md)** - Environment variables and configuration options
-- **[Contributing Guidelines](CONTRIBUTING.md)** - How to contribute to the project
-- **[Architecture Assessment](ARCHITECTURE_ASSESSMENT.md)** - Detailed technical analysis and roadmap
-- **[Architecture Checklist](ARCHITECTURE_CHECKLIST.md)** - Systematic review against best practices  
-- **[Improvement Suggestions](IMPROVEMENT_SUGGESTIONS.md)** - Prioritized, actionable improvements
-- **[Architecture Index](docs/ARCHITECTURE_INDEX.md)** - Quick reference and overview
+- **[Architecture](docs/ARCHITECTURE.md)** - Current system design, API surface, and technical debt
+- **[Roadmap](ROADMAP.md)** - Current priorities
+- **[Authentication](docs/auth.md)** - Proxy/forward-auth deployment model
+- **[Configuration](CONFIGURATION.md)** - Environment variables
+- **[Contributing](CONTRIBUTING.md)** - Development workflow and conventions
+- **[Combat system](docs/COMBAT_SYSTEM.md)** / **[damage system](docs/COMBAT_DAMAGE_SYSTEM.md)**
+- **[OpenAPI specification](api/spec/api.yml)** - Authoritative API contract
+- **[Nix setup](docs/NIX_SETUP.md)**
 
 ## 🛣️ Development Roadmap & Task Tracking
 
-This project uses **git beads** (`bd`) for distributed task management. All planned work is tracked as beads (issues) that persist across sessions and travel with the codebase.
+[ROADMAP.md](ROADMAP.md) is the single backlog and list of current priorities.
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#known-technical-debt) for known
+technical debt.
 
-### Task Management Commands
+## Current Status
 
-```bash
-# Enter the Nix development environment (bd is auto-installed)
-nix-shell
+Implemented: combat and fog of war, per-game player limits with host/kick/start,
+player-specific game state, interactive board and order submission, Socket.IO
+updates, PostgreSQL persistence with in-memory fallback, proxy authentication,
+health/metrics/rate limiting, and unit test suites for both packages.
 
-# See available work (unblocked tasks)
-bd ready
-
-# View issue details
-bd show <id>
-
-# Claim work
-bd update <id> --status in_progress
-
-# Complete work
-bd close <id>
-
-# Sync with git
-bd sync
-```
-
-### Documentation
-
-- **[Task Tracking with Beads](docs/TASK_TRACKING_WITH_BEADS.md)** - Complete guide to using beads for task management
-- **[ROADMAP.md](ROADMAP.md)** - High-level development priorities (historical reference)
-- **[AGENTS.md](AGENTS.md)** - Guide for AI coding agents using beads
-- **[PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md](docs/features/PLAYER_MANAGEMENT_IMPLEMENTATION_PLAN.md)** - Detailed feature planning
-
-To see all current planned work, run `bd list` or `bd ready` in the development environment. See [TASK_TRACKING_WITH_BEADS.md](docs/TASK_TRACKING_WITH_BEADS.md) for detailed information about the 22 beads tracking all planned work.
-
-# TODO
-
-## Joining Games
-
-- **Limit number of players in a game:** Implemented (currently hardcoded to 4 per game).
-- **Owner sets player limit when game is created:** Not implemented. Player limit is global.
-- **Cannot join twice with the same user session/username in the same game:** Implemented.
-- **User session may be joined to many games:** Possible. The system does not restrict a user from joining multiple different games.
-
-## Game World
-
-- **API to get state of the world for a given turn (for a specific player):**
-  - The client application expects an endpoint like `GET /games/{gameId}/players/{playerId}` which would return the current game state (world, turn, etc.) for that player.
-  - The backend service `GameService.turnResults` provides results of a completed turn, but a dedicated endpoint to fetch the full current game state for a player (as if they just joined or are refreshing) would be beneficial for the client.
+Known gaps: API response and error consistency, visibility redaction, dead
+persistence and legacy code cleanup, and broader E2E/database coverage. Details
+and priority order are in
+[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#known-technical-debt) and
+[ROADMAP.md](ROADMAP.md).

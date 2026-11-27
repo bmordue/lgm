@@ -36,7 +36,6 @@ pkgs.mkShell {
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo "Node.js version: $(node --version)"
     echo "npm version: $(npm --version)"
-    echo "bv version: $(bv --version 2>/dev/null || echo 'available')"
     echo "Current directory: $(pwd)"
     echo ""
 
